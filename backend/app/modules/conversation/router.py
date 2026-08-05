@@ -39,6 +39,10 @@ class SessionCreateRequest(BaseModel):
     user_id: str | None = None
 
 
+class SessionRenameRequest(BaseModel):
+    name: str | None = None
+
+
 class MessageRequest(BaseModel):
     text: str = Field(min_length=1, max_length=4000)
 
@@ -93,6 +97,7 @@ async def list_sessions(
                 "created_at": s.created_at,
                 "updated_at": s.updated_at,
                 "message_count": s.message_count,
+                "name": getattr(s, "name", None),
             }
             for s in sessions
         ]
@@ -112,6 +117,29 @@ async def get_messages(
             for m in messages
         ],
     }
+
+
+@router.patch("/sessions/{session_id}")
+async def rename_session(
+    session_id: str,
+    body: SessionRenameRequest,
+    auth: object = Depends(require_api_key),
+) -> dict[str, object]:
+    ok = await get_conversation_service().rename_session(session_id, body.name)
+    if not ok:
+        raise HTTPException(status_code=404, detail="sessão não encontrada")
+    return {"session_id": session_id, "name": body.name, "updated_at": get_settings().redis_url}
+
+
+@router.delete("/sessions/{session_id}")
+async def delete_session(
+    session_id: str,
+    auth: object = Depends(require_api_key),
+) -> dict[str, object]:
+    ok = await get_conversation_service().delete_session(session_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="sessão não encontrada")
+    return {"deleted": True, "session_id": session_id}
 
 
 @router.post("/sessions/{session_id}/messages")

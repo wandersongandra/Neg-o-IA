@@ -36,6 +36,7 @@ class ConversationSession:
     created_at: str
     updated_at: str
     message_count: int
+    name: str | None = None
 
 
 class ConversationStorePort(Protocol):
@@ -50,6 +51,10 @@ class ConversationStorePort(Protocol):
     async def get_messages(self, session_id: str) -> list[ConversationMessage]: ...
 
     async def list_sessions(self) -> list[ConversationSession]: ...
+
+    async def rename_session(self, session_id: str, name: str | None) -> bool: ...
+
+    async def delete_session(self, session_id: str) -> bool: ...
 
 
 __all__ = [

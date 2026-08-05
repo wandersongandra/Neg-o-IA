@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { Inter, JetBrains_Mono } from "next/font/google";
+import { Providers } from "@/components/providers";
 import "./globals.css";
 
 const inter = Inter({
@@ -24,7 +25,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR" className="dark">
       <body className={`${inter.variable} ${jetbrains.variable} font-sans`}>
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

@@ -62,7 +62,7 @@ export default function CoreSphere({ data, brain }: CoreSphereProps) {
   return (
     <div className="relative mx-auto flex aspect-square w-full max-w-[480px] items-center justify-center">
       <div
-        className="animate-glow-pulse absolute size-2/3 rounded-full bg-[#3B82F6]/20 blur-3xl"
+        className="animate-glow-pulse absolute size-2/3 rounded-full bg-[var(--color-prime)]/20 blur-3xl"
         style={{ filter: "blur(60px)" }}
       />
 
@@ -70,7 +70,7 @@ export default function CoreSphere({ data, brain }: CoreSphereProps) {
         className="absolute size-[86%] rounded-full"
         style={{
           background:
-            "radial-gradient(circle at 50% 45%, rgba(0,212,255,0.16) 0%, rgba(59,130,246,0.10) 30%, rgba(11,16,24,0) 68%)",
+            "radial-gradient(circle at 50% 45%, var(--accent-muted) 0%, rgba(59,130,246,0.10) 30%, transparent 68%)",
         }}
       />
 
@@ -85,11 +85,11 @@ export default function CoreSphere({ data, brain }: CoreSphereProps) {
       />
 
       <div className="animate-orbit absolute size-[58%]">
-        <span className="absolute -top-1 left-1/2 size-1.5 rounded-full bg-[#00D4FF] shadow-[0_0_10px_#00D4FF]" />
+        <span className="absolute -top-1 left-1/2 size-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_10px_var(--accent)]" />
       </div>
 
       <div className="animate-orbit-reverse absolute size-[74%]">
-        <span className="absolute -top-1 left-1/2 size-1 rounded-full bg-[#4DA6FF] shadow-[0_0_10px_#4DA6FF]" />
+        <span className="absolute -top-1 left-1/2 size-1 rounded-full bg-[var(--accent-glow)] shadow-[0_0_10px_var(--accent-glow)]" />
       </div>
 
       <div
@@ -119,10 +119,10 @@ export default function CoreSphere({ data, brain }: CoreSphereProps) {
           }}
         />
         <div className="relative text-center leading-none">
-          <p className="text-3xl font-black tracking-[0.3em] text-[#F8FAFC] drop-shadow-[0_0_14px_rgba(0,212,255,0.9)]">
+          <p className="text-3xl font-black tracking-[0.3em] text-[var(--text-primary)] drop-shadow-[0_0_14px_rgba(0,212,255,0.9)]">
             NEGÃO
           </p>
-          <p className="mt-2 font-mono-data text-[9px] tracking-[0.45em] text-[#00D4FF]">
+          <p className="mt-2 font-mono-data text-[9px] tracking-[0.45em] text-[var(--accent)]">
             INTELLIGENCE CORE
           </p>
         </div>
@@ -131,12 +131,12 @@ export default function CoreSphere({ data, brain }: CoreSphereProps) {
       {STATIC_DOTS.map((dot, i) => (
         <span
           key={i}
-          className="animate-float absolute size-1 rounded-full bg-[#4DA6FF]"
+          className="animate-float absolute size-1 rounded-full bg-[var(--accent-glow)]"
           style={{
             top: dot.top,
             left: dot.left,
             opacity: 0.7,
-            boxShadow: "0 0 8px #4DA6FF",
+            boxShadow: "0 0 8px var(--accent-glow)",
             animationDelay: dot.delay,
           }}
         />
@@ -151,15 +151,15 @@ export default function CoreSphere({ data, brain }: CoreSphereProps) {
           <div className="flex items-center gap-2 rounded-lg px-3 py-2">
             <span
               className={`size-1.5 rounded-full ${
-                chip.tone === "warn" ? "bg-[#F59E0B]" : "bg-[#22C55E]"
+                chip.tone === "warn" ? "bg-[var(--color-warn)]" : "bg-[var(--color-ok)]"
               }`}
               style={{ boxShadow: "0 0 8px currentColor" }}
             />
             <div className="leading-tight">
-              <p className="font-mono-data text-[8px] tracking-[0.2em] text-[#94A3B8]">
+              <p className="font-mono-data text-[8px] tracking-[0.2em] text-[var(--text-secondary)]">
                 {chip.label}
               </p>
-              <p className="font-mono-data text-[11px] font-semibold text-[#F8FAFC]">
+              <p className="font-mono-data text-[11px] font-semibold text-[var(--text-primary)]">
                 {chip.value}
               </p>
             </div>

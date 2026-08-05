@@ -136,6 +136,35 @@ class ConversationStore:
             _LOGGER.debug("conversation_store_read_failed", exc_info=True)
             return []
 
+    async def rename_session(self, session_id: str, name: str | None) -> bool:
+        """Renomeia a sessão (name opcional). Retorna False se não existir."""
+        try:
+            raw = await self._redis.get(_meta_key(session_id))
+            if not raw:
+                return False
+            meta: dict[str, Any] = json.loads(raw)
+            meta["name"] = name
+            meta["updated_at"] = _now()
+            await self._redis.set(
+                _meta_key(session_id), json.dumps(meta), ex=MESSAGES_TTL_SECONDS
+            )
+            return True
+        except Exception:
+            _LOGGER.debug("conversation_store_rename_failed", exc_info=True)
+            return False
+
+    async def delete_session(self, session_id: str) -> bool:
+        """Apaga sessão (mensagens, meta e índice). Retorna False se não existir."""
+        try:
+            removed = await self._redis.srem(INDEX_KEY, session_id)
+            if not removed:
+                return False
+            await self._redis.delete(_messages_key(session_id), _meta_key(session_id))
+            return True
+        except Exception:
+            _LOGGER.debug("conversation_store_delete_failed", exc_info=True)
+            return False
+
     async def list_sessions(self) -> list[ConversationSession]:
         try:
             ids = await self._redis.smembers(INDEX_KEY)
@@ -157,6 +186,7 @@ class ConversationStore:
                         created_at=meta.get("created_at", ""),
                         updated_at=meta.get("updated_at", ""),
                         message_count=int(meta.get("message_count", 0)),
+                        name=meta.get("name"),
                     )
                 )
             except Exception:

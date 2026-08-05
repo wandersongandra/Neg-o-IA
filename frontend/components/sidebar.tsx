@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   Activity,
   Bot,
@@ -20,6 +21,7 @@ import {
   Server,
   Settings,
   Wrench,
+  X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { DashboardData } from "@/lib/types";
@@ -61,94 +63,133 @@ const SOON_NAV: SoonNavItem[] = [
 interface SidebarProps {
   data: DashboardData | null;
   onNavigate: (label: string) => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export default function Sidebar({ data }: SidebarProps) {
+export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname();
   const version = data?.root?.version ?? "--";
   const ready = data?.readyz?.status === "ok";
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const handleLinkClick = () => {
+    if (onClose && window.innerWidth < 1024) {
+      onClose();
+    }
+  };
+
+  if (!mounted) {
+    return (
+      <aside className="glass sticky top-16 z-30 hidden h-[calc(100vh-4rem)] w-60 flex-col md:flex" />
+    );
+  }
 
   return (
-    <aside className="glass sticky top-16 z-30 hidden h-[calc(100vh-4rem)] w-60 flex-col md:flex">
-      <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
-        {MAIN_NAV.map((item) => {
-          const active = pathname === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] transition-all duration-300 ${
-                active
-                  ? "bg-[#3B82F6]/10 text-[#F8FAFC] shadow-[inset_0_0_0_1px_rgba(59,130,246,0.25)]"
-                  : "text-[#94A3B8] hover:bg-white/[0.03] hover:text-[#F8FAFC]"
-              }`}
-            >
-              <item.icon
-                className={`size-4 shrink-0 transition-colors ${
+    <>
+      {window.innerWidth < 1024 && isOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
+      <aside
+        className={`
+          glass sticky top-16 z-30 h-[calc(100vh-4rem)] w-60 flex-col md:flex
+          ${window.innerWidth < 1024
+            ? "fixed left-0 top-16 z-50 transform transition-transform duration-300 ease-in-out "
+              + (isOpen ? "translate-x-0" : "-translate-x-full")
+            : ""}
+        `}
+        role="navigation"
+        aria-label="Navegação principal"
+      >
+        <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
+          {MAIN_NAV.map((item) => {
+            const active = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={handleLinkClick}
+                className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] transition-all duration-300 ${
                   active
-                    ? "text-[#00D4FF]"
-                    : "text-[#64748B] group-hover:text-[#00D4FF]"
+                    ? "bg-[var(--color-prime)]/10 text-[var(--text-primary)] shadow-[inset_0_0_0_1px_var(--accent-muted)]"
+                    : "text-[var(--text-secondary)] hover:bg-white/[0.03] hover:text-[var(--text-primary)]"
                 }`}
-              />
+              >
+                <item.icon
+                  className={`size-4 shrink-0 transition-colors ${
+                    active
+                      ? "text-[var(--accent)]"
+                      : "text-[var(--text-secondary)] group-hover:text-[var(--accent)]"
+                  }`}
+                />
+                <span className="truncate">{item.label}</span>
+                {active && (
+                  <span className="ml-auto size-1 rounded-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
+                )}
+              </Link>
+            );
+          })}
+
+          <p className="px-3 pb-1 pt-4 font-mono-data text-[10px] font-semibold tracking-widest text-[var(--text-secondary)]">
+            EM BREVE
+          </p>
+          {SOON_NAV.map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              disabled
+              aria-disabled="true"
+              className="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-[13px] text-[var(--text-secondary)] opacity-60"
+            >
+              <item.icon className="size-4 shrink-0 text-[var(--text-secondary)]" />
               <span className="truncate">{item.label}</span>
-              {active && (
-                <span className="ml-auto size-1 rounded-full bg-[#00D4FF] shadow-[0_0_8px_#00D4FF]" />
-              )}
-            </Link>
-          );
-        })}
+            </button>
+          ))}
+        </nav>
 
-        <p className="px-3 pb-1 pt-4 font-mono-data text-[10px] font-semibold tracking-widest text-[#64748B]">
-          EM BREVE
-        </p>
-        {SOON_NAV.map((item) => (
-          <button
-            key={item.label}
-            type="button"
-            disabled
-            aria-disabled="true"
-            className="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-[13px] text-[#64748B] opacity-60"
-          >
-            <item.icon className="size-4 shrink-0 text-[#475569]" />
-            <span className="truncate">{item.label}</span>
-          </button>
-        ))}
-      </nav>
-
-      <div className="border-t border-white/[0.06] p-3">
-        <div className="glass rounded-xl p-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Brain className="size-4 text-[#00D4FF]" />
-              <span className="font-mono-data text-[11px] font-semibold tracking-widest text-[#F8FAFC]">
-                NEGÃO CORE
+        <div className="border-t border-[var(--border)] p-3">
+          <div className="glass rounded-xl p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Brain className="size-4 text-[var(--accent)]" />
+                <span className="font-mono-data text-[11px] font-semibold tracking-widest text-[var(--text-primary)]">
+                  NEGÃO CORE
+                </span>
+              </div>
+              <span className="relative flex size-2">
+                <span className="animate-ping-soft absolute inline-flex size-full rounded-full bg-[var(--color-ok)]" />
+                <span className="relative inline-flex size-2 rounded-full bg-[var(--color-ok)]" />
               </span>
             </div>
-            <span className="relative flex size-2">
-              <span className="animate-ping-soft absolute inline-flex size-full rounded-full bg-[#22C55E]" />
-              <span className="relative inline-flex size-2 rounded-full bg-[#22C55E]" />
-            </span>
-          </div>
-          <div className="mt-3 space-y-1.5 font-mono-data text-[10px] text-[#94A3B8]">
-            <div className="flex justify-between">
-              <span>VERSÃO</span>
-              <span className="text-[#F8FAFC]">v{version}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>STATUS</span>
-              <span className={ready ? "text-[#22C55E]" : "text-[#F59E0B]"}>
-                {ready ? "OPERACIONAL" : "PARCIAL"}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span>UPTIME</span>
-              <span className="text-[#F8FAFC]" id="core-uptime">
-                --:--:--
-              </span>
+            <div className="mt-3 space-y-1.5 font-mono-data text-[10px] text-[var(--text-secondary)]">
+              <div className="flex justify-between">
+                <span>VERSÃO</span>
+                <span className="text-[var(--text-primary)]">v{version}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>STATUS</span>
+                <span className={ready ? "text-[var(--color-ok)]" : "text-[var(--color-warn)]"}>
+                  {ready ? "OPERACIONAL" : "PARCIAL"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>UPTIME</span>
+                <span className="text-[var(--text-primary)]" id="core-uptime">
+                  --:--:--
+                </span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }

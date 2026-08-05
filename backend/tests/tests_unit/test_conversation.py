@@ -65,6 +65,42 @@ async def test_store_limits_history_to_max(store: ConversationStore, monkeypatch
     assert messages[-1].content == "msg 7"
 
 
+async def test_store_rename_session(store: ConversationStore) -> None:
+    session = await store.start_session(user_id="wanderson")
+    ok = await store.rename_session(session.session_id, "Minha Sessão")
+    assert ok is True
+    sessions = await store.list_sessions()
+    s = next(s for s in sessions if s.session_id == session.session_id)
+    assert s.name == "Minha Sessão"
+
+    ok = await store.rename_session(session.session_id, None)
+    assert ok is True
+    sessions = await store.list_sessions()
+    s = next(s for s in sessions if s.session_id == session.session_id)
+    assert s.name is None
+
+
+async def test_store_rename_nonexistent_returns_false(store: ConversationStore) -> None:
+    ok = await store.rename_session("nao-existe", "x")
+    assert ok is False
+
+
+async def test_store_delete_session(store: ConversationStore) -> None:
+    session = await store.start_session(user_id="wanderson")
+    await store.append_message(session.session_id, "user", "oi")
+    ok = await store.delete_session(session.session_id)
+    assert ok is True
+    sessions = await store.list_sessions()
+    assert all(s.session_id != session.session_id for s in sessions)
+    messages = await store.get_messages(session.session_id)
+    assert messages == []
+
+
+async def test_store_delete_nonexistent_returns_false(store: ConversationStore) -> None:
+    ok = await store.delete_session("nao-existe")
+    assert ok is False
+
+
 async def test_store_list_sessions(store: ConversationStore) -> None:
     s1 = await store.start_session(user_id="a")
     s2 = await store.start_session(user_id="b")

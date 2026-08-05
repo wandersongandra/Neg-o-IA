@@ -34,11 +34,11 @@ function SectionTitle({
 }) {
   return (
     <div className="mb-3 flex items-center gap-2">
-      <Icon className="size-4 text-[#00D4FF]" />
+      <Icon className="size-4 text-[var(--accent)]" />
       <div className="leading-tight">
-        <h3 className="text-[13px] font-semibold text-[#F8FAFC]">{title}</h3>
+        <h3 className="text-[13px] font-semibold text-[var(--text-primary)]">{title}</h3>
         {subtitle ? (
-          <p className="font-mono-data text-[9px] tracking-[0.2em] text-[#64748B]">
+          <p className="font-mono-data text-[9px] tracking-[0.2em] text-[var(--text-secondary)]">
             {subtitle}
           </p>
         ) : null}
@@ -74,16 +74,16 @@ export function TimelinePanel() {
             key={entry.title}
             className="group flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-white/[0.03]"
           >
-            <div className="relative flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#3B82F6]/10 ring-1 ring-[#3B82F6]/20">
-              <entry.icon className="size-3.5 text-[#4DA6FF]" />
+            <div className="relative flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--color-prime)]/10 ring-1 ring-[var(--color-prime)]/20">
+              <entry.icon className="size-3.5 text-[var(--accent)]" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[12px] text-[#F8FAFC]">{entry.title}</p>
-              <p className="font-mono-data text-[9px] tracking-wider text-[#64748B]">
+              <p className="truncate text-[12px] text-[var(--text-primary)]">{entry.title}</p>
+              <p className="font-mono-data text-[9px] tracking-wider text-[var(--text-secondary)]">
                 {entry.tag}
               </p>
             </div>
-            <span className="font-mono-data shrink-0 text-[10px] text-[#64748B]">
+            <span className="font-mono-data shrink-0 text-[10px] text-[var(--text-secondary)]">
               {entry.when}
             </span>
           </div>
@@ -108,9 +108,9 @@ const TASKS: Task[] = [
 ];
 
 const PRIORITY_STYLE: Record<Task["priority"], { label: string; cls: string; dot: string }> = {
-  alta: { label: "ALTA", cls: "text-[#EF4444] bg-[#EF4444]/10 ring-[#EF4444]/30", dot: "bg-[#EF4444]" },
-  média: { label: "MÉDIA", cls: "text-[#F59E0B] bg-[#F59E0B]/10 ring-[#F59E0B]/30", dot: "bg-[#F59E0B]" },
-  baixa: { label: "BAIXA", cls: "text-[#22C55E] bg-[#22C55E]/10 ring-[#22C55E]/30", dot: "bg-[#22C55E]" },
+  alta: { label: "ALTA", cls: "text-[var(--color-danger)] bg-[var(--color-danger)]/10 ring-[var(--color-danger)]/30", dot: "bg-[var(--color-danger)]" },
+  média: { label: "MÉDIA", cls: "text-[var(--color-warn)] bg-[var(--color-warn)]/10 ring-[var(--color-warn)]/30", dot: "bg-[var(--color-warn)]" },
+  baixa: { label: "BAIXA", cls: "text-[var(--color-ok)] bg-[var(--color-ok)]/10 ring-[var(--color-ok)]/30", dot: "bg-[var(--color-ok)]" },
 };
 
 export function TasksPanel() {
@@ -137,11 +137,11 @@ export function TasksPanel() {
               }`}
             >
               <task.icon
-                className={`size-3.5 shrink-0 ${isDone ? "text-[#22C55E]" : "text-[#64748B] group-hover:text-[#00D4FF]"}`}
+                className={`size-3.5 shrink-0 ${isDone ? "text-[var(--color-ok)]" : "text-[var(--text-secondary)] group-hover:text-[var(--accent)]"}`}
               />
               <span
                 className={`min-w-0 flex-1 truncate text-[12px] ${
-                  isDone ? "line-through text-[#94A3B8]" : "text-[#F8FAFC]"
+                  isDone ? "line-through text-[var(--text-secondary)]" : "text-[var(--text-primary)]"
                 }`}
               >
                 {task.title}
@@ -152,7 +152,7 @@ export function TasksPanel() {
               </span>
               <CheckCircle2
                 className={`size-4 shrink-0 transition-colors ${
-                  isDone ? "text-[#22C55E]" : "text-[#3D4653] group-hover:text-[#22C55E]"
+                  isDone ? "text-[var(--color-ok)]" : "text-[var(--text-secondary)] group-hover:text-[var(--color-ok)]"
                 }`}
               />
             </button>
@@ -205,8 +205,8 @@ export function MemoryDonut() {
             })}
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <p className="font-mono-data text-xl font-bold text-[#F8FAFC]">46%</p>
-            <p className="font-mono-data text-[8px] tracking-[0.25em] text-[#94A3B8]">
+            <p className="font-mono-data text-xl font-bold text-[var(--text-primary)]">46%</p>
+            <p className="font-mono-data text-[8px] tracking-[0.25em] text-[var(--text-secondary)]">
               EM USO
             </p>
           </div>
@@ -218,8 +218,8 @@ export function MemoryDonut() {
                 className="size-2 rounded-sm"
                 style={{ background: seg.color, boxShadow: `0 0 8px ${seg.color}88` }}
               />
-              <span className="flex-1 text-[11px] text-[#94A3B8]">{seg.label}</span>
-              <span className="font-mono-data text-[11px] font-semibold text-[#F8FAFC]">
+              <span className="flex-1 text-[11px] text-[var(--text-secondary)]">{seg.label}</span>
+              <span className="font-mono-data text-[11px] font-semibold text-[var(--text-primary)]">
                 {seg.value}%
               </span>
             </div>
@@ -272,7 +272,7 @@ export function KnowledgeGraph() {
               cx={node.x}
               cy={node.y}
               r={node.size ?? 9}
-              fill="#0B1018"
+              fill="var(--bg-secondary)"
               stroke="rgba(0,212,255,0.5)"
               strokeWidth="1"
               className="transition-all duration-300"
@@ -282,7 +282,7 @@ export function KnowledgeGraph() {
               x={node.x}
               y={node.y + (node.size ?? 9) + 14}
               textAnchor="middle"
-              className="fill-[#94A3B8]"
+              className="fill-[var(--text-secondary)]"
               style={{ fontSize: 11, fontFamily: "var(--font-jetbrains), monospace" }}
             >
               {node.label}
@@ -305,7 +305,7 @@ export function KnowledgeGraph() {
           x={GRAPH_CENTER.x}
           y={GRAPH_CENTER.y - 4}
           textAnchor="middle"
-          className="fill-[#F8FAFC] font-bold"
+          className="fill-[var(--text-primary)] font-bold"
           style={{ fontSize: 15, fontFamily: "var(--font-jetbrains), monospace", filter: "drop-shadow(0 0 8px rgba(0,212,255,0.8))" }}
         >
           NEGÃO
@@ -314,7 +314,7 @@ export function KnowledgeGraph() {
           x={GRAPH_CENTER.x}
           y={GRAPH_CENTER.y + 16}
           textAnchor="middle"
-          className="fill-[#00D4FF]"
+          className="fill-[var(--accent)]"
           style={{ fontSize: 8, letterSpacing: 3, fontFamily: "var(--font-jetbrains), monospace" }}
         >
           CORE
@@ -342,11 +342,11 @@ export function LearningsPanel() {
             key={item.title}
             className="flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-white/[0.03]"
           >
-            <span className="flex size-7 items-center justify-center rounded-lg bg-[#22C55E]/10 ring-1 ring-[#22C55E]/25">
-              <item.icon className="size-3.5 text-[#22C55E]" />
+            <span className="flex size-7 items-center justify-center rounded-lg bg-[var(--color-ok)]/10 ring-1 ring-[var(--color-ok)]/25">
+              <item.icon className="size-3.5 text-[var(--color-ok)]" />
             </span>
-            <span className="text-[12px] text-[#F8FAFC]">{item.title}</span>
-            <ArrowUp className="ml-auto size-3 text-[#22C55E]" />
+            <span className="text-[12px] text-[var(--text-primary)]">{item.title}</span>
+            <ArrowUp className="ml-auto size-3 text-[var(--color-ok)]" />
           </div>
         ))}
       </div>
@@ -392,15 +392,15 @@ export function FooterBar({ data }: { data: DashboardData | null }) {
       <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-2">
         {cells.map((cell) => (
           <div key={cell.label} className="leading-tight">
-            <p className="font-mono-data text-[8px] tracking-[0.25em] text-[#64748B]">
+            <p className="font-mono-data text-[8px] tracking-[0.25em] text-[var(--text-secondary)]">
               {cell.label}
             </p>
-            <p className="font-mono-data text-[11px] font-semibold text-[#F8FAFC]">
+            <p className="font-mono-data text-[11px] font-semibold text-[var(--text-primary)]">
               {cell.value}
             </p>
           </div>
         ))}
-        <div className="flex items-center gap-1.5 text-[#22C55E]">
+        <div className="flex items-center gap-1.5 text-[var(--color-ok)]">
           <RefreshCw className="size-3 animate-spin-slow" />
           <span className="font-mono-data text-[10px]">
             {data?.backend_reachable ? "SINCRONIZADO" : "SEM CONEXÃO"}

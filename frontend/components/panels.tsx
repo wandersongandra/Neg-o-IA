@@ -50,8 +50,8 @@ function Card({
   return (
     <div className={`glass glass-hover animate-fade-up rounded-2xl p-4 ${className}`}>
       <div className="mb-3 flex items-center gap-2">
-        <Icon className="size-3.5 text-[#00D4FF]" />
-        <h3 className="font-mono-data text-[10px] font-semibold tracking-[0.25em] text-[#94A3B8]">
+        <Icon className="size-3.5 text-[var(--accent)]" />
+        <h3 className="font-mono-data text-[10px] font-semibold tracking-[0.25em] text-[var(--text-secondary)]">
           {title}
         </h3>
       </div>
@@ -112,17 +112,17 @@ export function SystemCard({ data }: { data: DashboardData | null }) {
       <div className="space-y-2.5">
         {rows.map((row) => (
           <div key={row.label} className="flex items-center gap-3">
-            {row.icon ? <row.icon className="size-3.5 text-[#64748B]" /> : null}
-            <span className="flex-1 font-mono-data text-[10px] tracking-wider text-[#94A3B8]">
+            {row.icon ? <row.icon className="size-3.5 text-[var(--text-secondary)]" /> : null}
+            <span className="flex-1 font-mono-data text-[10px] tracking-wider text-[var(--text-secondary)]">
               {row.label}
             </span>
             <span
               className={`font-mono-data text-[11px] font-semibold ${
                 row.tone === "danger"
-                  ? "text-[#EF4444]"
+                  ? "text-[var(--color-danger)]"
                   : row.tone === "warn"
-                    ? "text-[#F59E0B]"
-                    : "text-[#22C55E]"
+                    ? "text-[var(--color-warn)]"
+                    : "text-[var(--color-ok)]"
               }`}
             >
               {row.value}
@@ -142,7 +142,7 @@ export function ModelCard({ brain }: { brain: BrainStatus | null }) {
   const modeLabel =
     mode === "nvidia" ? "● NVIDIA" : mode === "local" ? "● LOCAL" : "● disponível";
   const modeColor =
-    mode === "nvidia" || mode === "local" ? "text-[#22C55E]" : "text-[#F59E0B]";
+    mode === "nvidia" || mode === "local" ? "text-[var(--color-ok)]" : "text-[var(--color-warn)]";
   const rows: Row[] = [
     { label: "FORNECEDOR", value: mode === "local" ? "LOCAL (GPU)" : "NVIDIA API" },
     { label: "FALLBACK MODEL", value: fallback ?? "—" },
@@ -160,29 +160,29 @@ export function ModelCard({ brain }: { brain: BrainStatus | null }) {
   return (
     <Card title="MODELO" icon={Sparkles}>
       <div className="mb-3 flex items-center gap-3">
-        <div className="relative flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#3B82F6]/30 to-[#00D4FF]/20 ring-1 ring-[#00D4FF]/30">
-          <Brain className="size-4 text-[#00D4FF]" />
+        <div className="relative flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--color-prime)]/30 to-[var(--accent)]/20 ring-1 ring-[var(--accent)]/30">
+          <Brain className="size-4 text-[var(--accent)]" />
         </div>
         <div className="min-w-0 leading-tight">
-          <p className="truncate text-sm font-semibold text-[#F8FAFC]">{primary}</p>
+          <p className="truncate text-sm font-semibold text-[var(--text-primary)]">{primary}</p>
           <p className={`font-mono-data text-[10px] ${modeColor}`}>{modeLabel}</p>
         </div>
       </div>
       <div className="space-y-2">
         {rows.map((row) => (
           <div key={row.label} className="flex items-center justify-between gap-2">
-            <span className="font-mono-data text-[10px] tracking-wider text-[#94A3B8]">
+            <span className="font-mono-data text-[10px] tracking-wider text-[var(--text-secondary)]">
               {row.label}
             </span>
             <span
               className={`max-w-[55%] truncate font-mono-data text-[11px] font-semibold ${
                 row.tone === "danger"
-                  ? "text-[#EF4444]"
+                  ? "text-[var(--color-danger)]"
                   : row.tone === "warn"
-                    ? "text-[#F59E0B]"
+                    ? "text-[var(--color-warn)]"
                     : row.tone === "ok"
-                      ? "text-[#22C55E]"
-                      : "text-[#F8FAFC]"
+                      ? "text-[var(--color-ok)]"
+                      : "text-[var(--text-primary)]"
               }`}
             >
               {row.value}
@@ -207,12 +207,12 @@ export function MemoryCard({ data }: { data: DashboardData | null }) {
   return (
     <Card title="MEMÓRIA" icon={Brain}>
       <div className="mb-3 flex items-center justify-between">
-        <span className="font-mono-data text-[10px] tracking-wider text-[#94A3B8]">
+        <span className="font-mono-data text-[10px] tracking-wider text-[var(--text-secondary)]">
           REDIS STM
         </span>
         <span
           className={`flex items-center gap-1.5 font-mono-data text-[10px] ${
-            redisOk ? "text-[#22C55E]" : "text-[#F59E0B]"
+            redisOk ? "text-[var(--color-ok)]" : "text-[var(--color-warn)]"
           }`}
         >
           <span className="size-1.5 rounded-full bg-current shadow-[0_0_8px_currentColor]" />
@@ -222,10 +222,10 @@ export function MemoryCard({ data }: { data: DashboardData | null }) {
       <div className="grid grid-cols-2 gap-x-4 gap-y-2">
         {rows.map((row) => (
           <div key={row.label} className="flex items-baseline justify-between gap-2">
-            <span className="font-mono-data text-[10px] tracking-wider text-[#94A3B8]">
+            <span className="font-mono-data text-[10px] tracking-wider text-[var(--text-secondary)]">
               {row.label}
             </span>
-            <span className="font-mono-data text-[11px] font-semibold text-[#F8FAFC]">
+            <span className="font-mono-data text-[11px] font-semibold text-[var(--text-primary)]">
               {row.value}
             </span>
           </div>
@@ -266,13 +266,13 @@ export function ToolsCard({
             className="glass glass-hover flex flex-col items-center gap-1.5 rounded-xl px-2 py-2.5"
             title={tool.ok ? "conectado" : "indisponível"}
           >
-            <tool.icon className="size-4 text-[#F8FAFC]" />
-            <span className="max-w-full truncate text-[9px] text-[#94A3B8]">
+            <tool.icon className="size-4 text-[var(--text-primary)]" />
+            <span className="max-w-full truncate text-[9px] text-[var(--text-secondary)]">
               {tool.label}
             </span>
             <span
               className={`size-1 rounded-full ${
-                tool.ok ? "bg-[#22C55E]" : "bg-[#F59E0B]"
+                tool.ok ? "bg-[var(--color-ok)]" : "bg-[var(--color-warn)]"
               }`}
               style={{ boxShadow: "0 0 8px currentColor" }}
             />
@@ -291,21 +291,21 @@ export function Greeting({ data }: { data: DashboardData | null }) {
 
   return (
     <div className="animate-fade-up text-center">
-      <h1 className="text-2xl font-semibold tracking-tight text-[#F8FAFC]">
+      <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
         {period}, <span className="text-gradient">Wanderson</span>.
       </h1>
-      <p className="mt-2 text-sm text-[#94A3B8]">
-        <span className={online ? "text-[#22C55E]" : "text-[#EF4444]"}>
+      <p className="mt-2 text-sm text-[var(--text-secondary)]">
+        <span className={online ? "text-[var(--color-ok)]" : "text-[var(--color-danger)]"}>
           NEGÃO está {online ? "online" : "offline"}.
         </span>{" "}
         {ready
           ? "Tudo funcionando normalmente."
           : "Operando com ressalvas em alguns subsistemas."}
       </p>
-      <div className="mx-auto mt-3 flex max-w-md flex-wrap items-center justify-center gap-2 font-mono-data text-[10px] text-[#64748B]">
+      <div className="mx-auto mt-3 flex max-w-md flex-wrap items-center justify-center gap-2 font-mono-data text-[10px] text-[var(--text-secondary)]">
         <span className="glass rounded-full px-3 py-1">HOJE APRENDI +12</span>
         <span className="glass rounded-full px-3 py-1">3 TAREFAS IMPORTANTES</span>
-        <span className="glass rounded-full px-3 py-1 text-[#22C55E]">
+        <span className="glass rounded-full px-3 py-1 text-[var(--color-ok)]">
           SISTEMAS OPERACIONAIS
         </span>
       </div>

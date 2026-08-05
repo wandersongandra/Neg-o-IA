@@ -147,6 +147,12 @@ class ConversationService:
         except Exception:
             _LOGGER.debug("conversation_reset_failed", exc_info=True)
 
+    async def rename_session(self, session_id: str, name: str | None) -> bool:
+        return await self._store.rename_session(session_id, name)
+
+    async def delete_session(self, session_id: str) -> bool:
+        return await self._store.delete_session(session_id)
+
     async def _publish(self, event_type: str, payload: dict[str, Any]) -> None:
         try:
             from app.modules.events.application import get_event_bus_service
