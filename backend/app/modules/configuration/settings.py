@@ -1,0 +1,42 @@
+from __future__ import annotations
+
+from functools import lru_cache
+
+from pydantic import field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_prefix="NEGAO_",
+        extra="ignore",
+    )
+
+    app_name: str = "NEGÃO AI"
+    env: str = "development"
+    debug: bool = False
+    log_level: str = "INFO"
+    api_prefix: str = "/api/v1"
+    api_key: str = "negao-dev-api-key"
+    database_url: str = "postgresql+asyncpg://negao:negao@localhost:5432/negao"
+    redis_url: str = "redis://localhost:6379/0"
+    secret_key: str = "negao-dev-secret-key"
+    cors_origins: list[str] = ["*"]
+    otel_exporter_otlp_endpoint: str = "http://localhost:4317"
+    metrics_enabled: bool = True
+    rate_limit_per_minute: int = 60
+    rate_limit_burst: int = 5
+    ws_max_connections: int = 100
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def _split_cors_origins(cls, value: object) -> object:
+        if isinstance(value, str):
+            return [origin.strip() for origin in value.split(",") if origin.strip()]
+        return value
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()

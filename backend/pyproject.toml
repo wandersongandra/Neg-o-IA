@@ -1,0 +1,80 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "negao-ai-backend"
+version = "0.1.0"
+description = "NEGÃO AI - Fundação (v0.x): esqueleto funcional da API"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "pydantic>=2.7",
+    "pydantic-settings",
+    "sqlalchemy[asyncio]>=2.0",
+    "asyncpg",
+    "alembic",
+    "redis>=5",
+    "pgvector",
+    "structlog",
+    "orjson",
+    "httpx",
+    "pyjwt",
+    "opentelemetry-api",
+    "opentelemetry-sdk",
+    "opentelemetry-instrumentation-fastapi",
+    "opentelemetry-exporter-otlp-proto-grpc",
+    "prometheus-client",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "ruff",
+    "mypy",
+    "types-redis",
+    "fakeredis",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.mypy]
+strict = true
+
+[[tool.mypy.overrides]]
+module = [
+    "fastapi.*",
+    "pydantic.*",
+    "pydantic_settings.*",
+    "starlette.*",
+    "uvicorn.*",
+    "structlog.*",
+    "prometheus_client.*",
+    "sqlalchemy.*",
+    "asyncpg.*",
+    "alembic.*",
+    "redis.*",
+    "pgvector.*",
+    "orjson.*",
+    "httpx.*",
+    "jwt.*",
+    "opentelemetry.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+markers = [
+    "integration: testes que exigem PostgreSQL/Redis reais (requerem NEGAO_TEST_DATABASE_URL)",
+]
