@@ -29,6 +29,26 @@ class Settings(BaseSettings):
     rate_limit_burst: int = 5
     ws_max_connections: int = 100
 
+    # --- Brain (Model Router / LLM) -------------------------------------------------
+    nvidia_api_key: str = ""
+    nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
+    brain_chat_model: str = "nvidia/gpt-oss-120b"
+    brain_fallback_model: str = "nvidia/llama-3.1-8b-instruct"
+    brain_stt_model: str = "nvidia/parakeet-tdt-0.6b-v2"
+    brain_temperature: float = 0.3
+    brain_max_tokens: int = 1024
+    brain_retry_attempts: int = 2
+    brain_circuit_failures: int = 3
+    brain_circuit_cooldown_seconds: int = 60
+    brain_cache_ttl_seconds: int = 300
+
+    # --- Voice (STT/TTS) -------------------------------------------------------------
+    tts_voice: str = "pt-BR-FranciscaNeural"
+    tts_rate: str = "+0%"
+
+    # --- Conversation -----------------------------------------------------------------
+    conversation_max_context_messages: int = 20
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def _split_cors_origins(cls, value: object) -> object:

@@ -25,12 +25,25 @@ from app.modules.api.rate_limit import RateLimiter
 from app.modules.api.router import router as api_router
 from app.modules.api.websocket import connection_manager
 from app.modules.api.websocket import router as websocket_router
+from app.modules.brain.router import router as brain_router
 from app.modules.configuration.settings import Settings, get_settings
+from app.modules.conversation.router import (
+    router as conversation_router,
+)
+from app.modules.conversation.router import (
+    ws_router as conversation_ws_router,
+)
 from app.modules.database.router import router as database_router
 from app.modules.events.router import router as events_router
 from app.modules.memory.router import router as memory_router
 from app.modules.monitoring.router import router as monitoring_router
 from app.modules.security.router import router as security_router
+from app.modules.voice.router import (
+    router as voice_router,
+)
+from app.modules.voice.router import (
+    voice_ws_router,
+)
 
 logger = structlog.get_logger("negao.main")
 
@@ -238,6 +251,11 @@ def create_app() -> FastAPI:
     application.include_router(events_router)
     application.include_router(monitoring_router)
     application.include_router(memory_router)
+    application.include_router(brain_router)
+    application.include_router(voice_router)
+    application.include_router(voice_ws_router)
+    application.include_router(conversation_router)
+    application.include_router(conversation_ws_router)
     _add_root_healthcheck(application, settings)
     return application
 

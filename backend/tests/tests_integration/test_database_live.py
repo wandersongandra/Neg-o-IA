@@ -7,9 +7,14 @@ Pulados automaticamente se NEGAO_TEST_DATABASE_URL não estiver definido:
 from __future__ import annotations
 
 import os
+from collections.abc import AsyncGenerator
 
 import pytest
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from app.modules.database.application import (
     create_api_key,
@@ -25,7 +30,7 @@ TEST_URL = os.environ.get("NEGAO_TEST_DATABASE_URL")
 
 
 @pytest.fixture
-async def engine():
+async def engine() -> AsyncGenerator[AsyncEngine]:
     if not TEST_URL:
         pytest.skip("NEGAO_TEST_DATABASE_URL não definido; pulando integração")
     engine = create_async_engine(TEST_URL)
@@ -34,9 +39,7 @@ async def engine():
 
 
 @pytest.mark.asyncio
-async def test_roundtrip_api_key_and_audit(engine) -> None:
-    from sqlalchemy.orm import sessionmaker as async_sessionmaker
-
+async def test_roundtrip_api_key_and_audit(engine: AsyncEngine) -> None:
     factory = async_sessionmaker(engine, expire_on_commit=False)
     async with factory() as session:
         async with engine.begin() as conn:

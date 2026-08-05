@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Activity,
   Bot,
@@ -13,6 +15,8 @@ import {
   FolderKanban,
   Home,
   MessagesSquare,
+  Mic,
+  Monitor,
   Server,
   Settings,
   Wrench,
@@ -20,15 +24,25 @@ import {
 import type { LucideIcon } from "lucide-react";
 import type { DashboardData } from "@/lib/types";
 
-interface NavItem {
+interface MainNavItem {
   label: string;
+  href: string;
   icon: LucideIcon;
-  active?: boolean;
 }
 
-const NAV: NavItem[] = [
-  { label: "Home", icon: Home, active: true },
-  { label: "Conversa", icon: MessagesSquare },
+interface SoonNavItem {
+  label: string;
+  icon: LucideIcon;
+}
+
+const MAIN_NAV: MainNavItem[] = [
+  { label: "Dashboard", href: "/", icon: Home },
+  { label: "Conversa", href: "/conversa", icon: MessagesSquare },
+  { label: "Voz", href: "/voz", icon: Mic },
+  { label: "Monitor", href: "/monitor", icon: Monitor },
+];
+
+const SOON_NAV: SoonNavItem[] = [
   { label: "Memória", icon: Brain },
   { label: "Conhecimento", icon: Braces },
   { label: "Projetos", icon: FolderKanban },
@@ -49,34 +63,54 @@ interface SidebarProps {
   onNavigate: (label: string) => void;
 }
 
-export default function Sidebar({ data, onNavigate }: SidebarProps) {
+export default function Sidebar({ data }: SidebarProps) {
+  const pathname = usePathname();
   const version = data?.root?.version ?? "--";
   const ready = data?.readyz?.status === "ok";
 
   return (
     <aside className="glass sticky top-16 z-30 hidden h-[calc(100vh-4rem)] w-60 flex-col md:flex">
       <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
-        {NAV.map((item) => (
+        {MAIN_NAV.map((item) => {
+          const active = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] transition-all duration-300 ${
+                active
+                  ? "bg-[#3B82F6]/10 text-[#F8FAFC] shadow-[inset_0_0_0_1px_rgba(59,130,246,0.25)]"
+                  : "text-[#94A3B8] hover:bg-white/[0.03] hover:text-[#F8FAFC]"
+              }`}
+            >
+              <item.icon
+                className={`size-4 shrink-0 transition-colors ${
+                  active
+                    ? "text-[#00D4FF]"
+                    : "text-[#64748B] group-hover:text-[#00D4FF]"
+                }`}
+              />
+              <span className="truncate">{item.label}</span>
+              {active && (
+                <span className="ml-auto size-1 rounded-full bg-[#00D4FF] shadow-[0_0_8px_#00D4FF]" />
+              )}
+            </Link>
+          );
+        })}
+
+        <p className="px-3 pb-1 pt-4 font-mono-data text-[10px] font-semibold tracking-widest text-[#64748B]">
+          EM BREVE
+        </p>
+        {SOON_NAV.map((item) => (
           <button
             key={item.label}
-            onClick={() => onNavigate(item.label)}
-            className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] transition-all duration-300 ${
-              item.active
-                ? "bg-[#3B82F6]/10 text-[#F8FAFC] shadow-[inset_0_0_0_1px_rgba(59,130,246,0.25)]"
-                : "text-[#94A3B8] hover:bg-white/[0.03] hover:text-[#F8FAFC]"
-            }`}
+            type="button"
+            disabled
+            aria-disabled="true"
+            className="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-[13px] text-[#64748B] opacity-60"
           >
-            <item.icon
-              className={`size-4 shrink-0 transition-colors ${
-                item.active
-                  ? "text-[#00D4FF]"
-                  : "text-[#64748B] group-hover:text-[#00D4FF]"
-              }`}
-            />
+            <item.icon className="size-4 shrink-0 text-[#475569]" />
             <span className="truncate">{item.label}</span>
-            {item.active && (
-              <span className="ml-auto size-1 rounded-full bg-[#00D4FF] shadow-[0_0_8px_#00D4FF]" />
-            )}
           </button>
         ))}
       </nav>

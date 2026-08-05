@@ -1,9 +1,10 @@
 "use client";
 
-import type { DashboardData } from "@/lib/types";
+import type { BrainStatus, DashboardData } from "@/lib/types";
 
 interface CoreSphereProps {
   data: DashboardData | null;
+  brain: BrainStatus | null;
 }
 
 interface Chip {
@@ -44,11 +45,13 @@ const STATIC_DOTS = [
   { top: "88%", left: "32%", delay: "0.6s" },
 ];
 
-export default function CoreSphere({ data }: CoreSphereProps) {
+export default function CoreSphere({ data, brain }: CoreSphereProps) {
   const online = data?.healthz?.status === "alive";
   const latency = data?.latency_ms ?? null;
+  const model = brain?.primary_model ?? "GPT-OSS-120B";
   const chips: Chip[] = [
-    ...BASE_CHIPS.slice(0, 5),
+    { label: "MODELO ATIVO", value: model, tone: brain ? "ok" : "warn" },
+    ...BASE_CHIPS.slice(1, 5),
     {
       label: "PROCESSAMENTO",
       value: latency === null ? "--" : `${latency}ms`,

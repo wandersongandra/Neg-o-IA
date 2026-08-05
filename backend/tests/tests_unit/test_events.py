@@ -30,7 +30,9 @@ def test_build_envelope_preenche_id_occurred_at_e_version() -> None:
 
 def test_envelope_rejeita_campos_extra() -> None:
     with pytest.raises(ValidationError):
-        EventEnvelope(type=EVENT_TYPE, producer="tests", campo_inesperado=True)
+        EventEnvelope.model_validate(
+            {"type": EVENT_TYPE, "producer": "tests", "campo_inesperado": True}
+        )
 
 
 def test_envelope_roundtrip_json() -> None:

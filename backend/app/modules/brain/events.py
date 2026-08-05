@@ -1,30 +1,49 @@
-"""Contrato de eventos do módulo brain — catálogo v1 (Event Bus)."""
+"""Contrato de eventos do módulo brain — catálogo v1 (Event Bus).
+
+Producer deste módulo: "brain".
+"""
 
 from __future__ import annotations
 
+from typing import Final
+
 EVENT_VERSION = 1
 
-PUBLISHED: frozenset[str] = frozenset(
+EVENT_BRAIN_REQUEST_STARTED: Final[str] = "brain.request.started"
+EVENT_BRAIN_REQUEST_COMPLETED: Final[str] = "brain.request.completed"
+EVENT_BRAIN_MODEL_FALLBACK: Final[str] = "brain.model.fallback"
+EVENT_BRAIN_MODEL_ERROR: Final[str] = "brain.model.error"
+
+EVENT_CATALOG: Final[dict[str, str]] = {
+    EVENT_BRAIN_REQUEST_STARTED: (
+        "Pedido recebido pelo Brain (modelo, tamanho do contexto, sessão)"
+    ),
+    EVENT_BRAIN_REQUEST_COMPLETED: (
+        "Resposta concluída pelo Brain com modelo, latência e uso de fallback/cache"
+    ),
+    EVENT_BRAIN_MODEL_FALLBACK: (
+        "O modelo primário falhou e a resposta veio do modelo de fallback"
+    ),
+    EVENT_BRAIN_MODEL_ERROR: (
+        "Todos os provedores de modelo falharam para este pedido"
+    ),
+}
+
+PUBLISHED: Final[frozenset[str]] = frozenset(
     {
-        "brain.input.received",
-        "brain.planning.started",
-        "brain.response.ready",
-        "voice.tts.requested",
-        "tool.execution.requested",
+        EVENT_BRAIN_REQUEST_STARTED,
+        EVENT_BRAIN_REQUEST_COMPLETED,
+        EVENT_BRAIN_MODEL_FALLBACK,
+        EVENT_BRAIN_MODEL_ERROR,
     }
 )
 
-CONSUMED: frozenset[str] = frozenset(
+CONSUMED: Final[frozenset[str]] = frozenset(
     {
         "voice.asr.completed",
-        "vision.analysis.completed",
-        "reasoning.intent.resolved",
-        "planner.plan.created",
-        "planner.plan.failed",
-        "tool.execution.completed",
-        "tool.execution.failed",
+        "conversation.message.stored",
         "memory.read.completed",
-        "knowledge.lookup.completed",
-        "automation.rule.triggered",
     }
 )
+
+PRODUCER: Final[str] = "brain"

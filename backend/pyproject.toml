@@ -26,6 +26,7 @@ dependencies = [
     "opentelemetry-instrumentation-fastapi",
     "opentelemetry-exporter-otlp-proto-grpc",
     "prometheus-client",
+    "edge-tts",
 ]
 
 [project.optional-dependencies]
@@ -70,6 +71,7 @@ module = [
     "httpx.*",
     "jwt.*",
     "opentelemetry.*",
+    "edge_tts.*",
 ]
 ignore_missing_imports = true
 

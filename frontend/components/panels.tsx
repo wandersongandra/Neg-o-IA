@@ -21,7 +21,7 @@ import {
   Zap,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { DashboardData } from "@/lib/types";
+import type { BrainStatus, DashboardData } from "@/lib/types";
 
 interface Row {
   label: string;
@@ -134,33 +134,57 @@ export function SystemCard({ data }: { data: DashboardData | null }) {
   );
 }
 
-export function ModelCard() {
+export function ModelCard({ brain }: { brain: BrainStatus | null }) {
+  const mode = brain?.mode ?? null;
+  const primary = brain?.primary_model ?? "GPT-OSS-120B";
+  const fallback = brain?.fallback_model ?? null;
+  const circuitFailures = brain?.circuit_failures ?? null;
+  const modeLabel =
+    mode === "nvidia" ? "● NVIDIA" : mode === "local" ? "● LOCAL" : "● disponível";
+  const modeColor =
+    mode === "nvidia" || mode === "local" ? "text-[#22C55E]" : "text-[#F59E0B]";
   const rows: Row[] = [
-    { label: "FORNECEDOR", value: "NVIDIA API" },
+    { label: "FORNECEDOR", value: mode === "local" ? "LOCAL (GPU)" : "NVIDIA API" },
+    { label: "FALLBACK MODEL", value: fallback ?? "—" },
     { label: "TEMPO MÉDIO", value: "1.4s" },
     { label: "TOKENS (SESSÃO)", value: "12.4K" },
     { label: "CUSTO (SESSÃO)", value: "$0.021" },
   ];
+  if (circuitFailures !== null) {
+    rows.push({
+      label: "CIRCUIT FAILURES",
+      value: String(circuitFailures),
+      tone: circuitFailures > 0 ? "warn" : "ok",
+    });
+  }
   return (
     <Card title="MODELO" icon={Sparkles}>
       <div className="mb-3 flex items-center gap-3">
         <div className="relative flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#3B82F6]/30 to-[#00D4FF]/20 ring-1 ring-[#00D4FF]/30">
           <Brain className="size-4 text-[#00D4FF]" />
         </div>
-        <div className="leading-tight">
-          <p className="text-sm font-semibold text-[#F8FAFC]">GPT-OSS-120B</p>
-          <p className="font-mono-data text-[10px] text-[#22C55E]">
-            ● disponível
-          </p>
+        <div className="min-w-0 leading-tight">
+          <p className="truncate text-sm font-semibold text-[#F8FAFC]">{primary}</p>
+          <p className={`font-mono-data text-[10px] ${modeColor}`}>{modeLabel}</p>
         </div>
       </div>
       <div className="space-y-2">
         {rows.map((row) => (
-          <div key={row.label} className="flex items-center justify-between">
+          <div key={row.label} className="flex items-center justify-between gap-2">
             <span className="font-mono-data text-[10px] tracking-wider text-[#94A3B8]">
               {row.label}
             </span>
-            <span className="font-mono-data text-[11px] font-semibold text-[#F8FAFC]">
+            <span
+              className={`max-w-[55%] truncate font-mono-data text-[11px] font-semibold ${
+                row.tone === "danger"
+                  ? "text-[#EF4444]"
+                  : row.tone === "warn"
+                    ? "text-[#F59E0B]"
+                    : row.tone === "ok"
+                      ? "text-[#22C55E]"
+                      : "text-[#F8FAFC]"
+              }`}
+            >
               {row.value}
             </span>
           </div>
@@ -211,10 +235,18 @@ export function MemoryCard({ data }: { data: DashboardData | null }) {
   );
 }
 
-export function ToolsCard({ data }: { data: DashboardData | null }) {
+export function ToolsCard({
+  data,
+  brain,
+}: {
+  data: DashboardData | null;
+  brain: BrainStatus | null;
+}) {
   const postgresOk = data?.database?.connected ?? false;
   const redisOk = data?.memory?.redis_connected ?? false;
+  const llmOk = brain !== null;
   const tools: { label: string; icon: LucideIcon; ok: boolean }[] = [
+    { label: "LLM", icon: Brain, ok: llmOk },
     { label: "GitHub", icon: GitBranch, ok: true },
     { label: "Docker", icon: Boxes, ok: true },
     { label: "VS Code", icon: FileText, ok: true },

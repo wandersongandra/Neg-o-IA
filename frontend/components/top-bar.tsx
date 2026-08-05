@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   Bell,
   Command,
@@ -8,18 +9,38 @@ import {
   Settings,
   Sparkles,
 } from "lucide-react";
-import type { DashboardData } from "@/lib/types";
+import type { BrainRouterInfo, DashboardData } from "@/lib/types";
 
 interface TopBarProps {
   data: DashboardData | null;
   onOpenPalette: () => void;
 }
 
-function modelLabel(): string {
-  return "GPT-OSS-120B";
+const FALLBACK_MODEL = "GPT-OSS-120B";
+
+function useBrainModel(): string {
+  const [model, setModel] = useState<string>(FALLBACK_MODEL);
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+    fetch("/api/proxy/brain/router", { cache: "no-store", signal: controller.signal })
+      .then((res) =>
+        res.ok ? (res.json() as Promise<BrainRouterInfo>) : Promise.resolve(null),
+      )
+      .then((data) => {
+        if (!cancelled && data?.primary_model) setModel(data.primary_model);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, []);
+  return model;
 }
 
 export default function TopBar({ data, onOpenPalette }: TopBarProps) {
+  const model = useBrainModel();
   const online = data?.healthz?.status === "alive";
   const latency = data?.latency_ms ?? null;
   const level =
@@ -58,7 +79,7 @@ export default function TopBar({ data, onOpenPalette }: TopBarProps) {
       <div className="ml-auto flex items-center gap-2">
         <div className="glass hidden items-center gap-2 rounded-xl px-3 py-1.5 lg:flex">
           <Sparkles className="size-3.5 text-[#00D4FF]" />
-          <span className="text-xs text-[#F8FAFC]">{modelLabel()}</span>
+          <span className="text-xs text-[#F8FAFC]">{model}</span>
         </div>
 
         <div className="glass hidden items-center gap-2 rounded-xl px-3 py-1.5 xl:flex">

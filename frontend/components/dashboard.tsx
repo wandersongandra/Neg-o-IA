@@ -1,17 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
+  Activity,
   Brain,
   Database,
   GitBranch,
   MessageSquareText,
+  Mic,
   Play,
   Search,
   Wrench,
   X,
 } from "lucide-react";
-import type { DashboardData } from "@/lib/types";
+import type { LucideIcon } from "lucide-react";
+import type { BrainStatus, ConversationStatus, DashboardData } from "@/lib/types";
 import TopBar from "@/components/top-bar";
 import Sidebar from "@/components/sidebar";
 import CoreSphere from "@/components/core-sphere";
@@ -33,8 +37,16 @@ import {
 
 const POLL_MS = 5000;
 
-const COMMANDS = [
-  { label: "Abrir conversa com o NEGÃO", icon: MessageSquareText },
+interface Command {
+  label: string;
+  icon: LucideIcon;
+  href?: string;
+}
+
+const COMMANDS: Command[] = [
+  { label: "Abrir conversa com o NEGÃO", icon: MessageSquareText, href: "/conversa" },
+  { label: "Voz", icon: Mic, href: "/voz" },
+  { label: "Monitor", icon: Activity, href: "/monitor" },
   { label: "Consultar memória", icon: Brain },
   { label: "Buscar conhecimento", icon: GitBranch },
   { label: "Acessar banco de dados", icon: Database },
@@ -43,16 +55,45 @@ const COMMANDS = [
 ];
 
 export default function Dashboard() {
+  const router = useRouter();
   const [data, setData] = useState<DashboardData | null>(null);
+  const [brain, setBrain] = useState<BrainStatus | null>(null);
+  const [, setConv] = useState<ConversationStatus | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [filter, setFilter] = useState("");
 
   const load = useCallback(async () => {
-    try {
-      const res = await fetch("/api/dashboard", { cache: "no-store" });
-      if (res.ok) setData((await res.json()) as DashboardData);
-    } catch {
+    const [dashRes, brainRes, convRes] = await Promise.all([
+      fetch("/api/dashboard", { cache: "no-store" }).catch(() => null),
+      fetch("/api/proxy/brain/status", { cache: "no-store" }).catch(() => null),
+      fetch("/api/proxy/conversation/status", { cache: "no-store" }).catch(() => null),
+    ]);
+    if (dashRes?.ok) {
+      try {
+        setData((await dashRes.json()) as DashboardData);
+      } catch {
+        setData(null);
+      }
+    } else {
       setData(null);
+    }
+    if (brainRes?.ok) {
+      try {
+        setBrain((await brainRes.json()) as BrainStatus);
+      } catch {
+        setBrain(null);
+      }
+    } else {
+      setBrain(null);
+    }
+    if (convRes?.ok) {
+      try {
+        setConv((await convRes.json()) as ConversationStatus);
+      } catch {
+        setConv(null);
+      }
+    } else {
+      setConv(null);
     }
   }, []);
 
@@ -107,13 +148,13 @@ export default function Dashboard() {
 
             <div className="col-span-12 lg:col-span-6">
               <Greeting data={data} />
-              <CoreSphere data={data} />
+              <CoreSphere data={data} brain={brain} />
             </div>
 
             <div className="col-span-12 space-y-4 lg:col-span-3">
-              <ModelCard />
+              <ModelCard brain={brain} />
               <MemoryCard data={data} />
-              <ToolsCard data={data} />
+              <ToolsCard data={data} brain={brain} />
             </div>
           </section>
 
@@ -172,7 +213,10 @@ export default function Dashboard() {
               {filtered.map((cmd) => (
                 <button
                   key={cmd.label}
-                  onClick={() => setPaletteOpen(false)}
+                  onClick={() => {
+                    setPaletteOpen(false);
+                    if (cmd.href) router.push(cmd.href);
+                  }}
                   className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-[#E2E8F0] transition-colors hover:bg-[#3B82F6]/10 hover:text-[#F8FAFC]"
                 >
                   <cmd.icon className="size-4 text-[#64748B]" />

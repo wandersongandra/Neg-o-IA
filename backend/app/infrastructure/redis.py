@@ -13,7 +13,12 @@ from app.modules.configuration.settings import get_settings
 @lru_cache
 def get_redis_client(redis_url: str) -> aioredis.Redis[str]:
     """Cria (e cacheia por URL) o cliente async do Redis."""
-    return aioredis.from_url(redis_url, decode_responses=True)
+    return aioredis.from_url(
+        redis_url,
+        decode_responses=True,
+        socket_connect_timeout=0.5,
+        socket_timeout=2.0,
+    )
 
 
 def get_redis() -> aioredis.Redis[str]:
