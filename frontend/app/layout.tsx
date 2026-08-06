@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { Providers } from "@/components/providers";
@@ -20,12 +20,16 @@ export const metadata: Metadata = {
   title: "NEGÃO AI — Centro de Comando",
   description: "Centro de comando da inteligência artificial NEGÃO",
   manifest: "/manifest.json",
-  themeColor: "#00d4ff",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "NEGÃO AI",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#00d4ff",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

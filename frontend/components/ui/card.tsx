@@ -42,7 +42,7 @@ export const Card = React.forwardRef<
   CardProps
 >(({ variant = "elevated", interactive = false, className, onClick, children }, ref) => {
   const interactiveStyles = interactive
-    ? "cursor-pointer hover:shadow-lg"
+    ? "interactive-control cursor-pointer hover:shadow-lg"
     : "";
   const customClasses = className || "";
 
@@ -51,6 +51,13 @@ export const Card = React.forwardRef<
       ref={ref}
       className={`${variantStyles[variant]} ${interactiveStyles} ${customClasses}`}
       onClick={onClick}
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onKeyDown={(event) => {
+        if (!interactive || !onClick || (event.key !== "Enter" && event.key !== " ")) return;
+        event.preventDefault();
+        onClick();
+      }}
     >
       {children}
     </div>

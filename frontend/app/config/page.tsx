@@ -69,7 +69,7 @@ const RATE_OPTIONS = [
 
 function SectionCard({ title, icon: Icon, children, className = "" }: { title: string; icon: React.ComponentType<{ className?: string }>; children: React.ReactNode; className?: string }) {
   return (
-    <div className={`glass p-6 rounded-2xl ${className}`}>
+    <div className={`glass glass-hover animate-fade-up p-6 rounded-2xl ${className}`}>
       <div className="flex items-center gap-3 mb-4">
         <div className="size-10 rounded-xl bg-[var(--accent-muted)] flex items-center justify-center">
           <Icon className="size-5 text-[var(--accent)]" />
@@ -196,7 +196,7 @@ export default function ConfigPage() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="glass-hover flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-[var(--text-primary)] hover:bg-[var(--accent-muted)] transition-colors disabled:opacity-50"
+          className="glass glass-hover interactive-control flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-[var(--text-primary)] hover:bg-[var(--accent-muted)] transition-colors disabled:opacity-50"
         >
           <Save className="size-5" />
           <span>{saving ? "Salvando..." : "Salvar alterações"}</span>
@@ -226,7 +226,7 @@ export default function ConfigPage() {
               <button
                 type="button"
                 onClick={resetPrompt}
-                className="glass-hover flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-[var(--text-secondary)] hover:bg-[var(--accent-muted)] hover:text-[var(--accent)] transition-colors"
+                className="glass glass-hover interactive-control flex items-center gap-2 px-4 py-2 rounded-lg text-sm text-[var(--text-secondary)] hover:bg-[var(--accent-muted)] hover:text-[var(--accent)] transition-colors"
               >
                 <RotateCcw className="size-4" />
                 Restaurar padrão
@@ -267,7 +267,7 @@ export default function ConfigPage() {
         <SectionCard title="Ferramentas" icon={Wrench}>
           <div className="space-y-3">
             {TOOL_OPTIONS.map(tool => (
-              <label key={tool.id} className="glass-hover flex items-center gap-3 p-3 rounded-xl cursor-pointer group">
+              <label key={tool.id} className="glass glass-hover flex items-center gap-3 p-3 rounded-xl cursor-pointer group">
                 <div className="size-10 rounded-xl bg-[var(--accent-muted)] flex items-center justify-center">
                   <tool.icon className="size-5 text-[var(--accent)]" />
                 </div>
@@ -334,14 +334,14 @@ export default function ConfigPage() {
       <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border)]">
         <button
           onClick={() => router.back()}
-          className="glass-hover px-6 py-3 rounded-xl font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-muted)] transition-colors"
+          className="glass glass-hover interactive-control px-6 py-3 rounded-xl font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--accent-muted)] transition-colors"
         >
           Voltar
         </button>
         <button
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white bg-[var(--accent)] hover:bg-[var(--accent-glow)] transition-colors disabled:opacity-50"
+          className="interactive-control flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white bg-[var(--accent)] hover:bg-[var(--accent-glow)] transition-colors disabled:opacity-50"
         >
           <Save className="size-5" />
           <span>{saving ? "Salvando..." : "Salvar alterações"}</span>

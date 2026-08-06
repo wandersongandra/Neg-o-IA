@@ -84,7 +84,7 @@ export const CoreSphere = forwardRef<CoreSphereRef, CoreSphereProps>(
     ];
 
     return (
-      <div className="relative mx-auto flex aspect-square w-full max-w-[480px] items-center justify-center">
+      <div className="relative mx-auto flex aspect-square w-full max-w-[480px] items-center justify-center" aria-label="NEGÃO Intelligence Core">
         <div
           className="animate-glow-pulse absolute size-2/3 rounded-full bg-[var(--color-prime)]/20 blur-3xl"
           style={{ filter: "blur(60px)" }}
@@ -104,6 +104,11 @@ export const CoreSphere = forwardRef<CoreSphereRef, CoreSphereProps>(
         />
 
         <div
+          className="animate-spin-reverse absolute size-[79%] rounded-full border border-[rgba(77,166,255,0.18)]"
+          style={{ borderStyle: "dotted", animationDuration: "27s" }}
+        />
+
+        <div
           className="animate-spin-reverse absolute size-[64%] rounded-full border-t border-r border-[rgba(0,212,255,0.35)]"
           style={{ transform: "rotateX(70deg)", borderRadius: "999px" }}
         />
@@ -116,6 +121,10 @@ export const CoreSphere = forwardRef<CoreSphereRef, CoreSphereProps>(
           <span className="absolute -top-1 left-1/2 size-1 rounded-full bg-[var(--accent-glow)] shadow-[0_0_10px_var(--accent-glow)]" />
         </div>
 
+        <div className="animate-orbit absolute size-[48%]" style={{ animationDuration: "10s" }}>
+          <span className="absolute -top-1 left-1/2 size-1 rounded-full bg-white shadow-[0_0_12px_var(--accent)]" />
+        </div>
+
         <div
           className="animate-spin-slow absolute size-[74%] rounded-full"
           style={{
@@ -126,7 +135,7 @@ export const CoreSphere = forwardRef<CoreSphereRef, CoreSphereProps>(
         />
 
         <div
-          className="relative flex size-[42%] items-center justify-center rounded-full"
+          className="core-reactor core-noise relative flex size-[42%] items-center justify-center rounded-full"
           style={{
             background:
               "radial-gradient(circle at 50% 35%, rgba(0,212,255,0.55) 0%, rgba(59,130,246,0.45) 35%, rgba(11,16,24,0.9) 75%)",
@@ -135,6 +144,7 @@ export const CoreSphere = forwardRef<CoreSphereRef, CoreSphereProps>(
           }}
         >
           <div className="absolute inset-3 rounded-full border border-white/10" />
+          <div className="absolute inset-6 rounded-full border border-[var(--accent)]/20" />
           <div
             className="absolute inset-0 rounded-full animate-glow-pulse"
             style={{

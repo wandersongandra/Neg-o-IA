@@ -91,7 +91,7 @@ export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: S
       {/* Sidebar — IMPROVED: CSS-based responsive, no JS logic */}
       <aside
         className={`
-          glass sticky top-16 z-30 h-[calc(100vh-4rem)] w-60 flex-col
+          glass side-command-deck sticky top-16 z-30 h-[calc(100vh-4rem)] w-60 flex-col
           fixed left-0 top-16 z-50 transform transition-transform duration-300 ease-in-out lg:relative lg:sticky lg:translate-x-0
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
           lg:flex hidden
@@ -120,7 +120,7 @@ export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: S
                   onNavigate?.(item.label);
                   handleLinkClick();
                 }}
-                className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] transition-all duration-300 ${
+                className={`interactive-control group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] transition-all duration-300 ${
                   active
                     ? "bg-[var(--color-prime)]/10 text-[var(--text-primary)] shadow-[inset_0_0_0_1px_var(--accent-muted)]"
                     : "text-[var(--text-secondary)] hover:bg-white/[0.03] hover:text-[var(--text-primary)]"
@@ -161,7 +161,7 @@ export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: S
 
         {/* Core Status Footer */}
         <div className="border-t border-[var(--border)] p-3">
-          <div className="glass rounded-xl p-3">
+          <div className="glass core-status rounded-xl p-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Brain className="size-4 text-[var(--accent)]" />

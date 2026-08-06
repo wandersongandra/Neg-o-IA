@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Command,
   Cpu,
@@ -85,6 +86,7 @@ function useTheme(): { theme: Theme; setTheme: (t: Theme) => void } {
 }
 
 export default function TopBar({ data, onOpenPalette }: TopBarProps) {
+  const router = useRouter();
   const model = useBrainModel();
   const online = data?.healthz?.status === "alive";
   const latency = data?.latency_ms ?? null;
@@ -93,14 +95,14 @@ export default function TopBar({ data, onOpenPalette }: TopBarProps) {
   const { theme, setTheme } = useTheme();
 
   return (
-    <header className="glass sticky top-0 z-40 flex h-16 items-center gap-4 px-5">
+    <header className="glass command-deck sticky top-0 z-40 flex h-16 items-center gap-4 px-5">
       <div className="flex items-center gap-3">
         <div className="relative flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--color-prime)] to-[var(--accent)] shadow-[0_0_24px_-6px_var(--accent-glow)]">
           <Cpu className="size-5 text-[var(--bg-primary)]" strokeWidth={2.2} />
           <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-[var(--color-ok)] ring-2 ring-[var(--bg-primary)]" />
         </div>
         <div className="leading-tight">
-          <p className="text-sm font-semibold tracking-wide text-[var(--text-primary)]">
+          <p className="hud-title text-sm text-[var(--text-primary)]">
             NEGÃO <span className="text-gradient glow-text">AI</span>
           </p>
           <p className="font-mono-data text-[10px] text-[var(--text-secondary)]">
@@ -111,7 +113,8 @@ export default function TopBar({ data, onOpenPalette }: TopBarProps) {
 
       <button
         onClick={onOpenPalette}
-        className="glass glass-hover group flex h-10 flex-1 max-w-xl items-center gap-3 rounded-xl px-4 text-left"
+        type="button"
+        className="glass glass-hover interactive-control group flex h-10 flex-1 max-w-xl items-center gap-3 rounded-xl px-4 text-left"
       >
         <Search className="size-4 text-[var(--text-secondary)] transition-colors group-hover:text-[var(--accent)]" />
         <span className="flex-1 truncate text-sm text-[var(--text-secondary)]">
@@ -155,8 +158,9 @@ export default function TopBar({ data, onOpenPalette }: TopBarProps) {
 
         <div className="relative group">
           <button
-            className="glass glass-hover flex size-10 items-center justify-center rounded-xl text-[var(--text-secondary)]"
+            className="glass glass-hover interactive-control flex size-10 items-center justify-center rounded-xl text-[var(--text-secondary)]"
             aria-label="Tema"
+            type="button"
             onClick={() => {
               const themes: Theme[] = ["azul", "esmeralda", "magenta"];
               const currentIndex = themes.indexOf(theme);
@@ -170,6 +174,7 @@ export default function TopBar({ data, onOpenPalette }: TopBarProps) {
             {(["azul", "esmeralda", "magenta"] as Theme[]).map((t) => (
               <button
                 key={t}
+                type="button"
                 onClick={() => setTheme(t)}
                 className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
                   theme === t
@@ -196,8 +201,10 @@ export default function TopBar({ data, onOpenPalette }: TopBarProps) {
         <InstallButton />
 
         <button
-          className="glass glass-hover flex size-10 items-center justify-center rounded-xl text-[var(--text-secondary)]"
+          className="glass glass-hover interactive-control flex size-10 items-center justify-center rounded-xl text-[var(--text-secondary)]"
           aria-label="Configurações"
+          type="button"
+          onClick={() => router.push("/config")}
         >
           <Settings className="size-4" />
         </button>

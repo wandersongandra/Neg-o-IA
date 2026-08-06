@@ -108,6 +108,8 @@
   --tracking-wider: 0.1em;
   --tracking-widest: 0.15em;
   --tracking-mono: 0.02em;
+  --glass-surface: linear-gradient(135deg, rgba(15, 28, 44, 0.76) 0%, rgba(5, 10, 18, 0.56) 48%, rgba(8, 20, 34, 0.7) 100%);
+  --glass-edge: linear-gradient(120deg, rgba(111, 234, 255, 0.54), rgba(255, 255, 255, 0.12) 26%, transparent 55%, rgba(91, 150, 255, 0.3));
 }
 
 [data-theme="azul"] {
@@ -151,14 +153,40 @@ body {
 body {
   @apply bg-[var(--bg-primary)] text-[var(--text-primary)] antialiased;
   background-image:
-    radial-gradient(1200px 800px at 15% -10%, var(--accent-muted), transparent 60%),
-    radial-gradient(1000px 700px at 110% 20%, var(--accent-muted), transparent 60%),
-    radial-gradient(900px 900px at 50% 120%, var(--accent-muted), transparent 60%);
+    radial-gradient(900px 620px at 18% -8%, var(--accent-muted), transparent 62%),
+    radial-gradient(780px 720px at 108% 24%, color-mix(in srgb, var(--accent-muted) 82%, #3b82f6), transparent 63%),
+    radial-gradient(720px 620px at 52% 108%, color-mix(in srgb, var(--accent-muted) 46%, transparent), transparent 68%),
+    linear-gradient(112deg, rgba(255,255,255,0.018) 1px, transparent 1px),
+    linear-gradient(18deg, rgba(255,255,255,0.012) 1px, transparent 1px);
+  background-size: auto, auto, auto, 42px 42px, 42px 42px;
   background-attachment: fixed;
   /* IMPROVED: Use standardized duration tokens */
   transition:
     background-color var(--duration-normal) ease,
     background-image var(--duration-normal) ease;
+}
+
+body::before,
+body::after {
+  content: "";
+  pointer-events: none;
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+}
+
+body::before {
+  opacity: 0.34;
+  background-image: radial-gradient(rgba(211, 248, 255, 0.28) 0.6px, transparent 0.7px);
+  background-size: 5px 5px;
+  mask-image: radial-gradient(ellipse at center, black, transparent 76%);
+  animation: atmosphere-drift 18s ease-in-out infinite alternate;
+}
+
+body::after {
+  background: linear-gradient(90deg, transparent 0%, rgba(0, 212, 255, 0.025) 46%, transparent 54%);
+  transform: translateX(-100%);
+  animation: scanner-sweep 13s cubic-bezier(.4, 0, .2, 1) infinite;
 }
 
 ::-webkit-scrollbar {
@@ -178,28 +206,49 @@ body {
 
 @layer utilities {
   .glass {
-    background: linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
-    border: 1px solid var(--border);
-    backdrop-filter: blur(var(--blur-base));
+    position: relative;
+    isolation: isolate;
+    background: var(--glass-surface);
+    border: 1px solid transparent;
+    background-clip: padding-box;
+    backdrop-filter: blur(22px) saturate(145%);
+    -webkit-backdrop-filter: blur(22px) saturate(145%);
     box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.04) inset,
-      0 20px 50px -30px rgba(0, 0, 0, 0.8);
+      0 1px 0 rgba(255, 255, 255, 0.12) inset,
+      0 0 0 1px rgba(0, 212, 255, 0.055),
+      0 22px 56px -34px rgba(0, 0, 0, 0.95),
+      0 0 42px -30px var(--accent-glow);
+  }
+
+  .glass::before {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    z-index: -1;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: var(--glass-edge);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
   }
 
   .glass-hover {
     transition:
       border-color var(--duration-normal) ease,
       box-shadow var(--duration-normal) ease,
-      transform var(--duration-normal) ease;
+      transform var(--duration-fast) cubic-bezier(.2,.8,.2,1),
+      background var(--duration-normal) ease;
   }
   .glass-hover:hover {
-    border-color: var(--accent-muted);
+    border-color: color-mix(in srgb, var(--accent) 32%, transparent);
     box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.06) inset,
+      0 1px 0 rgba(255, 255, 255, 0.18) inset,
       0 0 0 1px var(--accent-muted),
-      0 0 40px -12px var(--accent-glow),
-      0 24px 60px -30px rgba(0, 0, 0, 0.9);
-    transform: translateY(-1px);
+      0 0 46px -14px var(--accent-glow),
+      0 28px 66px -34px rgba(0, 0, 0, 0.95);
+    transform: translateY(-2px) scale(1.012);
   }
 
   .text-gradient {
@@ -284,6 +333,104 @@ body {
   }
   .animate-dash {
     animation: dash 6s linear infinite;
+  }
+
+  .animate-data-flow {
+    animation: data-flow 3.4s linear infinite;
+  }
+
+  .animate-draw-ring {
+    animation: draw-ring 1.4s cubic-bezier(.2,.8,.2,1) both;
+  }
+
+  .core-reactor {
+    animation: reactor-breathe 4.8s ease-in-out infinite;
+  }
+
+  .core-noise {
+    overflow: hidden;
+  }
+
+  .core-noise::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    opacity: .32;
+    mix-blend-mode: screen;
+    background-image: radial-gradient(rgba(255,255,255,.8) .55px, transparent .7px);
+    background-size: 4px 4px;
+    animation: noise-shift .35s steps(2) infinite;
+    z-index: 0;
+  }
+
+  .core-noise > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .hud-title {
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+
+  .interactive-control {
+    transition: transform var(--duration-fast) cubic-bezier(.2,.8,.2,1), box-shadow var(--duration-fast) ease, color var(--duration-fast) ease, opacity var(--duration-fast) ease;
+  }
+
+  .interactive-control:hover:not(:disabled) {
+    transform: translateY(-1px) scale(1.025);
+    box-shadow: 0 0 24px -8px var(--accent-glow);
+  }
+
+  .dashboard-shell main > section {
+    position: relative;
+  }
+
+  .command-deck {
+    box-shadow: 0 12px 40px -28px #000, 0 1px 0 rgba(255,255,255,.14) inset, 0 0 34px -28px var(--accent-glow);
+  }
+
+  .command-deck::after {
+    content: "SYSTEM // LIVE";
+    position: absolute;
+    right: 1.25rem;
+    bottom: -1px;
+    color: color-mix(in srgb, var(--accent) 52%, transparent);
+    font: 600 7px/1 var(--font-jetbrains), monospace;
+    letter-spacing: .22em;
+    pointer-events: none;
+  }
+
+  .side-command-deck {
+    border-right-color: color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+
+  .core-status {
+    background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 12%, transparent), rgba(5,10,18,.66));
+  }
+
+  .command-palette {
+    box-shadow: 0 30px 100px -36px #000, 0 0 90px -36px var(--accent-glow);
+  }
+
+  svg .animate-float {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  input:not([type="checkbox"]):not([type="range"]), textarea, select {
+    transition: border-color var(--duration-fast) ease, box-shadow var(--duration-fast) ease, background-color var(--duration-fast) ease;
+  }
+
+  input:not([type="checkbox"]):not([type="range"]):focus, textarea:focus, select:focus {
+    border-color: color-mix(in srgb, var(--accent) 58%, transparent) !important;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent), 0 0 24px -13px var(--accent-glow);
+  }
+
+  button:not(:disabled), a {
+    -webkit-tap-highlight-color: transparent;
   }
   .animate-ping-soft {
     animation: ping-soft 3s cubic-bezier(0, 0, 0.2, 1) infinite;
@@ -390,6 +537,40 @@ body {
   }
 }
 
+@keyframes data-flow {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -96; }
+}
+
+@keyframes draw-ring {
+  from { stroke-dashoffset: calc(var(--ring-offset) + 380px); opacity: 0; }
+  to { stroke-dashoffset: var(--ring-offset); opacity: 1; }
+}
+
+@keyframes reactor-breathe {
+  0%, 100% { transform: scale(.97); filter: brightness(.92) saturate(1); }
+  50% { transform: scale(1.055); filter: brightness(1.22) saturate(1.2); }
+}
+
+@keyframes noise-shift {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(-2%, 1%); }
+  50% { transform: translate(1%, -2%); }
+  75% { transform: translate(2%, 2%); }
+  100% { transform: translate(-1%, -1%); }
+}
+
+@keyframes atmosphere-drift {
+  from { transform: translate3d(-1%, -1%, 0) scale(1); }
+  to { transform: translate3d(1%, 1%, 0) scale(1.04); }
+}
+
+@keyframes scanner-sweep {
+  0%, 26% { transform: translateX(-110%); opacity: 0; }
+  30% { opacity: 1; }
+  60%, 100% { transform: translateX(110%); opacity: 0; }
+}
+
 @keyframes ping-soft {
   0% {
     transform: scale(1);
@@ -439,5 +620,14 @@ body {
   to {
     opacity: 0;
     transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }

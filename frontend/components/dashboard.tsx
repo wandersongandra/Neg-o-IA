@@ -164,7 +164,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="dashboard-shell flex min-h-screen flex-col">
       <TopBar data={data} onOpenPalette={() => setPaletteOpen(true)} />
 
       <div className="flex flex-1">
@@ -178,7 +178,7 @@ export default function Dashboard() {
         <main className="flex-1 space-y-6 overflow-x-hidden p-5 md:p-6 page-transition">
           {/* Mobile Menu Button — IMPROVED: CSS-based, no JS logic */}
           <button
-            className="glass glass-hover lg:hidden flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            className="glass glass-hover interactive-control lg:hidden flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
             onClick={() => setSidebarOpen(true)}
             aria-label="Abrir menu de navegação"
             aria-expanded={sidebarOpen}
@@ -237,7 +237,7 @@ export default function Dashboard() {
           role="presentation"
         >
           <div
-            className="glass w-full max-w-xl animate-fade-up rounded-2xl p-2"
+            className="glass command-palette w-full max-w-xl animate-fade-up rounded-2xl p-2"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
@@ -272,7 +272,7 @@ export default function Dashboard() {
               id="command-palette-list"
               role="listbox"
             >
-              {filtered.map((cmd, idx) => (
+              {filtered.map((cmd) => (
                 <button
                   key={cmd.label}
                   onClick={() => {
@@ -280,7 +280,7 @@ export default function Dashboard() {
                     if (cmd.href) router.push(cmd.href);
                     else toast({ title: cmd.label, variant: "default" });
                   }}
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--color-prime)]/10 hover:text-[var(--text-primary)] focus:outline-none focus:bg-[var(--color-prime)]/10 focus:text-[var(--text-primary)]"
+                  className="interactive-control flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--color-prime)]/10 hover:text-[var(--text-primary)] focus:outline-none focus:bg-[var(--color-prime)]/10 focus:text-[var(--text-primary)]"
                   role="option"
                   aria-selected={false}
                   type="button"

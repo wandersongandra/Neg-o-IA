@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import {
   Activity,
   ArrowUp,
@@ -181,7 +181,7 @@ export function MemoryDonut() {
       <SectionTitle icon={TrendingUp} title="Uso da Memória" subtitle="DISTRIBUIÇÃO" />
       <div className="flex items-center gap-4">
         <div className="relative shrink-0">
-          <svg width="150" height="150" viewBox="0 0 150 150" className="-rotate-90">
+          <svg width="150" height="150" viewBox="0 0 150 150" className="-rotate-90" aria-label="Distribuição da memória">
             <circle cx="75" cy="75" r="56" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="14" />
             {DONUT.map((seg) => {
               const len = (seg.value / 100) * C;
@@ -194,10 +194,16 @@ export function MemoryDonut() {
                   fill="none"
                   stroke={seg.color}
                   strokeWidth="14"
-                  strokeLinecap="butt"
+                  strokeLinecap="round"
                   strokeDasharray={`${len} ${C - len}`}
                   strokeDashoffset={-offset}
-                  style={{ transition: "stroke-dasharray 700ms ease", filter: `drop-shadow(0 0 6px ${seg.color}66)` }}
+                  className="animate-draw-ring"
+                  style={{
+                    "--ring-offset": `${-offset}`,
+                    animationDelay: `${offset / C}s`,
+                    transition: "stroke-dasharray 700ms ease",
+                    filter: `drop-shadow(0 0 6px ${seg.color}66)`,
+                  } as CSSProperties}
                 />
               );
               offset += len;
@@ -255,18 +261,29 @@ export function KnowledgeGraph() {
   return (
     <div className="glass glass-hover animate-fade-up rounded-2xl p-4">
       <SectionTitle icon={GitBranch} title="Knowledge Graph" subtitle="REDE DE CONHECIMENTO" />
-      <svg viewBox="0 0 700 420" className="w-full">
+      <svg viewBox="0 0 700 420" className="w-full" aria-label="Grafo de conhecimento do NEGÃO">
+        <defs>
+          <linearGradient id="knowledge-flow" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.1" />
+            <stop offset="45%" stopColor="var(--accent-glow)" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.12" />
+          </linearGradient>
+          <filter id="node-glow" x="-100%" y="-100%" width="300%" height="300%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
         {GRAPH_NODES.map((node) => (
-          <g key={node.label}>
+          <g key={node.label} className="animate-float" style={{ animationDelay: `${(node.x + node.y) % 9 * -0.45}s`, animationDuration: `${5 + (node.y % 4)}s` }}>
             <line
               x1={GRAPH_CENTER.x}
               y1={GRAPH_CENTER.y}
               x2={node.x}
               y2={node.y}
-              stroke="rgba(77,166,255,0.25)"
-              strokeWidth="1"
-              strokeDasharray="6 6"
-              className="animate-dash"
+              stroke="url(#knowledge-flow)"
+              strokeWidth="1.4"
+              strokeDasharray="12 10"
+              className="animate-data-flow"
             />
             <circle
               cx={node.x}
@@ -276,7 +293,7 @@ export function KnowledgeGraph() {
               stroke="rgba(0,212,255,0.5)"
               strokeWidth="1"
               className="transition-all duration-300"
-              style={{ filter: "drop-shadow(0 0 6px rgba(0,212,255,0.35))" }}
+              style={{ filter: "url(#node-glow)" }}
             />
             <text
               x={node.x}

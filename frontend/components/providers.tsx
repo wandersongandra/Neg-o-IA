@@ -24,7 +24,19 @@ export function Providers({ children }: { children: React.ReactNode }) {
       const anchor = e.target instanceof HTMLAnchorElement ? e.target : (e.target as HTMLElement).closest("a");
       if (!anchor) return;
       const href = anchor.getAttribute("href");
-      if (!href || href.startsWith("#") || href.startsWith("http") || anchor.target === "_blank") return;
+      if (
+        e.defaultPrevented ||
+        e.button !== 0 ||
+        e.metaKey ||
+        e.ctrlKey ||
+        e.shiftKey ||
+        e.altKey ||
+        !href ||
+        href.startsWith("#") ||
+        href.startsWith("http") ||
+        anchor.target === "_blank" ||
+        anchor.hasAttribute("download")
+      ) return;
       if (anchor.origin !== window.location.origin) return;
 
       e.preventDefault();
