@@ -32,17 +32,32 @@ function Inline({ text }: InlineProps) {
         }
         const link = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
         if (link) {
-          return (
-            <a
-              key={i}
-              href={link[2]}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[#00D4FF] underline decoration-[#00D4FF]/40 underline-offset-2 hover:text-[#67E8F9]"
-            >
-              {link[1]}
-            </a>
-          );
+          const href = link[2];
+          const safe =
+            /^(https?:|mailto:)/i.test(href) ||
+            (typeof window !== "undefined" &&
+              (() => {
+                try {
+                  const u = new URL(href, window.location.href);
+                  return u.protocol === "http:" || u.protocol === "https:";
+                } catch {
+                  return false;
+                }
+              })());
+          if (safe) {
+            return (
+              <a
+                key={i}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#00D4FF] underline decoration-[#00D4FF]/40 underline-offset-2 hover:text-[#67E8F9]"
+              >
+                {link[1]}
+              </a>
+            );
+          }
+          return <Fragment key={i}>{link[1]}</Fragment>;
         }
         return <Fragment key={i}>{part}</Fragment>;
       })}

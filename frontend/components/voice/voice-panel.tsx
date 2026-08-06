@@ -15,13 +15,7 @@ import {
   Volume2,
 } from "lucide-react";
 import { useAvatar } from "@/components/avatar/avatar-context";
-
-interface VoiceStatus {
-  stt_available: boolean;
-  tts_available: boolean;
-  stt_model: string;
-  tts_voice: string;
-}
+import type { VoiceStatus } from "@/lib/types";
 
 async function detailOf(res: Response): Promise<string> {
   try {
@@ -181,13 +175,14 @@ export default function VoicePanel() {
         router.push(`/conversa?text=${encodeURIComponent(data.text.trim())}`);
         return;
       }
-    } catch (err) {      setTranscribeError(
+    } catch (err) {
+      setTranscribeError(
         err instanceof Error ? err.message : "Falha ao transcrever o áudio.",
       );
     } finally {
       setTranscribing(false);
     }
-  }, []);
+  }, [router]);
 
   const synthesize = useCallback(async (text: string) => {
     setSynthesizing(true);
@@ -366,6 +361,7 @@ export default function VoicePanel() {
               type="button"
               role="switch"
               aria-checked={autoSend}
+              aria-label="Enviar transcrição direto para o chat"
               onClick={() => setAutoSend((v) => !v)}
               className={`relative h-6 w-11 rounded-full transition-colors ${
                 autoSend
@@ -506,7 +502,7 @@ export default function VoicePanel() {
             rows={4}
             placeholder="O que o NEGÃO deve falar?"
             disabled={!status?.tts_available}
-            className="w-full resize-none rounded-xl border border-white/[0.06] bg-black/20 p-3 text-sm text-[#F8FAFC] outline-none transition-colors placeholder:text-[#64748B] focus:border-[#00D4FF]/40 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full resize-none rounded-xl border border-white/[0.06] bg-black/20 p-3 text-base text-[#F8FAFC] outline-none transition-colors placeholder:text-[#64748B] focus:border-[#00D4FF]/40 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
           />
           <div className="flex flex-wrap items-center gap-3">
             <button

@@ -90,6 +90,7 @@ function Slider({ label, value, min, max, step, onChange, unit = "" }: { label: 
       </label>
       <input
         type="range"
+        aria-label={label}
         min={min}
         max={max}
         step={step}
@@ -237,7 +238,7 @@ export default function ConfigPage() {
               }}
               rows={8}
               maxLength={8000}
-              className="w-full min-h-[160px] font-mono-data text-sm bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4 text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] resize-y"
+              className="w-full min-h-[160px] font-mono-data text-base sm:text-sm bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4 text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] resize-y"
               placeholder="Defina a personalidade do NEGÃO..."
             />
             <div className="flex gap-2">
@@ -259,6 +260,7 @@ export default function ConfigPage() {
               <div>
                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Modelo Principal</label>
                 <select
+                  aria-label="Modelo Principal"
                   value={config.primary_model}
                   onChange={(e) => setConfig(prev => ({ ...prev, primary_model: e.target.value }))}
                   className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
@@ -269,6 +271,7 @@ export default function ConfigPage() {
               <div>
                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Modelo Fallback</label>
                 <select
+                  aria-label="Modelo Fallback"
                   value={config.fallback_model}
                   onChange={(e) => setConfig(prev => ({ ...prev, fallback_model: e.target.value }))}
                   className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
@@ -328,6 +331,7 @@ export default function ConfigPage() {
             <div>
               <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Voz (edge-tts)</label>
               <select
+                aria-label="Voz do edge-tts"
                 value={config.voice.voice}
                 onChange={(e) => setConfig(prev => ({ ...prev, voice: { ...prev.voice, voice: e.target.value } }))}
                 className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
@@ -338,6 +342,7 @@ export default function ConfigPage() {
             <div>
               <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Velocidade</label>
               <select
+                aria-label="Velocidade da fala"
                 value={config.voice.rate}
                 onChange={(e) => setConfig(prev => ({ ...prev, voice: { ...prev.voice, rate: e.target.value } }))}
                 className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
@@ -359,7 +364,7 @@ export default function ConfigPage() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="interactive-control flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-white bg-[var(--accent)] hover:bg-[var(--accent-glow)] transition-colors disabled:opacity-50"
+          className="interactive-control flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-[var(--bg-primary)] bg-[var(--accent)] hover:bg-[var(--accent-glow)] transition-colors disabled:opacity-50"
         >
           <Save className="size-5" />
           <span>{saving ? "Salvando..." : "Salvar alterações"}</span>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Bell, BellOff, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
 import { subscribeToPush, unsubscribeFromPush, getNotificationPermissionState, isPushSupported } from "@/lib/push";
 
@@ -11,11 +11,7 @@ export function PushNotifications() {
   const [error, setError] = useState<string | null>(null);
   const vapidConfigured = Boolean(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY);
 
-  useEffect(() => {
-    checkStatus();
-  }, []);
-
-  const checkStatus = async () => {
+  const checkStatus = useCallback(async () => {
     if (!vapidConfigured || !isPushSupported()) {
       setStatus("unsupported");
       return;
@@ -37,7 +33,11 @@ export function PushNotifications() {
     }
 
     setStatus(permission === "granted" ? "granted" : "default");
-  };
+  }, [vapidConfigured]);
+
+  useEffect(() => {
+    void checkStatus();
+  }, [checkStatus]);
 
   const handleSubscribe = async () => {
     const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;

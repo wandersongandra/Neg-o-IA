@@ -93,12 +93,12 @@ export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: S
         id="sidebar"
         className={`
           glass side-command-deck flex h-[calc(100dvh-4rem)] w-60 flex-col
-          fixed left-0 top-16 z-50 transform transition-transform duration-300 ease-in-out lg:relative lg:sticky lg:translate-x-0 lg:visible
+          fixed left-0 z-50 transform transition-transform duration-300 ease-in-out lg:relative lg:sticky lg:translate-x-0 lg:visible
           ${isOpen ? "visible translate-x-0" : "invisible -translate-x-full"}
         `}
+        style={{ top: "calc(4rem + env(safe-area-inset-top))" }}
         role="navigation"
         aria-label="Navegação principal"
-        aria-hidden={isOpen ? undefined : true}
       >
         {/* Close Button (Mobile Only) */}
         <button

@@ -50,7 +50,6 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
   const reducedMotion = useRef(false);
 
   const [state, setStateInternal] = useState<AvatarState>("idle");
-  const [, setParticles] = useState<Particle[]>([]);
   // Refs for animation loop to avoid re-subscribing effect on each animation tick
   const mouthOpenRef = useRef<number>(0);
   const pulsePhaseRef = useRef<number>(0);
@@ -58,11 +57,6 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
   // Keep refs in sync with animation values
   const setMouthOpenState = useCallback((v: number) => {
     mouthOpenRef.current = v;
-  }, []);
-
-  const setPulsePhaseState = useCallback((updater: (prev: number) => number) => {
-    const next = updater(pulsePhaseRef.current);
-    pulsePhaseRef.current = next;
   }, []);
 
   useEffect(() => {
@@ -91,7 +85,6 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
         });
       }
     });
-    setParticles(newParticles);
     particlesRef.current = newParticles;
   }, []);
 
@@ -99,7 +92,6 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
     initParticles();
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext("2d", { alpha: true, desynchronized: true });
     if (!ctx) return;
 
@@ -119,7 +111,6 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
 
     const animate = (time: number) => {
       if (reducedMotion.current) {
-        animationRef.current = requestAnimationFrame(animate);
         return;
       }
 
@@ -139,8 +130,8 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
       const glowColor = getComputedStyle(document.documentElement).getPropertyValue(colors.glow.replace("var(", "").replace(")", "")).trim() || colors.glow;
       const particleColor = getComputedStyle(document.documentElement).getPropertyValue(colors.particle.replace("var(", "").replace(")", "")).trim() || colors.particle;
 
-      // Pulse phase (use ref-backed setter)
-      setPulsePhaseState(prev => (prev + dt * 0.001) % (Math.PI * 2));
+      // Pulse phase (ref-backed, no re-render)
+      pulsePhaseRef.current = (pulsePhaseRef.current + dt * 0.001) % (Math.PI * 2);
 
       // Core glow (read from ref)
       const pulse = Math.sin(pulsePhaseRef.current) * 0.15 + 0.85;
@@ -173,9 +164,9 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
         ctx.stroke();
       }
 
-      // Update and draw particles
-      setParticles((prev) => {
-        const updated = prev.map((p) => {
+      // Update and draw particles (mutate ref directly, no re-render)
+      const particles = particlesRef.current;
+      for (const p of particles) {
           let orbitRadius = p.orbitRadius * radius;
           let orbitSpeed = p.orbitSpeed;
 
@@ -229,11 +220,7 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
           ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
           ctx.fill();
 
-          return p;
-        });
-        particlesRef.current = updated;
-        return updated;
-      });
+      }
 
       // Draw connections for thinking
       if (state === "thinking") {
@@ -275,7 +262,7 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
       window.removeEventListener("resize", resize);
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-  }, [state, initParticles, setMouthOpenState, setPulsePhaseState]);
+  }, [state, initParticles, setMouthOpenState]);
 
   const setState = useCallback((newState: AvatarState) => {
     setStateInternal(newState);

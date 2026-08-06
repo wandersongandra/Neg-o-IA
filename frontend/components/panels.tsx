@@ -175,6 +175,7 @@ export function ModelCard({ brain }: { brain: BrainStatus | null }) {
               {row.label}
             </span>
             <span
+              title={row.value}
               className={`max-w-[55%] truncate font-mono-data text-[11px] font-semibold ${
                 row.tone === "danger"
                   ? "text-[var(--color-danger)]"

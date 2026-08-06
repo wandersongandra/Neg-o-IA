@@ -25,6 +25,13 @@ export function InstallPrompt() {
       return;
     }
 
+    if (
+      isIOSDevice &&
+      !localStorage.getItem("negao-install-dismissed")
+    ) {
+      setShowPrompt(true);
+    }
+
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       deferredPrompt.current = e as BeforeInstallPromptEvent;
@@ -65,7 +72,7 @@ export function InstallPrompt() {
 
   if (isIOS) {
     return (
-      <div className="fixed bottom-4 left-4 right-4 md:bottom-6 md:left-auto md:right-6 md:w-[360px] z-50 animate-slide-up">
+      <div className="fixed bottom-4 left-4 right-4 md:bottom-6 md:left-auto md:right-6 md:w-[360px] z-50 animate-slide-up" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
         <div className="glass rounded-2xl border border-[var(--border)] p-4 shadow-2xl">
           <div className="flex items-start gap-3">
             <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--color-prime)] to-[var(--accent)] shrink-0">
@@ -91,7 +98,7 @@ export function InstallPrompt() {
   }
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 md:bottom-6 md:left-auto md:right-6 md:w-[360px] z-50 animate-slide-up">
+    <div className="fixed bottom-4 left-4 right-4 md:bottom-6 md:left-auto md:right-6 md:w-[360px] z-50 animate-slide-up" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
       <div className="glass rounded-2xl border border-[var(--border)] p-4 shadow-2xl">
         <div className="flex items-start gap-3">
           <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--color-prime)] to-[var(--accent)] shrink-0">

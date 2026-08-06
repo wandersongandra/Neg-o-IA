@@ -68,8 +68,10 @@ function ToastPortal({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id: s
 
   return createPortal(
     <div
+      role="status"
+      aria-live="polite"
       className="fixed bottom-5 right-5 z-[100] flex flex-col gap-2 pointer-events-none"
-      style={{ maxWidth: "400px" }}
+      style={{ maxWidth: "400px", paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
@@ -108,7 +110,6 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
   return (
     <div
       className={`glass glass-hover pointer-events-auto flex items-start gap-3 rounded-xl p-4 animate-fade-in ${variantStyles[toast.variant]}`}
-      style={{ animation: "slideIn 300ms ease" }}
     >
       <div className="shrink-0 mt-0.5">{iconComponents[toast.variant]}</div>
       <div className="flex-1 min-w-0">

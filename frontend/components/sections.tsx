@@ -382,7 +382,12 @@ export function FooterBar({ data }: { data: DashboardData | null }) {
   const env = data?.root?.environment ?? "--";
   const version = data?.root?.version ?? "--";
   const lastSync = data
-    ? new Date(data.fetched_at).toLocaleTimeString("pt-BR", { hour12: false })
+    ? (() => {
+        const d = new Date(data.fetched_at);
+        return Number.isNaN(d.getTime())
+          ? "--"
+          : d.toLocaleTimeString("pt-BR", { hour12: false });
+      })()
     : "--";
 
   const cells: { label: string; value: string }[] = [

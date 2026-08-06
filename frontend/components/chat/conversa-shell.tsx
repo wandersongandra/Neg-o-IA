@@ -27,6 +27,7 @@ export default function ConversaShell({ children }: { children: ReactNode }) {
               onClick={() => setSidebarOpen(true)}
               aria-label="Abrir menu de navegação"
               aria-expanded={sidebarOpen}
+              aria-controls="sidebar"
             >
               <Menu className="size-4" />
               Menu

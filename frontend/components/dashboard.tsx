@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
   Activity,
@@ -66,6 +66,8 @@ export default function Dashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [filter, setFilter] = useState("");
   const [mounted, setMounted] = useState(false);
+  const loadReqRef = useRef(0);
+  const paletteTriggerRef = useRef<HTMLButtonElement | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -73,10 +75,11 @@ export default function Dashboard() {
   }, []);
 
   const load = useCallback(async () => {
-    const [dashRes, brainRes] = await Promise.all([
+    const reqId = ++loadReqRef.current;    const [dashRes, brainRes] = await Promise.all([
       fetch("/api/dashboard", { cache: "no-store" }).catch(() => null),
       fetch("/api/proxy/brain/status", { cache: "no-store" }).catch(() => null),
     ]);
+    if (reqId !== loadReqRef.current) return;
     if (dashRes?.ok) {
       try {
         setData((await dashRes.json()) as DashboardData);
@@ -134,6 +137,15 @@ export default function Dashboard() {
     setPaletteOpen(false);
   }, [pathname]);
 
+  useEffect(() => {
+    if (paletteOpen) {
+      paletteTriggerRef.current = document.activeElement as HTMLButtonElement | null;
+      return;
+    }
+    paletteTriggerRef.current?.focus();
+    paletteTriggerRef.current = null;
+  }, [paletteOpen]);
+
   const filtered = COMMANDS.filter((c) =>
     c.label.toLowerCase().includes(filter.toLowerCase())
   );
@@ -178,16 +190,16 @@ export default function Dashboard() {
           </button>
 
           <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-6">
-            <div className="col-span-12 lg:col-span-3 min-w-0">
+            <div className="col-span-1 sm:col-span-2 lg:col-span-3 min-w-0">
               <SystemCard data={data} />
             </div>
 
-            <div className="col-span-12 lg:col-span-6 min-w-0">
+            <div className="col-span-1 sm:col-span-2 lg:col-span-6 min-w-0">
               <Greeting data={data} />
               <CoreSphere data={data} brain={brain} />
             </div>
 
-            <div className="col-span-12 space-y-4 lg:col-span-3 min-w-0">
+            <div className="col-span-1 space-y-4 sm:col-span-2 lg:col-span-3 min-w-0">
               <ModelCard brain={brain} />
               <MemoryCard data={data} />
               <ToolsCard data={data} brain={brain} />
@@ -220,10 +232,11 @@ export default function Dashboard() {
       </div>
 
       {paletteOpen && (
-        <div
+        <button
+          type="button"
           className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-6 backdrop-blur-sm md:items-center"
           onClick={() => setPaletteOpen(false)}
-          role="presentation"
+          aria-label="Fechar paleta de comandos"
         >
           <div
             className="glass command-palette w-full max-w-xl animate-fade-up rounded-2xl p-2"
@@ -233,6 +246,9 @@ export default function Dashboard() {
             aria-labelledby="command-palette-title"
             aria-describedby="command-palette-desc"
           >
+            <p id="command-palette-desc" className="sr-only">
+              Digite um comando ou escolha uma ação abaixo.
+            </p>
             <div className="flex items-center gap-3 border-b border-[var(--border)] px-3 py-3">
               <Search className="size-4 text-[var(--accent)]" aria-hidden="true" />
               <input
@@ -241,7 +257,7 @@ export default function Dashboard() {
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
                 placeholder="Comando para o NEGÃO…"
-                className="flex-1 bg-transparent text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-secondary)]"
+                className="flex-1 bg-transparent text-base text-[var(--text-primary)] outline-none placeholder:text-[var(--text-secondary)] sm:text-sm"
                 aria-label="Pesquisa de comandos"
                 role="combobox"
                 aria-expanded="true"
@@ -281,7 +297,6 @@ export default function Dashboard() {
               {filtered.length === 0 && (
                 <p
                   className="px-3 py-4 text-center text-sm text-[var(--text-secondary)]"
-                  id="command-palette-desc"
                   role="status"
                 >
                   Nenhum comando encontrado
@@ -289,7 +304,7 @@ export default function Dashboard() {
               )}
             </div>
           </div>
-        </div>
+        </button>
       )}
     </div>
   );

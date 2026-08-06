@@ -94,7 +94,7 @@ interface FetchResult<T> {
 
 async function fetchJson<T>(url: string): Promise<FetchResult<T>> {
   try {
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(12_000) });
     if (!res.ok) return { value: null, error: `HTTP ${res.status}` };
     return { value: (await res.json()) as T, error: null };
   } catch {
@@ -104,7 +104,10 @@ async function fetchJson<T>(url: string): Promise<FetchResult<T>> {
 
 async function fetchLogs(): Promise<FetchResult<string[]>> {
   try {
-    const res = await fetch("/api/proxy/monitoring/logs", { cache: "no-store" });
+    const res = await fetch("/api/proxy/monitoring/logs", {
+      cache: "no-store",
+      signal: AbortSignal.timeout(12_000),
+    });
     if (!res.ok) return { value: null, error: `HTTP ${res.status}` };
     const body = (await res.json()) as unknown;
     if (Array.isArray(body)) return { value: body as string[], error: null };
@@ -236,7 +239,7 @@ function InfoRow({
       <span className="shrink-0 font-mono-data text-[10px] tracking-wider text-[#94A3B8]">
         {label}
       </span>
-      <span className={`max-w-[60%] truncate font-mono-data text-[11px] font-semibold ${color}`}>
+      <span title={value} className={`max-w-[60%] truncate font-mono-data text-[11px] font-semibold ${color}`}>
         {value}
       </span>
     </div>
@@ -417,7 +420,7 @@ function ConversationSection({ snapshot }: { snapshot: Snapshot }) {
                   .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
                   .map((s) => (
                     <tr key={s.session_id} className="border-t border-white/[0.04]">
-                      <td className="max-w-[240px] truncate py-2 pr-4 font-mono-data text-[10px] text-[#00D4FF]">
+                      <td title={s.session_id} className="max-w-[240px] truncate py-2 pr-4 font-mono-data text-[10px] text-[#00D4FF]">
                         {s.session_id}
                       </td>
                       <td className="py-2 pr-4 font-mono-data text-[10px] text-[#94A3B8]">
@@ -700,8 +703,17 @@ export default function MonitorPage() {
 
   useEffect(() => {
     void load();
-    const id = setInterval(() => void load(), POLL_MS);
-    return () => clearInterval(id);
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") void load();
+    }, POLL_MS);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void load();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [load]);
 
   const hasData = snapshot.fetchedAt > 0;

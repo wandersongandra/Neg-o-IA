@@ -44,13 +44,15 @@ export async function subscribeToPush(vapidPublicKey: string): Promise<PushSubsc
   };
 
   try {
-    await fetch("/api/proxy/push/subscribe", {
+    const res = await fetch("/api/proxy/push/subscribe", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(subscriptionData),
     });
+    if (!res.ok) throw new Error(`backend rejeitou subscrição (${res.status})`);
   } catch (error) {
     console.error("Failed to send subscription to backend:", error);
+    throw error;
   }
 
   return subscriptionData;
