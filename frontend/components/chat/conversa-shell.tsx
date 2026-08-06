@@ -11,7 +11,7 @@ export default function ConversaShell({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-dvh flex-col">
       <TopBar data={null} onOpenPalette={() => router.push("/")} />
       <div className="flex flex-1">
         <Sidebar

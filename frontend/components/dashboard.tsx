@@ -16,7 +16,7 @@ import {
   X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { BrainStatus, ConversationStatus, DashboardData } from "@/lib/types";
+import type { BrainStatus, DashboardData } from "@/lib/types";
 import TopBar from "@/components/top-bar";
 import Sidebar from "@/components/sidebar";
 import CoreSphere from "@/components/core-sphere";
@@ -62,7 +62,6 @@ export default function Dashboard() {
   const pathname = usePathname();
   const [data, setData] = useState<DashboardData | null>(null);
   const [brain, setBrain] = useState<BrainStatus | null>(null);
-  const [, setConv] = useState<ConversationStatus | null>(null);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [filter, setFilter] = useState("");
@@ -74,10 +73,9 @@ export default function Dashboard() {
   }, []);
 
   const load = useCallback(async () => {
-    const [dashRes, brainRes, convRes] = await Promise.all([
+    const [dashRes, brainRes] = await Promise.all([
       fetch("/api/dashboard", { cache: "no-store" }).catch(() => null),
       fetch("/api/proxy/brain/status", { cache: "no-store" }).catch(() => null),
-      fetch("/api/proxy/conversation/status", { cache: "no-store" }).catch(() => null),
     ]);
     if (dashRes?.ok) {
       try {
@@ -96,15 +94,6 @@ export default function Dashboard() {
       }
     } else {
       setBrain(null);
-    }
-    if (convRes?.ok) {
-      try {
-        setConv((await convRes.json()) as ConversationStatus);
-      } catch {
-        setConv(null);
-      }
-    } else {
-      setConv(null);
     }
   }, []);
 
@@ -151,7 +140,7 @@ export default function Dashboard() {
 
   if (!mounted) {
     return (
-      <div className="flex min-h-screen flex-col">
+      <div className="flex min-h-dvh flex-col">
         <TopBar data={null} onOpenPalette={() => undefined} />
         <div className="flex flex-1">
           <Sidebar data={null} onNavigate={() => undefined} />
@@ -164,7 +153,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="dashboard-shell flex min-h-screen flex-col">
+    <div className="dashboard-shell flex min-h-dvh flex-col">
       <TopBar data={data} onOpenPalette={() => setPaletteOpen(true)} />
 
       <div className="flex flex-1">
@@ -205,7 +194,7 @@ export default function Dashboard() {
             </div>
           </section>
 
-          <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+          <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-12 gap-6">
             <div className="col-span-1 xl:col-span-4 min-w-0">
               <TimelinePanel />
             </div>

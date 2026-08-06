@@ -9,13 +9,14 @@ type PushStatus = "unsupported" | "denied" | "default" | "granted" | "subscribed
 export function PushNotifications() {
   const [status, setStatus] = useState<PushStatus>("default");
   const [error, setError] = useState<string | null>(null);
+  const vapidConfigured = Boolean(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY);
 
   useEffect(() => {
     checkStatus();
   }, []);
 
   const checkStatus = async () => {
-    if (!isPushSupported()) {
+    if (!vapidConfigured || !isPushSupported()) {
       setStatus("unsupported");
       return;
     }

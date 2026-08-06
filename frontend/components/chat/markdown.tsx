@@ -145,10 +145,10 @@ function parseBlocks(text: string): ReactNode[] {
       continue;
     }
 
-    if (/^\s*\d+[.)]\s+/.test(line)) {
+    if (/^\s*\d{1,2}[.)]\s+/.test(line)) {
       const items: string[] = [];
-      while (i < lines.length && /^\s*\d+[.)]\s+/.test(lines[i])) {
-        items.push(lines[i].replace(/^\s*\d+[.)]\s+/, ""));
+      while (i < lines.length && /^\s*\d{1,2}[.)]\s+/.test(lines[i])) {
+        items.push(lines[i].replace(/^\s*\d{1,2}[.)]\s+/, ""));
         i += 1;
       }
       nodes.push(<ListBlock key={`ol-${nodes.length}`} items={items} ordered={true} />);
@@ -164,7 +164,7 @@ function parseBlocks(text: string): ReactNode[] {
     while (
       i < lines.length &&
       lines[i].trim() !== "" &&
-      !lines[i].match(/^(#{1,3}\s|```|[-*]\s|\d+[.)]\s)/)
+      !lines[i].match(/^(#{1,3}\s|```|[-*]\s|\d{1,2}[.)]\s)/)
     ) {
       para.push(lines[i]);
       i += 1;

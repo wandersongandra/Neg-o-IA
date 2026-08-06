@@ -46,6 +46,7 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
   const dataArrayRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const reducedMotion = useRef(false);
 
   const [state, setStateInternal] = useState<AvatarState>("idle");
@@ -282,6 +283,8 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
 
   const speak = useCallback((audio: HTMLAudioElement) => {
     try {
+      currentAudioRef.current?.pause();
+      currentAudioRef.current = audio;
       if (!audioContextRef.current) {
         const AudioCtx = (window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext) as typeof AudioContext;
         audioContextRef.current = new AudioCtx();
@@ -301,6 +304,11 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
       dataArrayRef.current = new Uint8Array(analyserRef.current.frequencyBinCount) as unknown as Uint8Array<ArrayBuffer>;
 
       setStateInternal("speaking");
+
+      void audio.play().catch(() => {
+        setMouthOpenState(0);
+        setStateInternal("idle");
+      });
 
       const updateMouth = () => {
         if (!analyserRef.current || !dataArrayRef.current) return;
@@ -323,6 +331,8 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
   }, [setMouthOpenState]);
 
   const stopSpeaking = useCallback(() => {
+    currentAudioRef.current?.pause();
+    currentAudioRef.current = null;
     setMouthOpenState(0);
     setStateInternal("idle");
     if (sourceRef.current) {

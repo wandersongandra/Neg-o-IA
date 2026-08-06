@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function VozPage() {
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-3xl flex-col p-5 md:p-6">
+    <main className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col p-5 md:p-6">
       <header className="animate-fade-in mb-6">
         <Link
           href="/"

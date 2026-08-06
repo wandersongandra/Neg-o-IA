@@ -90,7 +90,7 @@ function SectionHeader({
 }
 
 export default function VoicePanel() {
-  const { setState: setAvatarState, speak } = useAvatar();
+  const { setState: setAvatarState } = useAvatar();
   const router = useRouter();
   const [status, setStatus] = useState<VoiceStatus | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
@@ -181,8 +181,7 @@ export default function VoicePanel() {
         router.push(`/conversa?text=${encodeURIComponent(data.text.trim())}`);
         return;
       }
-    } catch (err) {
-      setTranscribeError(
+    } catch (err) {      setTranscribeError(
         err instanceof Error ? err.message : "Falha ao transcrever o áudio.",
       );
     } finally {
@@ -201,21 +200,12 @@ export default function VoicePanel() {
       });
       if (!res.ok) throw new Error(await detailOf(res));
       const buffer = await res.arrayBuffer();
-       const url = URL.createObjectURL(
+      const url = URL.createObjectURL(
         new Blob([buffer], { type: "audio/mpeg" }),
       );
       if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
       audioUrlRef.current = url;
       setAudioUrl(url);
-      const audio = new Audio(url);
-      audio.onended = () => {
-        setAvatarState("idle");
-      };
-      audio.onerror = () => {
-        setAvatarState("idle");
-      };
-      setAvatarState("speaking");
-      speak(audio);
     } catch (err) {
       setTtsError(
         err instanceof Error ? err.message : "Falha ao sintetizar a fala.",
@@ -223,7 +213,7 @@ export default function VoicePanel() {
     } finally {
       setSynthesizing(false);
     }
-  }, [setAvatarState, speak]);
+  }, []);
 
   useEffect(() => {
     if (!pendingAutoText.current) return;
@@ -554,6 +544,10 @@ export default function VoicePanel() {
               autoPlay
               src={audioUrl}
               className="w-full"
+              onPlay={() => setAvatarState("speaking")}
+              onEnded={() => setAvatarState("idle")}
+              onPause={() => setAvatarState("idle")}
+              onError={() => setAvatarState("idle")}
             />
           ) : null}
         </div>

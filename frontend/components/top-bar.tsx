@@ -95,13 +95,13 @@ export default function TopBar({ data, onOpenPalette }: TopBarProps) {
   const { theme, setTheme } = useTheme();
 
   return (
-    <header className="glass command-deck sticky top-0 z-40 flex h-16 items-center gap-4 px-5">
+    <header className="glass command-deck sticky top-0 z-40 flex h-16 items-center gap-3 overflow-x-hidden px-4 pt-[env(safe-area-inset-top)] sm:gap-4 sm:px-5">
       <div className="flex items-center gap-3">
         <div className="relative flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--color-prime)] to-[var(--accent)] shadow-[0_0_24px_-6px_var(--accent-glow)]">
           <Cpu className="size-5 text-[var(--bg-primary)]" strokeWidth={2.2} />
           <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-[var(--color-ok)] ring-2 ring-[var(--bg-primary)]" />
         </div>
-        <div className="leading-tight">
+        <div className="hidden leading-tight min-[400px]:block">
           <p className="hud-title text-sm text-[var(--text-primary)]">
             NEGÃO <span className="text-gradient glow-text">AI</span>
           </p>
@@ -114,21 +114,21 @@ export default function TopBar({ data, onOpenPalette }: TopBarProps) {
       <button
         onClick={onOpenPalette}
         type="button"
-        className="glass glass-hover interactive-control group flex h-10 flex-1 max-w-xl items-center gap-3 rounded-xl px-4 text-left"
+        className="glass glass-hover interactive-control group flex h-10 min-w-0 flex-1 max-w-xl items-center gap-3 rounded-xl px-4 text-left"
       >
-        <Search className="size-4 text-[var(--text-secondary)] transition-colors group-hover:text-[var(--accent)]" />
+        <Search className="size-4 shrink-0 text-[var(--text-secondary)] transition-colors group-hover:text-[var(--accent)]" />
         <span className="flex-1 truncate text-sm text-[var(--text-secondary)]">
           Pesquisar ou dar um comando ao NEGÃO…
         </span>
-        <span className="glass flex items-center gap-1 rounded-md px-2 py-0.5 font-mono-data text-[10px] text-[var(--text-secondary)]">
+        <span className="glass hidden items-center gap-1 rounded-md px-2 py-0.5 font-mono-data text-[10px] text-[var(--text-secondary)] sm:flex">
           <Command className="size-3" /> K
         </span>
       </button>
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
         <div className="glass hidden items-center gap-2 rounded-xl px-3 py-1.5 lg:flex">
           <Sparkles className="size-3.5 text-[var(--accent)]" />
-          <span className="text-xs text-[var(--text-primary)]">{model}</span>
+          <span className="max-w-[160px] truncate text-xs text-[var(--text-primary)]">{model}</span>
         </div>
 
         <div className="glass hidden items-center gap-2 rounded-xl px-3 py-1.5 xl:flex">
@@ -158,7 +158,7 @@ export default function TopBar({ data, onOpenPalette }: TopBarProps) {
 
         <div className="relative group">
           <button
-            className="glass glass-hover interactive-control flex size-10 items-center justify-center rounded-xl text-[var(--text-secondary)]"
+            className="glass glass-hover interactive-control flex size-9 items-center justify-center rounded-xl text-[var(--text-secondary)] sm:size-10"
             aria-label="Tema"
             type="button"
             onClick={() => {
@@ -170,7 +170,7 @@ export default function TopBar({ data, onOpenPalette }: TopBarProps) {
           >
             <Palette className="size-4 transition-colors group-hover:text-[var(--accent)]" />
           </button>
-          <div className="absolute right-0 top-full mt-2 hidden group-hover:flex flex-col glass rounded-xl border border-[var(--border)] p-1 shadow-lg z-50 min-w-[140px]">
+          <div className="absolute right-0 top-full mt-2 hidden flex-col glass rounded-xl border border-[var(--border)] p-1 shadow-lg z-50 min-w-[140px] group-hover:flex group-focus-within:flex">
             {(["azul", "esmeralda", "magenta"] as Theme[]).map((t) => (
               <button
                 key={t}
@@ -201,7 +201,7 @@ export default function TopBar({ data, onOpenPalette }: TopBarProps) {
         <InstallButton />
 
         <button
-          className="glass glass-hover interactive-control flex size-10 items-center justify-center rounded-xl text-[var(--text-secondary)]"
+          className="glass glass-hover interactive-control flex size-9 items-center justify-center rounded-xl text-[var(--text-secondary)] sm:size-10"
           aria-label="Configurações"
           type="button"
           onClick={() => router.push("/config")}
@@ -209,7 +209,7 @@ export default function TopBar({ data, onOpenPalette }: TopBarProps) {
           <Settings className="size-4" />
         </button>
 
-        <div className="flex items-center gap-2 pl-1">
+        <div className="hidden items-center gap-2 pl-1 sm:flex">
           <div className="flex size-9 items-center justify-center rounded-full bg-gradient-to-br from-[var(--color-prime)]/40 to-[var(--accent)]/40 text-xs font-semibold text-[var(--text-primary)] ring-1 ring-white/10">
             W
           </div>

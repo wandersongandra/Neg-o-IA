@@ -9,6 +9,7 @@ import {
   RefreshCw,
   RotateCcw,
   Send,
+  Square,
   Wifi,
   WifiOff,
   Mic,
@@ -72,12 +73,26 @@ export default function ChatPanel() {
   const sessionIdRef = useRef<string | null>(null);
   const hasUserMessageRef = useRef(false);
   const sendingRef = useRef(false);
+  const ttsMutedRef = useRef(ttsMuted);
+  const pendingAssistantRef = useRef<string | null>(null);
+  const genTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const endRef = useRef<HTMLDivElement | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const recordingSecondsRef = useRef(0);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    ttsMutedRef.current = ttsMuted;
+  }, [ttsMuted]);
+
+  const clearGenTimer = useCallback(() => {
+    if (genTimerRef.current) {
+      clearTimeout(genTimerRef.current);
+      genTimerRef.current = null;
+    }
+  }, []);
 
   const autoResizeTextarea = useCallback((el: HTMLTextAreaElement) => {
     el.style.height = "auto";
@@ -164,8 +179,10 @@ export default function ChatPanel() {
 
       switch (msg.type) {
         case "session":
-          sessionIdRef.current = msg.session_id;
-          setSessionId(msg.session_id);
+          if (!sessionIdRef.current) {
+            sessionIdRef.current = msg.session_id;
+          }
+          setSessionId(sessionIdRef.current);
           break;
         case "tokens":
           hasUserMessageRef.current = true;
@@ -184,6 +201,7 @@ export default function ChatPanel() {
           });
           break;
         case "done":
+          clearGenTimer();
           sessionIdRef.current = msg.session_id;
           setSessionId(msg.session_id);
           setMessages((prev) => {
@@ -197,6 +215,7 @@ export default function ChatPanel() {
                   content: msg.text,
                   model: msg.model,
                   latency_ms: msg.latency_ms,
+                  fallback_used: msg.fallback_used,
                 };
                 break;
               }
@@ -204,9 +223,10 @@ export default function ChatPanel() {
             return copy;
           });
           sendingRef.current = false;
+          pendingAssistantRef.current = null;
           setSending(false);
           setThinking(false);
-          if (!ttsMuted && msg.text.trim()) {
+          if (!ttsMutedRef.current && msg.text.trim()) {
             setAvatarState("speaking");
             synthesizeAndSpeak(msg.text);
           } else {
@@ -214,6 +234,7 @@ export default function ChatPanel() {
           }
           break;
         case "error":
+          clearGenTimer();
           setAvatarState("error");
           setMessages((prev) => {
             const copy = [...prev];
@@ -227,6 +248,7 @@ export default function ChatPanel() {
             return copy;
           });
           sendingRef.current = false;
+          pendingAssistantRef.current = null;
           setSending(false);
           setThinking(false);
           setTimeout(() => setAvatarState("idle"), 3000);
@@ -237,10 +259,7 @@ export default function ChatPanel() {
     };
 
     const scheduleReconnect = () => {
-      if (disposed || hasUserMessageRef.current) {
-        setStatus("offline");
-        return;
-      }
+      if (disposed) return;
       setStatus("conectando");
       const delay = RECONNECT_DELAYS_MS[Math.min(attempt, RECONNECT_DELAYS_MS.length - 1)];
       attempt += 1;
@@ -249,7 +268,7 @@ export default function ChatPanel() {
     };
 
     function connect() {
-      if (disposed || hasUserMessageRef.current) return;
+      if (disposed) return;
       setStatus("conectando");
 
       let url: string;
@@ -289,10 +308,6 @@ export default function ChatPanel() {
       nextSocket.onclose = () => {
         if (wsRef.current === nextSocket) wsRef.current = null;
         if (disposed) return;
-        if (hasUserMessageRef.current) {
-          setStatus("offline");
-          return;
-        }
         scheduleReconnect();
       };
     }
@@ -334,13 +349,17 @@ export default function ChatPanel() {
             setAvatarState("idle");
           };
           speak(audio);
+          void audio.play().catch(() => {
+            URL.revokeObjectURL(url);
+            setAvatarState("idle");
+          });
         })
         .catch((e) => {
           console.warn("TTS failed:", e);
           setAvatarState("idle");
         });
     }
-  }, [apiKey, wsBase, setAvatarState, speak, stopSpeaking, ttsMuted]);
+  }, [apiKey, wsBase, setAvatarState, speak, stopSpeaking, clearGenTimer]);
 
   // Heartbeat
   useEffect(() => {
@@ -411,12 +430,14 @@ export default function ChatPanel() {
           )
         );
       } finally {
+        clearGenTimer();
         sendingRef.current = false;
+        pendingAssistantRef.current = null;
         setSending(false);
         setThinking(false);
       }
     },
-    []
+    [clearGenTimer]
   );
 
   const sendMessage = useCallback(
@@ -442,23 +463,51 @@ export default function ChatPanel() {
         content: "",
         status: "streaming",
       };
+      pendingAssistantRef.current = assistantMsg.id;
 
       setMessages((prev) => [...prev, userMsg, assistantMsg]);
 
+      // Watchdog: se não chegar resposta em 90s, marca como erro (evita chat travado)
+      clearGenTimer();
+      genTimerRef.current = setTimeout(() => {
+        if (!sendingRef.current) return;
+        sendingRef.current = false;
+        pendingAssistantRef.current = null;
+        setSending(false);
+        setThinking(false);
+        setAvatarState("idle");
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantMsg.id
+              ? {
+                  ...m,
+                  status: "error",
+                  content:
+                    "O NEGÃO demorou para responder. Tente novamente.",
+                }
+              : m
+          )
+        );
+      }, 90_000);
+
       const socket = wsRef.current;
       if (socket && socket.readyState === WebSocket.OPEN) {
-        socket.send(
-          JSON.stringify({
-            type: "chat",
-            text: trimmed,
-            session_id: sessionIdRef.current,
-          })
-        );
+        try {
+          socket.send(
+            JSON.stringify({
+              type: "chat",
+              text: trimmed,
+              session_id: sessionIdRef.current,
+            })
+          );
+        } catch {
+          await sendViaRest(trimmed, assistantMsg.id);
+        }
       } else {
         await sendViaRest(trimmed, assistantMsg.id);
       }
     },
-    [sendViaRest, setAvatarState]
+    [sendViaRest, setAvatarState, clearGenTimer]
   );
 
   const handleSubmit = useCallback(
@@ -473,9 +522,12 @@ export default function ChatPanel() {
   );
 
   const resetConversation = useCallback(() => {
+    clearGenTimer();
     setMessages([]);
     sendingRef.current = false;
+    pendingAssistantRef.current = null;
     setSending(false);
+    setThinking(false);
     const socket = wsRef.current;
     if (socket && socket.readyState === WebSocket.OPEN) {
       socket.send(
@@ -486,7 +538,7 @@ export default function ChatPanel() {
     setSessionId(null);
     setAvatarState("idle");
     stopSpeaking();
-  }, [setAvatarState, stopSpeaking]);
+  }, [setAvatarState, stopSpeaking, clearGenTimer]);
 
   const copyMessage = useCallback(async (id: string, content: string) => {
     try {
@@ -505,9 +557,11 @@ export default function ChatPanel() {
       if (idx < 0) return;
       const prevUser = [...messages.slice(0, idx)].reverse().find((m) => m.role === "user");
       if (!prevUser) return;
+      const userIdx = messages.findIndex((m) => m.id === prevUser.id);
+      if (userIdx < 0) return;
 
-      setMessages(messages.slice(0, idx));
-      setRegenMessageId(messageId);
+      // Remove resposta antiga + pergunta (sendMessage re-adiciona ambos)
+      setMessages(messages.slice(0, userIdx));
       await sendMessage(prevUser.content);
       setRegenMessageId(null);
     },
@@ -581,6 +635,27 @@ export default function ChatPanel() {
     setTtsMuted((prev) => !prev);
   }, []);
 
+  const stopGeneration = useCallback(() => {
+    clearGenTimer();
+    sendingRef.current = false;
+    pendingAssistantRef.current = null;
+    setSending(false);
+    setThinking(false);
+    setAvatarState("idle");
+    stopSpeaking();
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.role === "assistant" && m.status === "streaming"
+          ? {
+              ...m,
+              status: "done",
+              content: m.content.trim() || "*(geração interrompida)*",
+            }
+          : m
+      )
+    );
+  }, [clearGenTimer, setAvatarState, stopSpeaking]);
+
   const loadSession = useCallback(async (sid: string) => {
     try {
       const res = await fetch(`/api/proxy/conversation/sessions/${sid}/messages`);
@@ -642,7 +717,7 @@ export default function ChatPanel() {
   const StatusIcon = meta.icon;
 
   return (
-    <div className="glass flex h-[calc(100vh-16rem)] min-h-[480px] flex-col overflow-hidden rounded-2xl">
+    <div className="glass flex h-[calc(100dvh-16rem)] min-h-0 flex-col overflow-hidden rounded-2xl sm:min-h-[480px]">
       <header className="flex items-center gap-3 border-b border-white/[0.06] px-5 py-4">
         <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#3B82F6] to-[#00D4FF] shadow-[0_0_24px_-6px_rgba(0,212,255,0.7)]">
           <MessageSquare className="size-4 text-[#05070B]" strokeWidth={2.2} />
@@ -652,7 +727,11 @@ export default function ChatPanel() {
             Conversa com o NEGÃO
           </h2>
           <p className="font-mono-data text-[10px] uppercase tracking-widest text-[#94A3B8]">
-            {sessionId ? `sessão ${sessionId.slice(0, 8)}…` : "aguardando sessão"}
+            {thinking
+              ? "pensando…"
+              : sessionId
+                ? `sessão ${sessionId.slice(0, 8)}…`
+                : "aguardando sessão"}
           </p>
         </div>
 
@@ -908,7 +987,7 @@ export default function ChatPanel() {
         </div>
       </div>
 
-      <footer className="border-t border-white/[0.06] p-4">
+      <footer className="border-t border-white/[0.06] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <form
           onSubmit={handleSubmit}
           className="glass flex items-end gap-2 rounded-xl px-4 py-2"
@@ -948,6 +1027,16 @@ export default function ChatPanel() {
             className="max-h-32 min-h-[36px] flex-1 resize-none overflow-y-auto bg-transparent py-2 text-sm text-[#F8FAFC] outline-none placeholder:text-[#64748B]"
           />
           <button
+            type="button"
+            onClick={stopGeneration}
+            disabled={!sending}
+            className="glass glass-hover mb-1 flex size-9 shrink-0 items-center justify-center rounded-lg text-[#F59E0B] transition-colors hover:bg-[var(--color-warn)]/10 disabled:cursor-not-allowed disabled:opacity-40"
+            aria-label="Parar geração"
+            title="Parar geração"
+          >
+            <Square className="size-3.5 fill-current" />
+          </button>
+          <button
             type="submit"
             disabled={sending || !input.trim()}
             className="glass glass-hover mb-1 flex size-9 shrink-0 items-center justify-center rounded-lg text-[#00D4FF] disabled:cursor-not-allowed disabled:opacity-40"
@@ -960,8 +1049,8 @@ export default function ChatPanel() {
             )}
           </button>
         </form>
-        <p className="mt-2 text-center font-mono-data text-[9px] uppercase tracking-widest text-[#475569]">
-          Enter envia · Shift+Enter quebra linha · as respostas podem conter formatação
+        <p className="mt-2 text-center font-mono-data text-[10px] uppercase tracking-widest text-[var(--text-secondary)]">
+          Enter envia · Shift+Enter quebra linha · respostas podem conter formatação
         </p>
       </footer>
     </div>

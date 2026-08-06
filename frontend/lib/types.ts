@@ -146,4 +146,5 @@ export interface ChatViewMessage {
   status: "streaming" | "done" | "error";
   model?: string;
   latency_ms?: number;
+  fallback_used?: boolean;
 }

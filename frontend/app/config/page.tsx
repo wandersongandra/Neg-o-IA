@@ -131,6 +131,7 @@ export default function ConfigPage() {
   const [config, setConfig] = useState<Config>(DEFAULT_CONFIG);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [offline, setOffline] = useState(false);
   const [promptChars, setPromptChars] = useState(DEFAULT_SYSTEM_PROMPT.length);
 
   const fetchConfig = useCallback(async () => {
@@ -138,11 +139,18 @@ export default function ConfigPage() {
       const res = await fetch("/api/proxy/brain/config", { cache: "no-store" });
       if (res.ok) {
         const data = await res.json();
-        setConfig({ ...DEFAULT_CONFIG, ...data.config });
-        setPromptChars(data.config?.system_prompt?.length ?? DEFAULT_SYSTEM_PROMPT.length);
+        const loaded = data?.config ?? data;
+        setConfig({ ...DEFAULT_CONFIG, ...loaded });
+        setPromptChars(
+          loaded?.system_prompt?.length ?? DEFAULT_SYSTEM_PROMPT.length
+        );
+        setOffline(false);
+      } else {
+        setOffline(true);
       }
     } catch (e) {
       console.warn("Config fetch failed:", e);
+      setOffline(true);
     } finally {
       setLoading(false);
     }
@@ -203,6 +211,16 @@ export default function ConfigPage() {
           {saving && <Loader2 className="size-5 animate-spin" />}
         </button>
       </div>
+
+      {offline && (
+        <div className="glass flex items-center gap-3 rounded-2xl border-[#F59E0B]/40 px-4 py-3">
+          <Settings className="size-4 shrink-0 text-[#F59E0B]" />
+          <p className="text-sm text-[#F59E0B]">
+            Backend inacessível — exibindo valores padrão. O salvamento só
+            funcionará quando o servidor voltar.
+          </p>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <SectionCard title="Personalidade" icon={Brain}>

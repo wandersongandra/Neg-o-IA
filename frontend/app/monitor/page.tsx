@@ -712,7 +712,7 @@ export default function MonitorPage() {
     : "--:--:--";
 
   return (
-    <main className="mx-auto min-h-screen max-w-7xl space-y-6 p-5 md:p-6">
+    <main className="mx-auto min-h-dvh max-w-7xl space-y-6 p-5 md:p-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#3B82F6] to-[#00D4FF] shadow-[0_0_24px_-6px_rgba(0,212,255,0.7)]">
