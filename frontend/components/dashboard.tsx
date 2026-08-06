@@ -176,16 +176,17 @@ export default function Dashboard() {
         />
 
         <main className="flex-1 space-y-6 overflow-x-hidden p-5 md:p-6 page-transition">
-          {window.innerWidth < 1024 && (
-            <button
-              className="glass glass-hover md:hidden flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Abrir menu"
-            >
-              <Menu className="size-4" />
-              Menu
-            </button>
-          )}
+          {/* Mobile Menu Button — IMPROVED: CSS-based, no JS logic */}
+          <button
+            className="glass glass-hover lg:hidden flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Abrir menu de navegação"
+            aria-expanded={sidebarOpen}
+            aria-controls="sidebar"
+          >
+            <Menu className="size-4" />
+            Menu
+          </button>
 
           <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-6">
             <div className="col-span-12 lg:col-span-3 min-w-0">
@@ -233,30 +234,45 @@ export default function Dashboard() {
         <div
           className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-6 backdrop-blur-sm md:items-center"
           onClick={() => setPaletteOpen(false)}
+          role="presentation"
         >
           <div
             className="glass w-full max-w-xl animate-fade-up rounded-2xl p-2"
             onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="command-palette-title"
+            aria-describedby="command-palette-desc"
           >
             <div className="flex items-center gap-3 border-b border-[var(--border)] px-3 py-3">
-              <Search className="size-4 text-[var(--accent)]" />
+              <Search className="size-4 text-[var(--accent)]" aria-hidden="true" />
               <input
                 autoFocus
+                id="command-palette-title"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
                 placeholder="Comando para o NEGÃO…"
                 className="flex-1 bg-transparent text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-secondary)]"
+                aria-label="Pesquisa de comandos"
+                role="combobox"
+                aria-expanded="true"
+                aria-controls="command-palette-list"
               />
               <button
                 onClick={() => setPaletteOpen(false)}
                 className="text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
-                aria-label="Fechar"
+                aria-label="Fechar paleta de comandos"
+                type="button"
               >
                 <X className="size-4" />
               </button>
             </div>
-            <div className="max-h-80 overflow-y-auto py-1">
-              {filtered.map((cmd) => (
+            <div
+              className="max-h-80 overflow-y-auto py-1"
+              id="command-palette-list"
+              role="listbox"
+            >
+              {filtered.map((cmd, idx) => (
                 <button
                   key={cmd.label}
                   onClick={() => {
@@ -264,14 +280,21 @@ export default function Dashboard() {
                     if (cmd.href) router.push(cmd.href);
                     else toast({ title: cmd.label, variant: "default" });
                   }}
-                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--color-prime)]/10 hover:text-[var(--text-primary)]"
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--color-prime)]/10 hover:text-[var(--text-primary)] focus:outline-none focus:bg-[var(--color-prime)]/10 focus:text-[var(--text-primary)]"
+                  role="option"
+                  aria-selected={false}
+                  type="button"
                 >
-                  <cmd.icon className="size-4 text-[var(--text-secondary)]" />
+                  <cmd.icon className="size-4 text-[var(--text-secondary)]" aria-hidden="true" />
                   {cmd.label}
                 </button>
               ))}
               {filtered.length === 0 && (
-                <p className="px-3 py-4 text-center text-sm text-[var(--text-secondary)]">
+                <p
+                  className="px-3 py-4 text-center text-sm text-[var(--text-secondary)]"
+                  id="command-palette-desc"
+                  role="status"
+                >
                   Nenhum comando encontrado
                 </p>
               )}

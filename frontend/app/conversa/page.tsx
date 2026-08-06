@@ -12,10 +12,10 @@ export default function ConversaPage() {
     <ConversaShell>
       <main className="flex-1 space-y-6 overflow-x-hidden p-5 md:p-6">
         <header className="space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-[#F8FAFC]">
+          <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
             Conversa
           </h1>
-          <p className="font-mono-data text-xs uppercase tracking-widest text-[#94A3B8]">
+          <p className="font-mono-data text-xs uppercase tracking-widest text-[var(--text-secondary)]">
             Bata um papo com o NEGÃO em tempo real
           </p>
         </header>

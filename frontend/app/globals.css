@@ -1,6 +1,14 @@
 @import "tailwindcss";
 
+/* ====================================
+   DESIGN TOKENS — SPACING SCALE
+   ==================================== */
 @theme {
+  /* Typography Fonts */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+
+  /* Colors — Core Palette */
   --color-void: #05070b;
   --color-panel: #0b1018;
   --color-edge: rgba(255, 255, 255, 0.06);
@@ -11,14 +19,51 @@
   --color-warn: #f59e0b;
   --color-danger: #ef4444;
   --color-ink: #f8fafc;
-  --color-mute: #94a3b8;
+  --color-mute: #a8b5c7; /* IMPROVED: Better contrast */
 
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+  /* Spacing Scale (4px baseline) */
+  --spacing-xs: 0.25rem;  /* 4px */
+  --spacing-sm: 0.5rem;   /* 8px */
+  --spacing-md: 0.75rem;  /* 12px */
+  --spacing-base: 1rem;   /* 16px */
+  --spacing-lg: 1.25rem;  /* 20px */
+  --spacing-xl: 1.5rem;   /* 24px */
+  --spacing-2xl: 2rem;    /* 32px */
+  --spacing-3xl: 2.5rem;  /* 40px */
+  --spacing-4xl: 3rem;    /* 48px */
+  --spacing-5xl: 4rem;    /* 64px */
+  --spacing-6xl: 5rem;    /* 80px */
+  --spacing-7xl: 6rem;    /* 96px */
+
+  /* Animation Timing (standardized) */
+  --duration-fast: 200ms;
+  --duration-normal: 300ms;
+  --duration-slow: 500ms;
+  --duration-slower: 700ms;
+  --duration-slowest: 1000ms;
+  --duration-orbit-slow: 12s;
+  --duration-orbit-medium: 14s;
+  --duration-orbit-fast: 16s;
+  --duration-orbit-reverse-slow: 19s;
+  --duration-orbit-reverse-medium: 20s;
+  --duration-orbit-reverse-fast: 22s;
+
+  /* Blur Scale for Glass Effects */
+  --blur-sm: 12px;
+  --blur-base: 14px;
+  --blur-lg: 16px;
+
+  /* Shadow Elevation System */
+  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
 }
 
 :root {
   color-scheme: dark;
+  /* Theme Colors */
   --accent: #00d4ff;
   --accent-glow: #4da6ff;
   --accent-muted: rgba(0, 212, 255, 0.15);
@@ -26,7 +71,43 @@
   --bg-secondary: #0b1018;
   --border: rgba(255, 255, 255, 0.06);
   --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
+  --text-secondary: #a8b5c7; /* IMPROVED: Better contrast */
+
+  /* Typography Scale */
+  --text-display: clamp(2.5rem, 5vw, 4rem);
+  --text-h1: 2.25rem; /* 36px */
+  --text-h2: 1.875rem; /* 30px */
+  --text-h3: 1.5rem; /* 24px */
+  --text-h4: 1.25rem; /* 20px */
+  --text-body-lg: 1rem; /* 16px */
+  --text-body: 0.9375rem; /* 15px */
+  --text-body-sm: 0.875rem; /* 14px */
+  --text-caption: 0.8125rem; /* 13px */
+  --text-label: 0.75rem; /* 12px */
+  --text-badge: 0.6875rem; /* 11px */
+  --text-code: 0.8125rem; /* 13px - monospace */
+
+  /* Font Weights */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --weight-black: 900;
+
+  /* Line Heights */
+  --leading-tight: 1.2;
+  --leading-snug: 1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+  --leading-loose: 2;
+
+  /* Letter Spacing */
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.05em;
+  --tracking-wider: 0.1em;
+  --tracking-widest: 0.15em;
+  --tracking-mono: 0.02em;
 }
 
 [data-theme="azul"] {
@@ -37,7 +118,7 @@
   --bg-secondary: #0b1018;
   --border: rgba(255, 255, 255, 0.06);
   --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
+  --text-secondary: #a8b5c7; /* IMPROVED: Better contrast */
 }
 
 [data-theme="esmeralda"] {
@@ -48,7 +129,7 @@
   --bg-secondary: #081a10;
   --border: rgba(255, 255, 255, 0.06);
   --text-primary: #f0fdf4;
-  --text-secondary: #86efac;
+  --text-secondary: #86efac; /* Using accent-based secondary */
 }
 
 [data-theme="magenta"] {
@@ -59,7 +140,7 @@
   --bg-secondary: #1a0816;
   --border: rgba(255, 255, 255, 0.06);
   --text-primary: #fdf4ff;
-  --text-secondary: #f9a8d4;
+  --text-secondary: #f9a8d4; /* Using accent-based secondary */
 }
 
 html,
@@ -74,7 +155,10 @@ body {
     radial-gradient(1000px 700px at 110% 20%, var(--accent-muted), transparent 60%),
     radial-gradient(900px 900px at 50% 120%, var(--accent-muted), transparent 60%);
   background-attachment: fixed;
-  transition: background-color 300ms ease, background-image 300ms ease;
+  /* IMPROVED: Use standardized duration tokens */
+  transition:
+    background-color var(--duration-normal) ease,
+    background-image var(--duration-normal) ease;
 }
 
 ::-webkit-scrollbar {
@@ -96,7 +180,7 @@ body {
   .glass {
     background: linear-gradient(160deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.015));
     border: 1px solid var(--border);
-    backdrop-filter: blur(14px);
+    backdrop-filter: blur(var(--blur-base));
     box-shadow:
       0 1px 0 rgba(255, 255, 255, 0.04) inset,
       0 20px 50px -30px rgba(0, 0, 0, 0.8);
@@ -104,9 +188,9 @@ body {
 
   .glass-hover {
     transition:
-      border-color 300ms ease,
-      box-shadow 300ms ease,
-      transform 300ms ease;
+      border-color var(--duration-normal) ease,
+      box-shadow var(--duration-normal) ease,
+      transform var(--duration-normal) ease;
   }
   .glass-hover:hover {
     border-color: var(--accent-muted);
@@ -138,12 +222,14 @@ body {
   .font-mono-data {
     font-family: var(--font-jetbrains), ui-monospace, "Cascadia Code", monospace;
     font-variant-numeric: tabular-nums;
+    letter-spacing: var(--tracking-mono);
   }
 
   .hairline {
     border-color: var(--border);
   }
 
+  /* Status Indicator Dots — IMPROVED: Use filter instead of box-shadow */
   .dot-ok,
   .dot-warn,
   .dot-danger,
@@ -152,7 +238,7 @@ body {
     width: 8px;
     height: 8px;
     border-radius: 999px;
-    box-shadow: 0 0 10px currentColor;
+    filter: drop-shadow(0 0 6px currentColor);
   }
   .dot-ok {
     background: var(--color-ok);
@@ -171,26 +257,27 @@ body {
     color: var(--color-mute);
   }
 
+  /* IMPROVED: Animation utilities now use standardized durations */
   .animate-fade-in {
-    animation: fade-in 700ms ease both;
+    animation: fade-in var(--duration-slower) ease both;
   }
   .animate-fade-up {
-    animation: fade-up 700ms ease both;
+    animation: fade-up var(--duration-slower) ease both;
   }
   .animate-glow-pulse {
     animation: glow-pulse 4s ease-in-out infinite;
   }
   .animate-spin-slow {
-    animation: spin 16s linear infinite;
+    animation: spin var(--duration-orbit-fast) linear infinite;
   }
   .animate-spin-reverse {
-    animation: spin-reverse 22s linear infinite;
+    animation: spin-reverse var(--duration-orbit-reverse-fast) linear infinite;
   }
   .animate-orbit {
-    animation: orbit 14s linear infinite;
+    animation: orbit var(--duration-orbit-medium) linear infinite;
   }
   .animate-orbit-reverse {
-    animation: orbit-reverse 19s linear infinite;
+    animation: orbit-reverse var(--duration-orbit-reverse-slow) linear infinite;
   }
   .animate-float {
     animation: float 6s ease-in-out infinite;
@@ -210,12 +297,12 @@ body {
       var(--bg-secondary) 75%
     );
     background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
+    animation: shimmer var(--duration-slowest) infinite;
     border-radius: 0.5rem;
   }
 
   .page-transition {
-    animation: fadeIn 200ms ease;
+    animation: fadeIn var(--duration-normal) ease;
   }
 }
 

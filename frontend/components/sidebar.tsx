@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback } from "react";
 import {
   Activity,
   Bot,
@@ -21,6 +21,7 @@ import {
   Server,
   Settings,
   Wrench,
+  X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { DashboardData } from "@/lib/types";
@@ -71,52 +72,54 @@ export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: S
   const pathname = usePathname();
   const version = data?.root?.version ?? "--";
   const ready = data?.readyz?.status === "ok";
-  const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const handleLinkClick = () => {
-    if (onClose && window.innerWidth < 1024) {
-      onClose();
-    }
-  };
-
-  if (!mounted) {
-    return (
-      <aside className="glass sticky top-16 z-30 hidden h-[calc(100vh-4rem)] w-60 flex-col md:flex" />
-    );
-  }
+  const handleLinkClick = useCallback(() => {
+    onClose?.();
+  }, [onClose]);
 
   return (
     <>
-      {window.innerWidth < 1024 && isOpen && (
+      {/* Mobile Backdrop — Only visible when sidebar is open */}
+      {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
           onClick={onClose}
           aria-hidden="true"
         />
       )}
+
+      {/* Sidebar — IMPROVED: CSS-based responsive, no JS logic */}
       <aside
         className={`
-          glass sticky top-16 z-30 h-[calc(100vh-4rem)] w-60 flex-col md:flex
-          ${window.innerWidth < 1024
-            ? "fixed left-0 top-16 z-50 transform transition-transform duration-300 ease-in-out "
-              + (isOpen ? "translate-x-0" : "-translate-x-full")
-            : ""}
+          glass sticky top-16 z-30 h-[calc(100vh-4rem)] w-60 flex-col
+          fixed left-0 top-16 z-50 transform transition-transform duration-300 ease-in-out lg:relative lg:sticky lg:translate-x-0
+          ${isOpen ? "translate-x-0" : "-translate-x-full"}
+          lg:flex hidden
         `}
         role="navigation"
         aria-label="Navegação principal"
       >
-        <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
+        {/* Close Button (Mobile Only) */}
+        <button
+          onClick={onClose}
+          className="absolute right-3 top-3 lg:hidden p-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          aria-label="Fechar menu"
+        >
+          <X className="size-5" />
+        </button>
+
+        {/* Navigation */}
+        <nav className="flex-1 space-y-0.5 overflow-y-auto p-3 mt-6 lg:mt-0">
           {MAIN_NAV.map((item) => {
             const active = pathname === item.href;
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => { onNavigate?.(item.label); handleLinkClick(); }}
+                onClick={() => {
+                  onNavigate?.(item.label);
+                  handleLinkClick();
+                }}
                 className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] transition-all duration-300 ${
                   active
                     ? "bg-[var(--color-prime)]/10 text-[var(--text-primary)] shadow-[inset_0_0_0_1px_var(--accent-muted)]"
@@ -138,6 +141,7 @@ export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: S
             );
           })}
 
+          {/* Coming Soon Section */}
           <p className="px-3 pb-1 pt-4 font-mono-data text-[10px] font-semibold tracking-widest text-[var(--text-secondary)]">
             EM BREVE
           </p>
@@ -155,6 +159,7 @@ export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: S
           ))}
         </nav>
 
+        {/* Core Status Footer */}
         <div className="border-t border-[var(--border)] p-3">
           <div className="glass rounded-xl p-3">
             <div className="flex items-center justify-between">
