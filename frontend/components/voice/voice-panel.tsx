@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   AudioLines,
+  Bot,
   Loader2,
   MessageSquareText,
   Mic,
@@ -89,6 +91,7 @@ function SectionHeader({
 
 export default function VoicePanel() {
   const { setState: setAvatarState, speak } = useAvatar();
+  const router = useRouter();
   const [status, setStatus] = useState<VoiceStatus | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
 
@@ -110,6 +113,12 @@ export default function VoicePanel() {
   const audioUrlRef = useRef<string | null>(null);
   const disposedRef = useRef(false);
   const pendingAutoText = useRef<string | null>(null);
+  const autoSendRef = useRef(false);
+  const [autoSend, setAutoSend] = useState(false);
+
+  useEffect(() => {
+    autoSendRef.current = autoSend;
+  }, [autoSend]);
 
   useEffect(() => {
     let cancelled = false;
@@ -168,6 +177,10 @@ export default function VoicePanel() {
         throw new Error("O backend retornou uma resposta inválida.");
       }
       setTranscription(data.text);
+      if (autoSendRef.current && data.text.trim()) {
+        router.push(`/conversa?text=${encodeURIComponent(data.text.trim())}`);
+        return;
+      }
     } catch (err) {
       setTranscribeError(
         err instanceof Error ? err.message : "Falha ao transcrever o áudio.",
@@ -358,6 +371,31 @@ export default function VoicePanel() {
         />
 
         <div className="flex flex-col items-center gap-4 py-2">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={autoSend}
+              onClick={() => setAutoSend((v) => !v)}
+              className={`relative h-6 w-11 rounded-full transition-colors ${
+                autoSend
+                  ? "bg-[#00D4FF]/70 shadow-[0_0_16px_-4px_rgba(0,212,255,0.8)]"
+                  : "bg-white/10"
+              }`}
+              title="Ao parar de gravar, transcrição vai direto para o chat com o NEGÃO"
+            >
+              <span
+                className={`absolute top-0.5 size-5 rounded-full bg-white transition-all ${
+                  autoSend ? "left-[22px]" : "left-0.5"
+                }`}
+              />
+            </button>
+            <span className="flex items-center gap-1.5 text-xs text-[#94A3B8]">
+              <Bot className="size-3.5 text-[#00D4FF]" />
+              Enviar direto para o chat
+            </span>
+          </div>
+
           <button
             type="button"
             onClick={recording ? handleStop : () => void startRecording()}
@@ -409,8 +447,10 @@ export default function VoicePanel() {
           )}
           {!recording && !transcribing && (
             <p className="text-center text-xs text-[#64748B]">
-              Clique no microfone para começar a gravar. A transcrição é
-              enviada ao NEGÃO assim que você parar.
+              Clique no microfone para começar a gravar.
+              {autoSend
+                ? " Ao parar, a transcrição vai direto para o chat."
+                : " A transcrição é enviada ao NEGÃO assim que você parar."}
             </p>
           )}
 

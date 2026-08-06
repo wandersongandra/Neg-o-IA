@@ -91,13 +91,13 @@ export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: S
       {/* Sidebar — IMPROVED: CSS-based responsive, no JS logic */}
       <aside
         className={`
-          glass side-command-deck sticky top-16 z-30 h-[calc(100vh-4rem)] w-60 flex-col
+          glass side-command-deck flex h-[calc(100vh-4rem)] w-60 flex-col
           fixed left-0 top-16 z-50 transform transition-transform duration-300 ease-in-out lg:relative lg:sticky lg:translate-x-0
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
-          lg:flex hidden
         `}
         role="navigation"
         aria-label="Navegação principal"
+        aria-hidden={!isOpen}
       >
         {/* Close Button (Mobile Only) */}
         <button

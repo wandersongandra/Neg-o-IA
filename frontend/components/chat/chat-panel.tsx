@@ -2,8 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Check,
+  Copy,
   Loader2,
   MessageSquare,
+  RefreshCw,
   RotateCcw,
   Send,
   Wifi,
@@ -15,9 +18,11 @@ import {
   History,
   Trash2,
   Edit3,
-  Check,
   X,
 } from "lucide-react";
+import Markdown from "@/components/chat/markdown";
+import PromptSuggestions from "@/components/chat/prompt-suggestions";
+import TypingIndicator from "@/components/chat/typing-indicator";
 import type { LucideIcon } from "lucide-react";
 import type {
   ChatViewMessage,
@@ -59,6 +64,9 @@ export default function ChatPanel() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [regenMessageId, setRegenMessageId] = useState<string | null>(null);
+  const [thinking, setThinking] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
   const sessionIdRef = useRef<string | null>(null);
@@ -69,6 +77,12 @@ export default function ChatPanel() {
   const audioChunksRef = useRef<Blob[]>([]);
   const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const recordingSecondsRef = useRef(0);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const autoResizeTextarea = useCallback((el: HTMLTextAreaElement) => {
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
+  }, []);
 
   // Fetch ws-info on mount
   useEffect(() => {
@@ -105,6 +119,25 @@ export default function ChatPanel() {
     fetchSessions();
   }, [fetchSessions]);
 
+  // Auto-send from ?text= (ex.: página de voz)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const text = params.get("text");
+    const sid = params.get("session");
+    if (sid) {
+      window.history.replaceState({}, "", window.location.pathname);
+      void loadSession(sid);
+    } else if (text) {
+      const clean = text.trim();
+      if (!clean) return;
+      window.history.replaceState({}, "", window.location.pathname);
+      const t = setTimeout(() => void sendMessage(clean), 400);
+      return () => clearTimeout(t);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // WebSocket connection
   useEffect(() => {
     if (!apiKey) return;
@@ -136,6 +169,7 @@ export default function ChatPanel() {
           break;
         case "tokens":
           hasUserMessageRef.current = true;
+          setThinking(false);
           setAvatarState("thinking");
           setMessages((prev) => {
             const copy = [...prev];
@@ -171,6 +205,7 @@ export default function ChatPanel() {
           });
           sendingRef.current = false;
           setSending(false);
+          setThinking(false);
           if (!ttsMuted && msg.text.trim()) {
             setAvatarState("speaking");
             synthesizeAndSpeak(msg.text);
@@ -193,6 +228,7 @@ export default function ChatPanel() {
           });
           sendingRef.current = false;
           setSending(false);
+          setThinking(false);
           setTimeout(() => setAvatarState("idle"), 3000);
           break;
         case "pong":
@@ -377,6 +413,7 @@ export default function ChatPanel() {
       } finally {
         sendingRef.current = false;
         setSending(false);
+        setThinking(false);
       }
     },
     []
@@ -389,6 +426,7 @@ export default function ChatPanel() {
 
       sendingRef.current = true;
       setSending(true);
+      setThinking(true);
       hasUserMessageRef.current = true;
       setAvatarState("thinking");
 
@@ -449,6 +487,32 @@ export default function ChatPanel() {
     setAvatarState("idle");
     stopSpeaking();
   }, [setAvatarState, stopSpeaking]);
+
+  const copyMessage = useCallback(async (id: string, content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      toast({ title: "Não foi possível copiar", variant: "destructive" });
+    }
+  }, [toast]);
+
+  const regenerate = useCallback(
+    async (messageId: string) => {
+      if (sendingRef.current) return;
+      const idx = messages.findIndex((m) => m.id === messageId);
+      if (idx < 0) return;
+      const prevUser = [...messages.slice(0, idx)].reverse().find((m) => m.role === "user");
+      if (!prevUser) return;
+
+      setMessages(messages.slice(0, idx));
+      setRegenMessageId(messageId);
+      await sendMessage(prevUser.content);
+      setRegenMessageId(null);
+    },
+    [messages, sendMessage]
+  );
 
   // Recording
   const startRecording = useCallback(async () => {
@@ -743,7 +807,7 @@ export default function ChatPanel() {
             className="flex-1 space-y-4 overflow-y-auto px-5 py-5"
           >
             {messages.length === 0 && (
-              <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+              <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
                 <div className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#3B82F6]/20 to-[#00D4FF]/20 ring-1 ring-white/10">
                   <MessageSquare className="size-6 text-[#00D4FF]" />
                 </div>
@@ -755,6 +819,11 @@ export default function ChatPanel() {
                     Pergunta qualquer coisa… a conexão é em tempo real.
                   </p>
                 </div>
+                <PromptSuggestions
+                  onSelect={(prompt) => {
+                    setInput(prompt);
+                  }}
+                />
               </div>
             )}
 
@@ -766,27 +835,29 @@ export default function ChatPanel() {
                   </div>
                 </div>
               ) : (
-                <div key={m.id} className="flex items-start gap-3">
+                <div key={m.id} className="group/message flex items-start gap-3">
                   <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#3B82F6] to-[#00D4FF] text-xs font-bold text-[#05070B] shadow-[0_0_16px_-4px_rgba(0,212,255,0.6)]">
                     N
                   </div>
                   <div className="glass max-w-[85%] rounded-2xl rounded-tl-md px-4 py-2.5">
                     {m.status === "streaming" ? (
-                      <p className="text-sm whitespace-pre-wrap break-words text-[#E2E8F0]">
-                        {m.content}
-                        <span className="ml-1 inline-block animate-pulse text-[#00D4FF]">
-                          …
-                        </span>
-                      </p>
+                      m.content ? (
+                        <div className="text-sm whitespace-pre-wrap break-words text-[#E2E8F0]">
+                          <Markdown text={m.content} />
+                          <span className="ml-1 inline-block h-3.5 w-1.5 animate-pulse rounded-sm bg-[#00D4FF] align-middle" />
+                        </div>
+                      ) : (
+                        <TypingIndicator />
+                      )
                     ) : m.status === "error" ? (
                       <p className="text-sm whitespace-pre-wrap break-words text-[#F87171]">
                         {m.content}
                       </p>
                     ) : (
                       <>
-                        <p className="text-sm whitespace-pre-wrap break-words text-[#E2E8F0]">
-                          {m.content}
-                        </p>
+                        <div className="break-words">
+                          <Markdown text={m.content} />
+                        </div>
                         {(m.model !== undefined || m.latency_ms !== undefined) && (
                           <div className="mt-2 flex items-center gap-3 font-mono-data text-[10px] text-[#64748B]">
                             {m.model !== undefined && (
@@ -797,6 +868,35 @@ export default function ChatPanel() {
                             )}
                           </div>
                         )}
+                        <div className="mt-2 flex items-center gap-1 opacity-0 transition-opacity group-hover/message:opacity-100">
+                          <button
+                            type="button"
+                            onClick={() => void copyMessage(m.id, m.content)}
+                            className="flex items-center gap-1 rounded-md px-1.5 py-1 text-[10px] text-[#64748B] transition-colors hover:bg-white/[0.04] hover:text-[#00D4FF]"
+                            title="Copiar resposta"
+                          >
+                            {copiedId === m.id ? (
+                              <Check className="size-3 text-[#22C55E]" />
+                            ) : (
+                              <Copy className="size-3" />
+                            )}
+                            {copiedId === m.id ? "copiado" : "copiar"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void regenerate(m.id)}
+                            disabled={sending || regenMessageId !== null}
+                            className="flex items-center gap-1 rounded-md px-1.5 py-1 text-[10px] text-[#64748B] transition-colors hover:bg-white/[0.04] hover:text-[#00D4FF] disabled:cursor-not-allowed disabled:opacity-40"
+                            title="Gerar nova resposta"
+                          >
+                            <RefreshCw
+                              className={`size-3 ${
+                                regenMessageId === m.id ? "animate-spin" : ""
+                              }`}
+                            />
+                            regerar
+                          </button>
+                        </div>
                       </>
                     )}
                   </div>
@@ -811,13 +911,13 @@ export default function ChatPanel() {
       <footer className="border-t border-white/[0.06] p-4">
         <form
           onSubmit={handleSubmit}
-          className="glass flex items-center gap-2 rounded-xl px-4 py-2"
+          className="glass flex items-end gap-2 rounded-xl px-4 py-2"
         >
           <button
             type="button"
             onClick={toggleMic}
             disabled={sending}
-            className={`glass glass-hover flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+            className={`glass glass-hover mb-1 flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
               recording
                 ? "bg-[var(--color-danger)]/20 text-[var(--color-danger)] animate-pulse"
                 : "text-[#00D4FF] hover:bg-[var(--accent-muted)]"
@@ -827,16 +927,30 @@ export default function ChatPanel() {
           >
             {recording ? <MicOff className="size-4" /> : <Mic className="size-4" />}
           </button>
-          <input
+          <textarea
+            ref={textareaRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Fala, chefe…"
-            className="flex-1 bg-transparent py-2 text-sm text-[#F8FAFC] outline-none placeholder:text-[#64748B]"
+            onChange={(e) => {
+              setInput(e.target.value);
+              autoResizeTextarea(e.target);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                const form = e.currentTarget.form;
+                if (form) {
+                  form.requestSubmit();
+                }
+              }
+            }}
+            rows={1}
+            placeholder="Fala, chefe…  (Enter envia, Shift+Enter quebra linha)"
+            className="max-h-32 min-h-[36px] flex-1 resize-none overflow-y-auto bg-transparent py-2 text-sm text-[#F8FAFC] outline-none placeholder:text-[#64748B]"
           />
           <button
             type="submit"
             disabled={sending || !input.trim()}
-            className="glass glass-hover flex size-9 shrink-0 items-center justify-center rounded-lg text-[#00D4FF] disabled:cursor-not-allowed disabled:opacity-40"
+            className="glass glass-hover mb-1 flex size-9 shrink-0 items-center justify-center rounded-lg text-[#00D4FF] disabled:cursor-not-allowed disabled:opacity-40"
             aria-label="Enviar mensagem"
           >
             {sending ? (
@@ -846,6 +960,9 @@ export default function ChatPanel() {
             )}
           </button>
         </form>
+        <p className="mt-2 text-center font-mono-data text-[9px] uppercase tracking-widest text-[#475569]">
+          Enter envia · Shift+Enter quebra linha · as respostas podem conter formatação
+        </p>
       </footer>
     </div>
   );

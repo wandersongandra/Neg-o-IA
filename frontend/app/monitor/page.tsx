@@ -327,13 +327,21 @@ function ConversationSection({ snapshot }: { snapshot: Snapshot }) {
   const { convStatus, sessions } = snapshot;
   const total = convStatus?.sessions ?? sessions?.length ?? null;
   const degraded = convStatus?.degraded ?? false;
+  const totalMessages =
+    sessions === null
+      ? null
+      : sessions.reduce((acc, s) => acc + (s.message_count ?? 0), 0);
+  const lastSession =
+    sessions === null || sessions.length === 0
+      ? null
+      : [...sessions].sort((a, b) => b.updated_at.localeCompare(a.updated_at))[0];
 
   return (
     <Section title="CONVERSAÇÃO" icon={MessageSquareText}>
       <Panel
         title="RESUMO"
         icon={Activity}
-        className="col-span-12 lg:col-span-3"
+        className="col-span-12 md:col-span-6 lg:col-span-3"
         badge={
           convStatus ? (
             <StatusBadge ok={!degraded} label={degraded ? "DEGRADADO" : "OK"} />
@@ -345,12 +353,45 @@ function ConversationSection({ snapshot }: { snapshot: Snapshot }) {
         <p className="mt-1 font-mono-data text-[9px] tracking-[0.25em] text-[#94A3B8]">
           SESSÕES ATIVAS
         </p>
+        <div className="mt-3 border-t border-white/[0.05] pt-2.5">
+          <InfoRow
+            label="MENSAGENS"
+            value={totalMessages === null ? "—" : String(totalMessages)}
+          />
+        </div>
+      </Panel>
+
+      <Panel
+        title="SESSÃO MAIS RECENTE"
+        icon={Sparkles}
+        className="col-span-12 md:col-span-6 lg:col-span-3"
+        badge={lastSession ? <StatusBadge ok label="ATIVA" /> : undefined}
+        error={snapshot.errors.sessions}
+      >
+        {lastSession ? (
+          <div className="space-y-1.5">
+            <p className="truncate font-mono-data text-[11px] font-semibold text-[#00D4FF]">
+              {lastSession.name || lastSession.session_id.slice(0, 12)}
+            </p>
+            <InfoRow label="MENSAGENS" value={String(lastSession.message_count)} />
+            <InfoRow label="ATUALIZADO" value={formatWhen(lastSession.updated_at)} />
+            <Link
+              href={`/conversa?session=${encodeURIComponent(lastSession.session_id)}`}
+              className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-[#3B82F6]/40 bg-[#3B82F6]/10 px-3 py-1.5 text-xs font-medium text-[#93C5FD] transition-colors hover:bg-[#3B82F6]/20 hover:text-[#DBEAFE]"
+            >
+              <MessageSquareText className="size-3.5" />
+              Abrir no chat
+            </Link>
+          </div>
+        ) : (
+          <EmptyData />
+        )}
       </Panel>
 
       <Panel
         title="SESSÕES"
         icon={Users}
-        className="col-span-12 lg:col-span-9"
+        className="col-span-12 lg:col-span-6"
         badge={sessions ? <StatusBadge ok label="OK" /> : undefined}
         error={snapshot.errors.sessions}
       >
