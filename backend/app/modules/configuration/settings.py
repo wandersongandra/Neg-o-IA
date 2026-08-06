@@ -32,8 +32,8 @@ class Settings(BaseSettings):
     # --- Brain (Model Router / LLM) -------------------------------------------------
     nvidia_api_key: str = ""
     nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
-    brain_chat_model: str = "nvidia/gpt-oss-120b"
-    brain_fallback_model: str = "nvidia/llama-3.1-8b-instruct"
+    brain_chat_model: str = "deepseek-ai/deepseek-v4-flash"
+    brain_fallback_model: str = "meta/llama-3.1-8b-instruct"
     brain_stt_model: str = "nvidia/parakeet-tdt-0.6b-v2"
     brain_temperature: float = 0.3
     brain_max_tokens: int = 1024

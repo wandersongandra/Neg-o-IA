@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 const API_URL = process.env.NEGAO_API_URL ?? "http://localhost:8000";
 const API_KEY = process.env.NEGAO_API_KEY ?? "negao-dev-api-key";
 const VOICE_TIMEOUT_MS = 35_000;
-const DEFAULT_TIMEOUT_MS = 10_000;
+const DEFAULT_TIMEOUT_MS = 60_000;
 
 async function proxy(req: NextRequest, path: string[]): Promise<Response> {
   const target = `${API_URL}/${path.join("/")}${req.nextUrl.search}`;

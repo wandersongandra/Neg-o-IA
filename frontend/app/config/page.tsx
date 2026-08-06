@@ -8,9 +8,9 @@ import { useToast } from "@/components/ui/toast";
 const DEFAULT_SYSTEM_PROMPT = `Você é o NEGÃO, assistente pessoal de inteligência artificial do Wanderson. Fala sempre em português brasileiro, com tom profissional, elegante e direto, inspirado no JARVIS: nunca invente fatos, admita quando não souber, e use humor sutil quando apropriado. Trate o usuário como 'chefe'. Seja conciso: prefira respostas curtas e úteis, em vez de longas explicações. Nunca repita o que o usuário acabou de dizer.`;
 
 const MODEL_OPTIONS = [
-  { value: "nvidia/gpt-oss-120b", label: "GPT-OSS-120B (padrão)" },
-  { value: "nvidia/llama-3.1-8b-instruct", label: "Llama 3.1 8B Instruct" },
-  { value: "nvidia/nemotron-3-ultra", label: "Nemotron 3 Ultra" },
+  { value: "deepseek-ai/deepseek-v4-flash", label: "DeepSeek V4 Flash (rápido)" },
+  { value: "openai/gpt-oss-120b", label: "GPT-OSS-120B" },
+  { value: "meta/llama-3.1-8b-instruct", label: "Llama 3.1 8B Instruct" },
 ];
 
 const VOICE_OPTIONS = [
@@ -46,8 +46,8 @@ interface Config {
 
 const DEFAULT_CONFIG = {
   system_prompt: DEFAULT_SYSTEM_PROMPT,
-  primary_model: "nvidia/gpt-oss-120b",
-  fallback_model: "nvidia/llama-3.1-8b-instruct",
+  primary_model: "deepseek-ai/deepseek-v4-flash",
+  fallback_model: "meta/llama-3.1-8b-instruct",
   temperature: 0.3,
   max_tokens: 1024,
   tools_enabled: ["web_search", "code_exec", "file_ops", "memory", "calendar"],

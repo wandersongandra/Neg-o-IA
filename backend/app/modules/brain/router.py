@@ -31,8 +31,8 @@ DEFAULT_CONFIG = {
         "respostas curtas e úteis, em vez de longas explicações. Nunca repita o que o "
         "usuário acabou de dizer."
     ),
-    "primary_model": "nvidia/gpt-oss-120b",
-    "fallback_model": "nvidia/llama-3.1-8b-instruct",
+    "primary_model": "deepseek-ai/deepseek-v4-flash",
+    "fallback_model": "meta/llama-3.1-8b-instruct",
     "temperature": 0.3,
     "max_tokens": 1024,
     "tools_enabled": ["web_search", "code_exec", "file_ops", "memory", "calendar"],
