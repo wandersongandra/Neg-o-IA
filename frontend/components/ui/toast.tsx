@@ -17,6 +17,7 @@ export interface Toast {
 interface ToastContextType {
   toast: (props: Omit<Toast, "id">) => string;
   dismiss: (id: string) => void;
+  dismissAll: () => void;
   toasts: Toast[];
 }
 
@@ -44,7 +45,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setToasts([]);
   }, []);
 
-  const value = { toast: addToast, dismiss, toasts };
+  const value = { toast: addToast, dismiss, dismissAll, toasts };
 
   return (
     <ToastContext.Provider value={value}>

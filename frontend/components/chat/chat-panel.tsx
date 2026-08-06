@@ -54,7 +54,6 @@ export default function ChatPanel() {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [wsBase, setWsBase] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
-  const [micEnabled, setMicEnabled] = useState(true);
   const [ttsMuted, setTtsMuted] = useState(false);
   const [sessions, setSessions] = useState<ConversationSession[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -305,7 +304,7 @@ export default function ChatPanel() {
           setAvatarState("idle");
         });
     }
-  }, [apiKey, wsBase]);
+  }, [apiKey, wsBase, setAvatarState, speak, stopSpeaking, ttsMuted]);
 
   // Heartbeat
   useEffect(() => {
@@ -449,7 +448,7 @@ export default function ChatPanel() {
     setSessionId(null);
     setAvatarState("idle");
     stopSpeaking();
-  }, []);
+  }, [setAvatarState, stopSpeaking]);
 
   // Recording
   const startRecording = useCallback(async () => {
@@ -494,7 +493,7 @@ export default function ChatPanel() {
     } catch (e) {
       console.warn("Mic access denied:", e);
     }
-  }, []);
+  }, [setAvatarState]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && recording) {
@@ -504,7 +503,7 @@ export default function ChatPanel() {
       setRecording(false);
       setAvatarState("idle");
     }
-  }, [recording]);
+  }, [recording, setAvatarState]);
 
   const toggleMic = useCallback(() => {
     if (recording) {

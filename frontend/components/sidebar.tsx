@@ -21,7 +21,6 @@ import {
   Server,
   Settings,
   Wrench,
-  X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { DashboardData } from "@/lib/types";
@@ -117,7 +116,7 @@ export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: S
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={handleLinkClick}
+                onClick={() => { onNavigate?.(item.label); handleLinkClick(); }}
                 className={`group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] transition-all duration-300 ${
                   active
                     ? "bg-[var(--color-prime)]/10 text-[var(--text-primary)] shadow-[inset_0_0_0_1px_var(--accent-muted)]"

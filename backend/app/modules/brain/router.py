@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import Annotated
+from typing import Annotated, Any
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException
@@ -44,14 +44,14 @@ DEFAULT_CONFIG = {
     },
 }
 
-async def _load_config() -> dict:
+async def _load_config() -> dict[str, Any]:
     client = get_redis()
     raw = await client.get(CONFIG_KEY)
     if raw:
-        return json.loads(raw)
+        return dict(json.loads(raw))
     return DEFAULT_CONFIG.copy()
 
-async def _save_config(config: dict) -> None:
+async def _save_config(config: dict[str, Any]) -> None:
     client = get_redis()
     await client.set(CONFIG_KEY, json.dumps(config), ex=86400 * 30)
 
@@ -77,7 +77,7 @@ class AgentConfigUpdate(BaseModel):
     temperature: float | None = Field(default=None, ge=0.0, le=2.0)
     max_tokens: int | None = Field(default=None, ge=1, le=8192)
     tools_enabled: list[str] | None = None
-    voice: dict | None = None
+    voice: dict[str, Any] | None = None
 
 
 def _parse_messages(raw: list[dict[str, str]]) -> list[ChatMessage]:
@@ -158,7 +158,7 @@ async def brain_router_status() -> dict[str, object]:
 @router.get("/config")
 async def get_agent_config(
     auth: Annotated[AuthResult, Depends(require_api_key)],
-) -> dict:
+) -> dict[str, Any]:
     """Configuração atual do agente NEGÃO."""
     config = await _load_config()
     # Merge com settings atuais para modelos
@@ -172,7 +172,7 @@ async def get_agent_config(
 async def update_agent_config(
     body: AgentConfigUpdate,
     auth: Annotated[AuthResult, Depends(require_api_key)],
-) -> dict:
+) -> dict[str, Any]:
     """Atualiza configuração do agente (merge parcial)."""
     config = await _load_config()
     update = body.model_dump(exclude_unset=True)

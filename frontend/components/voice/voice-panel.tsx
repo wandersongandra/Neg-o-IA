@@ -210,7 +210,7 @@ export default function VoicePanel() {
     } finally {
       setSynthesizing(false);
     }
-  }, []);
+  }, [setAvatarState, speak]);
 
   useEffect(() => {
     if (!pendingAutoText.current) return;
@@ -279,7 +279,7 @@ export default function VoicePanel() {
         setMediaError("Não foi possível acessar o microfone.");
       }
     }
-  }, [transcribe]);
+  }, [transcribe, setAvatarState]);
 
   const handleStop = useCallback(() => {
     const recorder = recorderRef.current;

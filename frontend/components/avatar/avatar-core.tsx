@@ -49,9 +49,20 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
   const reducedMotion = useRef(false);
 
   const [state, setStateInternal] = useState<AvatarState>("idle");
-  const [particles, setParticles] = useState<Particle[]>([]);
-  const [mouthOpen, setMouthOpen] = useState(0);
-  const [pulsePhase, setPulsePhase] = useState(0);
+  const [, setParticles] = useState<Particle[]>([]);
+  // Refs for animation loop to avoid re-subscribing effect on each animation tick
+  const mouthOpenRef = useRef<number>(0);
+  const pulsePhaseRef = useRef<number>(0);
+  const particlesRef = useRef<Particle[]>([]);
+  // Keep refs in sync with animation values
+  const setMouthOpenState = useCallback((v: number) => {
+    mouthOpenRef.current = v;
+  }, []);
+
+  const setPulsePhaseState = useCallback((updater: (prev: number) => number) => {
+    const next = updater(pulsePhaseRef.current);
+    pulsePhaseRef.current = next;
+  }, []);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -80,6 +91,7 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
       }
     });
     setParticles(newParticles);
+    particlesRef.current = newParticles;
   }, []);
 
   useEffect(() => {
@@ -126,14 +138,14 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
       const glowColor = getComputedStyle(document.documentElement).getPropertyValue(colors.glow.replace("var(", "").replace(")", "")).trim() || colors.glow;
       const particleColor = getComputedStyle(document.documentElement).getPropertyValue(colors.particle.replace("var(", "").replace(")", "")).trim() || colors.particle;
 
-      // Pulse phase
-      setPulsePhase(prev => (prev + dt * 0.001) % (Math.PI * 2));
+      // Pulse phase (use ref-backed setter)
+      setPulsePhaseState(prev => (prev + dt * 0.001) % (Math.PI * 2));
 
-      // Core glow
-      const pulse = Math.sin(pulsePhase) * 0.15 + 0.85;
+      // Core glow (read from ref)
+      const pulse = Math.sin(pulsePhaseRef.current) * 0.15 + 0.85;
       const coreRadius = radius * pulse;
       const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreRadius * 1.5);
-      gradient.addColorStop(0, `${primaryColor}40`);
+      gradient.addColorStop(0, `${glowColor}60`);
       gradient.addColorStop(0.5, `${primaryColor}20`);
       gradient.addColorStop(1, "transparent");
       ctx.fillStyle = gradient;
@@ -150,7 +162,7 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
 
       // Mouth animation when speaking
       if (state === "speaking") {
-        const mouthHeight = mouthOpen * radius * 0.3;
+        const mouthHeight = mouthOpenRef.current * radius * 0.3;
         ctx.strokeStyle = `${primaryColor}CC`;
         ctx.lineWidth = 3;
         ctx.lineCap = "round";
@@ -161,75 +173,73 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
       }
 
       // Update and draw particles
-      setParticles(prev => prev.map(p => {
-        const layerConfig = LAYER_CONFIG[p.layer];
-        let orbitRadius = p.orbitRadius * radius;
-        let orbitSpeed = p.orbitSpeed;
+      setParticles((prev) => {
+        const updated = prev.map((p) => {
+          let orbitRadius = p.orbitRadius * radius;
+          let orbitSpeed = p.orbitSpeed;
 
-        if (state === "thinking") {
-          orbitSpeed *= 3;
-          orbitRadius *= 0.6 + Math.sin(time * 0.002 + p.orbitAngle) * 0.2;
-        } else if (state === "speaking") {
-          orbitSpeed *= 1.5;
-          orbitRadius *= 1 + Math.sin(time * 0.005 + p.orbitAngle) * 0.15;
-        } else if (state === "listening") {
-          orbitSpeed *= 0.5;
-          orbitRadius *= 1 + Math.sin(time * 0.003 + p.orbitAngle) * 0.1;
-        } else if (state === "error") {
-          orbitSpeed *= 2;
-          orbitRadius *= 1 + Math.sin(time * 0.01 + p.orbitAngle) * 0.3;
-        }
-
-        p.orbitAngle += orbitSpeed * dt;
-        p.x = cx + Math.cos(p.orbitAngle) * orbitRadius;
-        p.y = cy + Math.sin(p.orbitAngle) * orbitRadius;
-
-        // Converge to center when thinking
-        if (state === "thinking") {
-          const dx = cx - p.x;
-          const dy = cy - p.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist > 20) {
-            p.x += dx * 0.02;
-            p.y += dy * 0.02;
+          if (state === "thinking") {
+            orbitSpeed *= 3;
+            orbitRadius *= 0.6 + Math.sin(time * 0.002 + p.orbitAngle) * 0.2;
+          } else if (state === "speaking") {
+            orbitSpeed *= 1.5;
+            orbitRadius *= 1 + Math.sin(time * 0.005 + p.orbitAngle) * 0.15;
+          } else if (state === "listening") {
+            orbitSpeed *= 0.5;
+            orbitRadius *= 1 + Math.sin(time * 0.003 + p.orbitAngle) * 0.1;
+          } else if (state === "error") {
+            orbitSpeed *= 2;
+            orbitRadius *= 1 + Math.sin(time * 0.01 + p.orbitAngle) * 0.3;
           }
-        }
 
-        // Disperse on error
-        if (state === "error") {
-          const dx = p.x - cx;
-          const dy = p.y - cy;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < radius * 1.5) {
-            p.x += dx * 0.01;
-            p.y += dy * 0.01;
+          p.orbitAngle += orbitSpeed * dt;
+          p.x = cx + Math.cos(p.orbitAngle) * orbitRadius;
+          p.y = cy + Math.sin(p.orbitAngle) * orbitRadius;
+
+          // Converge to center when thinking
+          if (state === "thinking") {
+            const dx = cx - p.x;
+            const dy = cy - p.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist > 20) {
+              p.x += dx * 0.02;
+              p.y += dy * 0.02;
+            }
           }
-        }
 
-        // Draw particle
-        const particleGradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius * 2);
-        const particleHex = getComputedStyle(document.documentElement).getPropertyValue(colors.particle.replace("var(", "").replace(")", "")).trim() || particleColor;
-        particleGradient.addColorStop(0, `${particleHex}FF`);
-        particleGradient.addColorStop(1, `${particleHex}00`);
-        ctx.fillStyle = particleGradient;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fill();
+          // Disperse on error
+          if (state === "error") {
+            const dx = p.x - cx;
+            const dy = p.y - cy;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < radius * 1.5) {
+              p.x += dx * 0.01;
+              p.y += dy * 0.01;
+            }
+          }
 
-        // Connections for thinking state
-        if (state === "thinking") {
+          // Draw particle
+          const particleGradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius * 2);
+          const particleHex = getComputedStyle(document.documentElement).getPropertyValue(colors.particle.replace("var(", "").replace(")", "")).trim() || particleColor;
+          particleGradient.addColorStop(0, `${particleHex}FF`);
+          particleGradient.addColorStop(1, `${particleHex}00`);
+          ctx.fillStyle = particleGradient;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fill();
+
           return p;
-        }
-
-        return p;
-      }));
+        });
+        particlesRef.current = updated;
+        return updated;
+      });
 
       // Draw connections for thinking
       if (state === "thinking") {
         ctx.strokeStyle = `${particleColor}30`;
         ctx.lineWidth = 0.5;
-        particles.forEach((p1, i) => {
-          particles.slice(i + 1).forEach(p2 => {
+        particlesRef.current.forEach((p1, i) => {
+          particlesRef.current.slice(i + 1).forEach(p2 => {
             const dx = p1.x - p2.x;
             const dy = p1.y - p2.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
@@ -264,7 +274,7 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
       window.removeEventListener("resize", resize);
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-  }, [state, initParticles]);
+  }, [state, initParticles, setMouthOpenState, setPulsePhaseState]);
 
   const setState = useCallback((newState: AvatarState) => {
     setStateInternal(newState);
@@ -298,11 +308,11 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
         let sum = 0;
         for (let i = 0; i < 32; i++) sum += dataArrayRef.current[i];
         const avg = sum / 32 / 255;
-        setMouthOpen(Math.min(avg * 2, 1));
+        setMouthOpenState(Math.min(avg * 2, 1));
         if (!audio.paused && !audio.ended) {
           requestAnimationFrame(updateMouth);
         } else {
-          setMouthOpen(0);
+          setMouthOpenState(0);
           setStateInternal("idle");
         }
       };
@@ -310,10 +320,10 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
     } catch (e) {
       console.warn("Avatar lip-sync failed:", e);
     }
-  }, []);
+  }, [setMouthOpenState]);
 
   const stopSpeaking = useCallback(() => {
-    setMouthOpen(0);
+    setMouthOpenState(0);
     setStateInternal("idle");
     if (sourceRef.current) {
       sourceRef.current.disconnect();
@@ -323,7 +333,7 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
       analyserRef.current.disconnect();
       analyserRef.current = null;
     }
-  }, []);
+  }, [setMouthOpenState]);
 
   useImperativeHandle(ref, () => ({
     setState,
