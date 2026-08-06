@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import {
-  Bell,
   Command,
   Cpu,
   Palette,
@@ -11,6 +10,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import type { BrainRouterInfo, DashboardData } from "@/lib/types";
+import { InstallPrompt, InstallButton } from "@/components/pwa/install-prompt";
+import { PushNotifications } from "@/components/pwa/push-notifications";
 
 interface TopBarProps {
   data: DashboardData | null;
@@ -190,13 +191,10 @@ export default function TopBar({ data, onOpenPalette }: TopBarProps) {
           </div>
         </div>
 
-        <button
-          className="glass glass-hover relative flex size-10 items-center justify-center rounded-xl text-[var(--text-secondary)]"
-          aria-label="Notificações"
-        >
-          <Bell className="size-4" />
-          <span className="absolute right-2 top-2 size-1.5 rounded-full bg-[var(--color-warn)] shadow-[0_0_8px_var(--color-warn)]" />
-        </button>
+        <PushNotifications />
+
+        <InstallButton />
+
         <button
           className="glass glass-hover flex size-10 items-center justify-center rounded-xl text-[var(--text-secondary)]"
           aria-label="Configurações"
@@ -216,6 +214,7 @@ export default function TopBar({ data, onOpenPalette }: TopBarProps) {
           </div>
         </div>
       </div>
+      <InstallPrompt />
     </header>
   );
 }

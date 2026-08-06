@@ -19,7 +19,7 @@ import type { LucideIcon } from "lucide-react";
 import type { BrainStatus, ConversationStatus, DashboardData } from "@/lib/types";
 import TopBar from "@/components/top-bar";
 import Sidebar from "@/components/sidebar";
-import CoreSphere from "@/components/core-sphere";
+import { CoreSphere } from "@/components/core-sphere";
 import {
   Greeting,
   MemoryCard,

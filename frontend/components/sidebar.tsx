@@ -42,6 +42,7 @@ const MAIN_NAV: MainNavItem[] = [
   { label: "Conversa", href: "/conversa", icon: MessagesSquare },
   { label: "Voz", href: "/voz", icon: Mic },
   { label: "Monitor", href: "/monitor", icon: Monitor },
+  { label: "Configuração", href: "/config", icon: Settings },
 ];
 
 const SOON_NAV: SoonNavItem[] = [

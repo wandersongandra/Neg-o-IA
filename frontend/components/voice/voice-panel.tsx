@@ -12,6 +12,7 @@ import {
   TriangleAlert,
   Volume2,
 } from "lucide-react";
+import { useAvatar } from "@/components/avatar/avatar-context";
 
 interface VoiceStatus {
   stt_available: boolean;
@@ -87,6 +88,7 @@ function SectionHeader({
 }
 
 export default function VoicePanel() {
+  const { setState: setAvatarState, speak } = useAvatar();
   const [status, setStatus] = useState<VoiceStatus | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
 
@@ -186,12 +188,21 @@ export default function VoicePanel() {
       });
       if (!res.ok) throw new Error(await detailOf(res));
       const buffer = await res.arrayBuffer();
-      const url = URL.createObjectURL(
+       const url = URL.createObjectURL(
         new Blob([buffer], { type: "audio/mpeg" }),
       );
       if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
       audioUrlRef.current = url;
       setAudioUrl(url);
+      const audio = new Audio(url);
+      audio.onended = () => {
+        setAvatarState("idle");
+      };
+      audio.onerror = () => {
+        setAvatarState("idle");
+      };
+      setAvatarState("speaking");
+      speak(audio);
     } catch (err) {
       setTtsError(
         err instanceof Error ? err.message : "Falha ao sintetizar a fala.",
@@ -254,6 +265,7 @@ export default function VoicePanel() {
       recorder.start();
       setRecording(true);
       setElapsed(0);
+      setAvatarState("listening");
     } catch (err) {
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
@@ -276,7 +288,8 @@ export default function VoicePanel() {
     }
     setRecording(false);
     setElapsed(0);
-  }, []);
+    setAvatarState("idle");
+  }, [setAvatarState]);
 
   useEffect(() => {
     if (!recording) return;

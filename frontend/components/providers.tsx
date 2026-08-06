@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { ToastProvider } from "@/components/ui/toast";
+import { AvatarProvider } from "@/components/avatar/avatar-context";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -37,8 +38,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   return (
-    <ToastProvider>
-      {children}
-    </ToastProvider>
+    <AvatarProvider>
+      <ToastProvider>
+        {children}
+      </ToastProvider>
+    </AvatarProvider>
   );
 }

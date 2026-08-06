@@ -93,6 +93,7 @@ export interface ConversationSession {
   created_at: string;
   updated_at: string;
   message_count: number;
+  name?: string;
 }
 
 export interface ConversationStoredMessage {
