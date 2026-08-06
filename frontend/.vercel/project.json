@@ -1,0 +1,16 @@
+{
+  "projectId": "prj_FrtiEGfALawiUnDNNX8mq29CK55c",
+  "orgId": "team_5uLRYxgvB7l0mjuRjnvXibNj",
+  "projectName": "negao-frontend",
+  "settings": {
+    "createdAt": 1785988098087,
+    "framework": "nextjs",
+    "devCommand": null,
+    "installCommand": null,
+    "buildCommand": null,
+    "outputDirectory": null,
+    "rootDirectory": null,
+    "directoryListing": false,
+    "nodeVersion": "24.x"
+  }
+}
