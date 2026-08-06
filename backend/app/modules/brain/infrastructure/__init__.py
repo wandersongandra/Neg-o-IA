@@ -209,7 +209,7 @@ class NvidiaChatAdapter:
             raise RetryableProviderError(f"erro de rede no NVIDIA: {exc}") from exc
 
         latency_ms = int((time.perf_counter() - started) * 1000)
-        if response.status_code in {429, 500, 502, 503, 504}:
+        if response.status_code in {429, 500, 502, 503, 504, 529}:
             raise RetryableProviderError(
                 f"NVIDIA {response.status_code}: {response.text[:200]}"
             )
@@ -366,7 +366,7 @@ class ModelRouter:
             raise RetryableProviderError(f"erro de rede no fallback: {exc}") from exc
 
         latency_ms = int((time.perf_counter() - started) * 1000)
-        if response.status_code in {429, 500, 502, 503, 504}:
+        if response.status_code in {429, 500, 502, 503, 504, 529}:
             raise RetryableProviderError(
                 f"fallback {response.status_code}: {response.text[:200]}"
             )
