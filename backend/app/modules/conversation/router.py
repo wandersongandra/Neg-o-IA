@@ -166,14 +166,15 @@ async def post_message(
 @ws_router.websocket("/ws/conversation")
 async def conversation_websocket(ws: WebSocket) -> None:
     await ws.accept()
-    client_ip = ws.client.host if ws.client else "unknown"
-    allowed, _, _, _ = await _get_ws_limiter().allow(client_ip)
+    api_key = ws.query_params.get("api_key", "")
+    limit_key = f"key:{api_key}" if api_key else (
+        ws.client.host if ws.client else "unknown"
+    )
+    allowed, _, _, _ = await _get_ws_limiter().allow(limit_key)
     if not allowed:
         await ws.close(code=TRY_AGAIN_CLOSE_CODE, reason="rate limited")
         return
-    auth = get_security_service().authenticate_api_key(
-        ws.query_params.get("api_key", "")
-    )
+    auth = get_security_service().authenticate_api_key(api_key)
     if not auth.authenticated:
         logger.warning("conversation_ws_auth_failed", reason=auth.reason)
         await ws.close(code=POLICY_CLOSE_CODE, reason="invalid api key")

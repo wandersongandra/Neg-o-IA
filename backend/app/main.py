@@ -139,8 +139,11 @@ async def rate_limit_middleware(
     if request.url.path not in _RATE_LIMIT_WHITELIST:
         if _rate_limiter is None:
             _rate_limiter = RateLimiter(limit=get_settings().rate_limit_per_minute)
-        client_ip = request.client.host if request.client else "unknown"
-        allowed, limit, remaining, retry_after = await _rate_limiter.allow(client_ip)
+        api_key = request.headers.get("x-api-key", "")
+        key = f"key:{api_key}" if api_key else (
+            request.client.host if request.client else "unknown"
+        )
+        allowed, limit, remaining, retry_after = await _rate_limiter.allow(key)
         if not allowed:
             return JSONResponse(
                 status_code=429,
