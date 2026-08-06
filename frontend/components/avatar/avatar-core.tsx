@@ -40,7 +40,7 @@ const STATE_COLORS = {
 
 export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-hidden"?: boolean | "true" | "false" }>((
   (props, ref) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationRef = useRef<number>(-1);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -288,13 +288,13 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
       analyserRef.current.smoothingTimeConstant = 0.8;
       sourceRef.current.connect(analyserRef.current);
       analyserRef.current.connect(audioContextRef.current.destination);
-      dataArrayRef.current = new Uint8Array(analyserRef.current.frequencyBinCount);
+      dataArrayRef.current = new Uint8Array(analyserRef.current.frequencyBinCount) as unknown as Uint8Array<ArrayBuffer>;
 
       setStateInternal("speaking");
 
       const updateMouth = () => {
         if (!analyserRef.current || !dataArrayRef.current) return;
-        analyserRef.current.getByteFrequencyData(dataArrayRef.current!);
+        analyserRef.current.getByteFrequencyData(dataArrayRef.current as Uint8Array<ArrayBuffer>);
         let sum = 0;
         for (let i = 0; i < 32; i++) sum += dataArrayRef.current[i];
         const avg = sum / 32 / 255;
@@ -343,3 +343,5 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
 }));
 
 AvatarCore.displayName = "AvatarCore";
+
+export default AvatarCore;

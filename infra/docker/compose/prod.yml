@@ -43,9 +43,9 @@ services:
 
   backend:
     build:
-      context: ../../backend
+      context: ../../../backend
     env_file:
-      - ../../.env
+      - ../../../.env
     environment:
       NEGAO_ENV: production
     depends_on:
@@ -62,7 +62,7 @@ services:
 
   frontend:
     build:
-      context: ../../frontend
+      context: ../../../frontend
     restart: unless-stopped
     environment:
       NEGAO_API_URL: http://backend:8000

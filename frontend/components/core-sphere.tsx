@@ -198,3 +198,5 @@ export const CoreSphere = forwardRef<CoreSphereRef, CoreSphereProps>(
 );
 
 CoreSphere.displayName = "CoreSphere";
+
+export default CoreSphere;
