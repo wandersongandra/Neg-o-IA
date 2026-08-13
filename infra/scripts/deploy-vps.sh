@@ -4,7 +4,7 @@
 # Uso: chmod +x deploy-vps.sh && ./deploy-vps.sh
 set -euo pipefail
 
-REPO="https://github.com/complianceX/Neg-o-IA.git"
+REPO="https://github.com/wandersongandra/Neg-o-IA.git"
 WORKDIR="/opt/negao"
 COMPOSE_FILE="infra/docker/compose/prod.yml"
 
