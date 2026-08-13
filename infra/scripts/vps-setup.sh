@@ -5,6 +5,9 @@ set -euo pipefail
 
 echo "=== NEGÃO AI — VPS First Setup ==="
 
+WORKDIR="/opt/negao"
+COMPOSE_FILE="infra/docker/compose/prod.yml"
+
 # 1. Instalar Docker
 if ! command -v docker &>/dev/null; then
     echo "[1/4] Instalando Docker..."
@@ -12,20 +15,18 @@ if ! command -v docker &>/dev/null; then
     apt-get install -y -qq ca-certificates curl gnupg lsb-release git >/dev/null
     install -m 0755 -d /etc/apt/keyrings
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-    chmod a+r /opt/docker/gpg 2>/dev/null || true
+    chmod a+r /etc/apt/keyrings/docker.gpg
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" > /etc/apt/sources.list.d/docker.list
     apt-get update -qq
     apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-compose-plugin >/dev/null
     systemctl enable --now docker
-    usermod -aG docker root
     echo "Docker instalado."
 fi
 
 # 2. Clonar repositório
-WORKDIR="/opt/negao"
 if [ ! -d "$WORKDIR/.git" ]; then
     echo "[2/4] Clonando repositório..."
-    git clone https://github.com/complianceX/Neg-o-IA.git "$WORKDIR"
+    git clone https://github.com/wandersongandra/Neg-o-IA.git "$WORKDIR"
 else
     echo "[2/4] Atualizando código..."
     cd "$WORKDIR" && git fetch --all --tags && git reset --hard origin/main
@@ -41,7 +42,7 @@ if [ ! -f .env ]; then
     echo "  - NEGAO_SECRET_KEY (gere: python3 -c \"import secrets; print(secrets.token_hex(32))\")"
     echo "  - NEXT_PUBLIC_VAPID_PUBLIC_KEY (gere: npx web-push generate-vapid-keys)"
     echo "Pressione ENTER após editar..."
-    read
+    read -r
 fi
 
 # 4. Build + deploy
