@@ -141,9 +141,7 @@ class EventBus:
 
     async def _ensure_group(self, stream: str) -> None:
         try:
-            await self._redis.xgroup_create(
-                stream, self._group_name, id="$", mkstream=True
-            )
+            await self._redis.xgroup_create(stream, self._group_name, id="$", mkstream=True)
         except aioredis.ResponseError as exc:
             if "BUSYGROUP" not in str(exc):
                 raise

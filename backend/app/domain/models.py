@@ -1,4 +1,4 @@
-"""Entidades de domínio do NEGÃO AI.
+"""Entidades de domínio da Sophie.
 
 Atenção: este módulo é framework-free — apenas dataclasses puras.
 Modelos ORM (SQLAlchemy) vivem em `app.modules.database.infrastructure`.

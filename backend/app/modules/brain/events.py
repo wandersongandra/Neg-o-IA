@@ -24,9 +24,7 @@ EVENT_CATALOG: Final[dict[str, str]] = {
     EVENT_BRAIN_MODEL_FALLBACK: (
         "O modelo primário falhou e a resposta veio do modelo de fallback"
     ),
-    EVENT_BRAIN_MODEL_ERROR: (
-        "Todos os provedores de modelo falharam para este pedido"
-    ),
+    EVENT_BRAIN_MODEL_ERROR: ("Todos os provedores de modelo falharam para este pedido"),
 }
 
 PUBLISHED: Final[frozenset[str]] = frozenset(

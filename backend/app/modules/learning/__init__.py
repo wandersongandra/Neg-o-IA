@@ -1,4 +1,4 @@
-"""Módulo learning — aprendizado contínuo do NEGÃO AI.
+"""Módulo learning — aprendizado contínuo da Sophie.
 
 v0: esqueleto de contrato. Implementação efetiva em v2+ (Cérebro que Aprende).
 """

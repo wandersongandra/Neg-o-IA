@@ -13,6 +13,4 @@ from typing import Any, Protocol
 class AutomationPort(Protocol):
     """Porta pública do Automation (avaliação de regras)."""
 
-    async def evaluate_rules(
-        self, event_type: str, payload: dict[str, Any]
-    ) -> list[str]: ...
+    async def evaluate_rules(self, event_type: str, payload: dict[str, Any]) -> list[str]: ...

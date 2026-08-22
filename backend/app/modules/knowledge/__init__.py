@@ -1,4 +1,4 @@
-"""Módulo knowledge — base de conhecimento curada do NEGÃO AI.
+"""Módulo knowledge — base de conhecimento curada da Sophie.
 
 v0: esqueleto de contrato. Implementação efetiva em v2+ (Knowledge Vault).
 """

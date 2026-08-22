@@ -1,4 +1,4 @@
-"""Adaptadores globais de infraestrutura do NEGÃO AI."""
+"""Adaptadores globais de infraestrutura da Sophie."""
 
 from app.infrastructure.db import (
     check_database_health,

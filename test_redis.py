@@ -1,108 +1,93 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""
-🔴 Redis Connection Test
-Testa conexão com Redis na nuvem
-"""
+"""Probe Redis connectivity."""
 
+import os
 import sys
 import time
-from typing import Optional
-
 try:
     import redis
 except ImportError:
-    print("❌ Módulo 'redis' não encontrado!")
-    print("   Instale com: pip install redis")
+    print("[ERROR] Módulo 'redis' não encontrado.")
+    print("[INFO] Instale com: pip install redis")
     sys.exit(1)
 
 
 def test_redis_connection(redis_url: str) -> bool:
-    """Testa conexão com Redis"""
-    print(f"\n🔧 Conectando ao Redis...")
-    print(f"   URL: {mask_password(redis_url)}\n")
+    """Testa a conexão com Redis."""
+    print("\n[INFO] Conectando ao Redis")
+    print(f"[INFO] URL: {mask_password(redis_url)}\n")
 
     try:
         r = redis.from_url(redis_url, decode_responses=True)
 
-        # TESTE 1: PING
-        print("   [1] Testando PING...", end=" ")
+        print("[1] PING", end=" ")
         result = r.ping()
         if result:
-            print("✅ OK")
+            print("[OK]")
         else:
-            print("❌ Falhou")
+            print("[ERROR]")
             return False
 
-        # TESTE 2: SET/GET
-        print("   [2] Testando SET/GET...", end=" ")
+        print("[2] SET/GET", end=" ")
         test_key = f"negao:test:{int(time.time())}"
-        test_value = "NEGÃO ACORDOU! 🤖"
+        test_value = "redis-probe"
         r.set(test_key, test_value)
         retrieved = r.get(test_key)
         if retrieved == test_value:
-            print("✅ OK")
+            print("[OK]")
         else:
-            print("❌ Falhou")
+            print("[ERROR]")
             return False
 
-        # TESTE 3: DELETE
-        print("   [3] Testando DELETE...", end=" ")
+        print("[3] DELETE", end=" ")
         r.delete(test_key)
         if r.get(test_key) is None:
-            print("✅ OK")
+            print("[OK]")
         else:
-            print("❌ Falhou")
+            print("[ERROR]")
             return False
 
-        # TESTE 4: INFO
-        print("   [4] Coletando INFO...", end=" ")
+        print("[4] INFO", end=" ")
         try:
             info = r.info()
             version = info.get("redis_version", "unknown")
             memory = info.get("used_memory_human", "unknown")
-            print(f"✅ OK")
-            print(f"\n   📊 Redis Info:")
-            print(f"      Versão: {version}")
-            print(f"      Memória: {memory}")
+            print("[OK]")
+            print(f"[INFO] Redis version: {version}")
+            print(f"[INFO] Used memory: {memory}")
         except Exception as e:
-            print(f"⚠️  Parcial ({str(e)})")
+            print(f"[WARN] Informações indisponíveis ({e})")
 
-        # TESTE 5: KEYS COUNT
-        print("   [5] Contando chaves...", end=" ")
+        print("[5] Database size", end=" ")
         try:
             keys_count = r.dbsize()
-            print(f"✅ OK")
-            print(f"      Total de chaves: {keys_count}")
+            print("[OK]")
+            print(f"[INFO] Keys: {keys_count}")
         except Exception as e:
-            print(f"⚠️  Falhou ({str(e)})")
+            print(f"[WARN] Database size indisponível ({e})")
 
-        print("\n✅ TODOS OS TESTES PASSARAM!")
-        print("   Redis na nuvem está funcionando!\n")
+        print("\nRedis connectivity checks passed.")
+        print("[INFO] Redis is available.\n")
         return True
 
     except redis.exceptions.ConnectionError as e:
-        print(f"\n❌ ERRO DE CONEXÃO: {e}")
-        print(f"   Verifique:")
-        print(f"   - Host está correto?")
-        print(f"   - Porta está aberta?")
-        print(f"   - Senha está correta?")
-        print(f"   - Firewall permite conexão?")
+        print(f"\n[ERROR] Falha de conexão: {e}")
+        print("[INFO] Verifique host, porta, credenciais e firewall.")
         return False
     except redis.exceptions.AuthenticationError as e:
-        print(f"\n❌ ERRO DE AUTENTICAÇÃO: {e}")
-        print(f"   Verifique a senha no .env")
+        print(f"\n[ERROR] Falha de autenticação: {e}")
+        print("[INFO] Verifique as credenciais do Redis.")
         return False
     except Exception as e:
-        print(f"\n❌ ERRO INESPERADO: {e}")
+        print(f"\n[ERROR] Erro inesperado: {e}")
         return False
 
 
 def mask_password(url: str) -> str:
-    """Mascara senha na URL para segurança"""
+    """Mascara credenciais na URL antes de exibi-la."""
     if "@" in url:
         scheme_and_creds, host = url.rsplit("@", 1)
-        # Mostrar apenas primeiros 6 caracteres da senha
         parts = scheme_and_creds.split(":")
         if len(parts) >= 3:
             password = parts[-1]
@@ -112,32 +97,22 @@ def mask_password(url: str) -> str:
 
 
 def main():
-    print("\n╔════════════════════════════════════════════════════════╗")
-    print("║         🔴 REDIS CONNECTION TEST                      ║")
-    print("║              Test Redis Cloud Connection              ║")
-    print("╚════════════════════════════════════════════════════════╝")
+    print("\nRedis connection test")
 
-    # Usar URL do .env
-    redis_url = (
-        "redis://default:REDACTED@"
-        "potato-tail-supermodern-53945.db.redis.io:15412/0"
-    )
+    redis_url = os.getenv("SOPHIE_REDIS_URL") or os.getenv("NEGAO_REDIS_URL")
+    if not redis_url:
+        print("[BLOCKED] Defina SOPHIE_REDIS_URL ou NEGAO_REDIS_URL em ambiente ignorado.")
+        return 2
 
     success = test_redis_connection(redis_url)
 
     if success:
-        print("╔════════════════════════════════════════════════════════╗")
-        print("║         ✅ REDIS ESTÁ PRONTO PARA NEGÃO!              ║")
-        print("║                                                       ║")
-        print("║   Próximo: Iniciar Backend + Frontend                ║")
-        print("╚════════════════════════════════════════════════════════╝\n")
+        print("[OK] Redis connection verified.")
+        print("[INFO] Start the backend and frontend services.\n")
         return 0
     else:
-        print("╔════════════════════════════════════════════════════════╗")
-        print("║         ❌ FALHA NA CONEXÃO COM REDIS                 ║")
-        print("║                                                       ║")
-        print("║   Verifique os erros acima e tente novamente          ║")
-        print("╚════════════════════════════════════════════════════════╝\n")
+        print("[ERROR] Redis connection failed.")
+        print("[INFO] Review the errors above and try again.\n")
         return 1
 
 

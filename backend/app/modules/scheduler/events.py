@@ -6,6 +6,4 @@ EVENT_VERSION = 1
 
 PUBLISHED: frozenset[str] = frozenset({"scheduler.tick"})
 
-CONSUMED: frozenset[str] = frozenset(
-    {"planner.plan.created", "automation.rule.triggered"}
-)
+CONSUMED: frozenset[str] = frozenset({"planner.plan.created", "automation.rule.triggered"})

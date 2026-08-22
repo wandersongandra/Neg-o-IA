@@ -288,7 +288,7 @@ export function Greeting({ data }: { data: DashboardData | null }) {
   const hour = new Date().getHours();
   const period = hour < 6 ? "Boa madrugada" : hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
   const online = data?.healthz?.status === "alive";
-  const ready = data?.readyz?.status === "ok";
+  const ready = data?.readyz?.status === "ready";
 
   return (
     <div className="animate-fade-up text-center">
@@ -297,7 +297,7 @@ export function Greeting({ data }: { data: DashboardData | null }) {
       </h1>
       <p className="mt-2 text-sm text-[var(--text-secondary)]">
         <span className={online ? "text-[var(--color-ok)]" : "text-[var(--color-danger)]"}>
-          NEGÃO está {online ? "online" : "offline"}.
+          Sophie está {online ? "online" : "offline"}.
         </span>{" "}
         {ready
           ? "Tudo funcionando normalmente."

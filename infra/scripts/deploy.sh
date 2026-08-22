@@ -4,7 +4,7 @@ set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 
 COMPOSE_FILE="${COMPOSE_FILE:-infra/docker/compose/prod.yml}"
-HEALTH_URL="${NEGAO_HEALTH_URL:-http://localhost/healthz}"
+HEALTH_URL="${NEGAO_HEALTH_URL:-http://localhost/readyz}"
 RETRIES="${HEALTH_RETRIES:-30}"
 SLEEP="${HEALTH_SLEEP:-5}"
 
@@ -17,7 +17,7 @@ echo "[1/4] Build das imagens"
 docker compose -f "$COMPOSE_FILE" build --pull
 
 echo "[2/4] Migrações do banco"
-docker compose -f "$COMPOSE_FILE" run --rm backend alembic upgrade head
+docker compose -f "$COMPOSE_FILE" run --rm backend alembic -c migrations/alembic.ini upgrade head
 
 echo "[3/4] Subindo a stack"
 docker compose -f "$COMPOSE_FILE" up -d

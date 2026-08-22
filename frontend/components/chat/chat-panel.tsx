@@ -57,8 +57,6 @@ export default function ChatPanel() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
-  const [apiKey, setApiKey] = useState<string | null>(null);
-  const [wsBase, setWsBase] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
   const [ttsMuted, setTtsMuted] = useState(false);
   const [sessions, setSessions] = useState<ConversationSession[]>([]);
@@ -92,8 +90,8 @@ export default function ChatPanel() {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
         try {
           mediaRecorderRef.current.stop();
-        } catch {
-          // recorder já inativo
+        } catch (error) {
+          void error;
         }
       }
       if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
@@ -115,26 +113,6 @@ export default function ChatPanel() {
     el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
   }, []);
 
-  // Fetch ws-info on mount
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/ws-info", { cache: "no-store" })
-      .then((res) => {
-        if (!res.ok) throw new Error(`ws-info ${res.status}`);
-        return res.json() as Promise<WsInfo>;
-      })
-      .then((info) => {
-        if (cancelled) return;
-        setApiKey(info.api_key);
-        setWsBase(info.ws_base);
-      })
-      .catch(() => {
-        if (!cancelled) setStatus("offline");
-      });
-    return () => { cancelled = true; };
-  }, []);
-
-  // Fetch sessions list
   const fetchSessions = useCallback(async () => {
     try {
       const res = await fetch("/api/proxy/conversation/sessions");
@@ -150,7 +128,6 @@ export default function ChatPanel() {
     fetchSessions();
   }, [fetchSessions]);
 
-  // Auto-send from ?text= (ex.: página de voz)
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
@@ -169,10 +146,7 @@ export default function ChatPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // WebSocket connection
   useEffect(() => {
-    if (!apiKey) return;
-
     let disposed = false;
     let socket: WebSocket | null = null;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -281,16 +255,27 @@ export default function ChatPanel() {
       reconnectTimer = setTimeout(connect, delay);
     };
 
-    function connect() {
+    async function connect() {
       if (disposed) return;
       setStatus("conectando");
 
+      let info: WsInfo;
+      try {
+        const res = await fetch("/api/ws-info", { cache: "no-store" });
+        if (!res.ok) throw new Error(`ws-info ${res.status}`);
+        info = (await res.json()) as WsInfo;
+      } catch {
+        scheduleReconnect();
+        return;
+      }
+      if (disposed) return;
+
       let url: string;
-      if (wsBase !== null && /^wss?:\/\//.test(wsBase)) {
-        url = `${wsBase}/ws/conversation?api_key=${apiKey}`;
+      if (info.ws_base !== null && /^wss?:\/\//.test(info.ws_base)) {
+        url = `${info.ws_base}/ws/conversation?ticket=${info.ticket}`;
       } else {
         const protocol = location.protocol === "https:" ? "wss" : "ws";
-        url = `${protocol}://${location.host}/ws/conversation?api_key=${apiKey}`;
+        url = `${protocol}://${location.host}/ws/conversation?ticket=${info.ticket}`;
       }
 
       let nextSocket: WebSocket;
@@ -326,7 +311,7 @@ export default function ChatPanel() {
       };
     }
 
-    connect();
+    void connect();
 
     return () => {
       disposed = true;
@@ -373,9 +358,8 @@ export default function ChatPanel() {
           setAvatarState("idle");
         });
     }
-  }, [apiKey, wsBase, setAvatarState, speak, clearGenTimer]);
+  }, [setAvatarState, speak, clearGenTimer]);
 
-  // Heartbeat
   useEffect(() => {
     if (status !== "online") return;
     const id = setInterval(() => {
@@ -387,7 +371,6 @@ export default function ChatPanel() {
     return () => clearInterval(id);
   }, [status]);
 
-  // Auto scroll
   useEffect(() => {
     endRef.current?.scrollIntoView({
       behavior: messages.some((m) => m.status === "streaming") ? "auto" : "smooth",
@@ -481,7 +464,7 @@ export default function ChatPanel() {
 
       setMessages((prev) => [...prev, userMsg, assistantMsg]);
 
-      // Watchdog: se não chegar resposta em 90s, marca como erro (evita chat travado)
+      // Marca a mensagem como erro se o backend não responder em 90 segundos.
       clearGenTimer();
       genTimerRef.current = setTimeout(() => {
         if (!sendingRef.current) return;
@@ -496,7 +479,7 @@ export default function ChatPanel() {
                   ...m,
                   status: "error",
                   content:
-                    "O NEGÃO demorou para responder. Tente novamente.",
+                    "A Sophie demorou para responder. Tente novamente.",
                 }
               : m
           )
@@ -573,7 +556,7 @@ export default function ChatPanel() {
       const userIdx = messages.findIndex((m) => m.id === prevUser.id);
       if (userIdx < 0) return;
 
-      // Remove resposta antiga + pergunta (sendMessage re-adiciona ambos)
+      // Reenvia a pergunta sem manter a resposta anterior na lista.
       setMessages(messages.slice(0, userIdx));
       setRegenMessageId(messageId);
       try {
@@ -585,7 +568,6 @@ export default function ChatPanel() {
     [messages, sendMessage]
   );
 
-  // Recording
   const startRecording = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -750,7 +732,7 @@ export default function ChatPanel() {
         </div>
         <div className="min-w-0 leading-tight">
           <h2 className="truncate text-sm font-semibold tracking-wide text-[#F8FAFC]">
-            Conversa com o NEGÃO
+            Conversa com a Sophie
           </h2>
           <p className="truncate font-mono-data text-[10px] uppercase tracking-widest text-[#94A3B8]">
             {thinking
@@ -788,7 +770,7 @@ export default function ChatPanel() {
           type="button"
           onClick={toggleTtsMuted}
           className={`glass glass-hover flex size-9 shrink-0 items-center justify-center rounded-lg text-[#00D4FF] hover:bg-[var(--accent-muted)]`}
-          aria-label={ttsMuted ? "Ativar voz do NEGÃO" : "Mutar voz do NEGÃO"}
+          aria-label={ttsMuted ? "Ativar voz da Sophie" : "Mutar voz da Sophie"}
           title={ttsMuted ? "Ativar voz" : "Mutar voz"}
         >
           {ttsMuted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
@@ -807,7 +789,6 @@ export default function ChatPanel() {
 
       <div className="flex-1 overflow-hidden">
         <div className="flex h-full">
-          {/* History sidebar */}
           <div
             className={`transition-all duration-300 ease-in-out ${
               historyOpen ? "w-64" : "w-0"
@@ -914,7 +895,6 @@ export default function ChatPanel() {
             )}
           </div>
 
-          {/* Chat messages */}
           <div
             role="log"
             aria-live="polite"

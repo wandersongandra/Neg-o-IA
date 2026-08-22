@@ -1,8 +1,5 @@
 @import "tailwindcss";
 
-/* ====================================
-   DESIGN TOKENS — SPACING SCALE
-   ==================================== */
 @theme {
   /* Typography Fonts */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
@@ -19,7 +16,7 @@
   --color-warn: #f59e0b;
   --color-danger: #ef4444;
   --color-ink: #f8fafc;
-  --color-mute: #a8b5c7; /* IMPROVED: Better contrast */
+  --color-mute: #a8b5c7;
 
   /* Spacing Scale (4px baseline) */
   --spacing-xs: 0.25rem;  /* 4px */
@@ -71,7 +68,7 @@
   --bg-secondary: #0b1018;
   --border: rgba(255, 255, 255, 0.06);
   --text-primary: #f8fafc;
-  --text-secondary: #a8b5c7; /* IMPROVED: Better contrast */
+  --text-secondary: #a8b5c7;
 
   /* Typography Scale */
   --text-display: clamp(2.5rem, 5vw, 4rem);
@@ -120,7 +117,7 @@
   --bg-secondary: #0b1018;
   --border: rgba(255, 255, 255, 0.06);
   --text-primary: #f8fafc;
-  --text-secondary: #a8b5c7; /* IMPROVED: Better contrast */
+  --text-secondary: #a8b5c7;
 }
 
 [data-theme="esmeralda"] {
@@ -160,7 +157,6 @@ body {
     linear-gradient(18deg, rgba(255,255,255,0.012) 1px, transparent 1px);
   background-size: auto, auto, auto, 42px 42px, 42px 42px;
   background-attachment: fixed;
-  /* IMPROVED: Use standardized duration tokens */
   transition:
     background-color var(--duration-normal) ease,
     background-image var(--duration-normal) ease;
@@ -278,7 +274,6 @@ body::after {
     border-color: var(--border);
   }
 
-  /* Status Indicator Dots — IMPROVED: Use filter instead of box-shadow */
   .dot-ok,
   .dot-warn,
   .dot-danger,
@@ -306,7 +301,6 @@ body::after {
     color: var(--color-mute);
   }
 
-  /* IMPROVED: Animation utilities now use standardized durations */
   .animate-fade-in {
     animation: fade-in var(--duration-slower) ease both;
   }

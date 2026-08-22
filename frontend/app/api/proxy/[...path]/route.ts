@@ -1,9 +1,9 @@
 import type { NextRequest } from "next/server";
+import { resolveApiConfig } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
-const API_URL = process.env.NEGAO_API_URL ?? "http://localhost:8000";
-const API_KEY = process.env.NEGAO_API_KEY ?? "negao-dev-api-key";
+const { apiUrl: API_URL, serviceApiKey: SERVICE_API_KEY } = resolveApiConfig();
 const VOICE_TIMEOUT_MS = 35_000;
 const DEFAULT_TIMEOUT_MS = 60_000;
 
@@ -78,7 +78,13 @@ async function proxy(req: NextRequest, path: string[]): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const headers: Record<string, string> = { "X-API-Key": API_KEY };
+    const headers: Record<string, string> = {};
+    const sessionToken = req.cookies.get("sophie_session")?.value;
+    if (sessionToken) {
+      headers.Authorization = `Bearer ${sessionToken}`;
+    } else if (SERVICE_API_KEY && process.env.NODE_ENV !== "production") {
+      headers["X-API-Key"] = SERVICE_API_KEY;
+    }
     let body: string | FormData | undefined;
     if (req.method === "POST" || req.method === "PATCH") {
       const contentType = req.headers.get("content-type") ?? "";

@@ -1,4 +1,4 @@
-# NEGÃO AI — Arquitetura de Subsistemas
+# Sophie AI — Arquitetura de Subsistemas
 
 **Documento de Arquitetura — v1.0 (Desenho Conceitual)**
 **Escopo:** Model Router, Tool Manager, Segurança e Autorização, Observabilidade, Banco de Dados, Event Bus.
@@ -10,10 +10,10 @@
 
 | # | Princípio | Consequência |
 |---|-----------|--------------|
-| P1 | **Uma única inteligência.** O NEGÃO AI é um assistente pessoal único (estilo Jarvis), com um núcleo (Brain) orquestrando todos os subsistemas. Não existem múltiplos agentes concorrentes. | Um único processo Brain; estado global consistente; fila única de tarefas. |
+| P1 | **Uma única inteligência.** O Sophie AI é um assistente pessoal único (estilo Jarvis), com um núcleo (Brain) orquestrando todos os subsistemas. Não existem múltiplos agentes concorrentes. | Um único processo Brain; estado global consistente; fila única de tarefas. |
 | P2 | **Núcleo agnóstico de modelo.** Nenhuma chamada de LLM acontece fora do Model Router. | Trocar/adicionar modelo = adicionar driver. Zero impacto no Brain. |
 | P3 | **Toda integração é um plugin.** O núcleo depende apenas de contratos (interfaces); nunca de SDKs de terceiros. | Integrações vivem em módulos plugáveis, com ciclo de vida, permissão e observabilidade próprias. |
-| P4 | **Default-deny.** Nenhuma ação acontece sem política explícita. | Camada de autorização obrigatória em TODO fluxo de execução. |
+| P4 | **Default-deny.** Nenhuma ação acontece sem política explícita. | Camada de autorização obrigatória em todo fluxo de execução. |
 | P5 | **Auditável por construção.** Toda ação relevante gera evento estruturado, imutável e com rastreabilidade. | Outbox pattern + tabelas append-only. |
 | P6 | **Observável por padrão.** Cada subsistema emite métricas, logs estruturados e spans. | Prometheus + Loki + OpenTelemetry desde o dia 1. |
 | P7 | **Dados do usuário são do usuário.** Criptografia em repouso, escopo explícito de recursos autorizados. | Secrets no Vault/Docker, criptografia AES-256-GCM, allowlist de recursos. |
@@ -216,7 +216,7 @@ Toda execução gera registro em `tool_runs` + evento de domínio (via outbox): 
 | Nível | Nome | Comportamento | Exemplos |
 |-------|------|---------------|----------|
 | **1** | Somente leitura | Executa imediatamente, sem confirmação. Nunca altera estado externo. | `github.list_repos`, `git.status`, `files.read`, `postgres SELECT`, `docker.ps` |
-| **2** | Sugestão | O NEGÃO AI executa em modo *dry-run/preview* e apresenta o resultado como proposta; o humano aplica manualmente (ou aprova a aplicação automática em 3). | `outlook.draft`, `cloudflare.purge_cache`, `git.commit` (proposto), `google_drive.upload` (preview) |
+| **2** | Sugestão | O Sophie AI executa em modo *dry-run/preview* e apresenta o resultado como proposta; o humano aplica manualmente (ou aprova a aplicação automática em 3). | `outlook.draft`, `cloudflare.purge_cache`, `git.commit` (proposto), `google_drive.upload` (preview) |
 | **3** | Execução mediante confirmação | Executa somente após confirmação explícita do usuário (dentro da janela de aprovação). | `github.merge_pr`, `docker.run`, `terminal` (não-whitelist), `postgres` escrita, `whatsapp.send`, `files.delete` |
 | **4** | Execução automática | Executa sem intervenção. **Concedido apenas por política explícita e revogável**; proibido para `delete`/destrutivo/remoto não reversível por padrão. | leituras recorrentes, agendamentos aprovados, rotinas de manutenção declaradas |
 
@@ -235,7 +235,7 @@ POLÍTICA = (principal, recurso, ação) → NÍVEL + REGRAS
 - **Escopo de recursos**: lista explícita de recursos autorizados por integração (repositórios, zonas Cloudflare, hosts SSH, diretórios de arquivos, bancos/roles). **Recurso fora da lista = deny automático** — o sistema nunca interage com o que não está autorizado.
 - **Quem aprova**: o usuário dono (owner) por padrão; delegação opcional por política (ex.: membro da família aprova envio de e-mail, owner aprova ações destrutivas).
 - **Janelas de aprovação**: pedido de confirmação válido por N minutos (default 15, configurável por política e por risco); expirado = novo pedido. A confirmação chega pelo canal ativo (WebSocket da sessão; fallback: e-mail/WhatsApp).
-- **Denials**: registrados em auditoria; alimentam memória de preferências (o NEGÃO AI aprende a não repetir ações negadas sem aviso); nunca silenciosos.
+- **Denials**: registrados em auditoria; alimentam memória de preferências (o Sophie AI aprende a não repetir ações negadas sem aviso); nunca silenciosos.
 - **Re-vocação imediata**: mudar política revoga aprovações pendentes daquele escopo.
 
 ### 3.3 Fluxo de decisão (resumo)
@@ -567,7 +567,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    subgraph OBS_APPS["Serviços do NEGÃO AI (Docker Compose)"]
+    subgraph OBS_APPS["Serviços do Sophie AI (Docker Compose)"]
         OBS_BRAIN["Brain (FastAPI)"]
         OBS_WORK["Workers (fila, eventos)"]
         OBS_TOOLS["Tool Executor"]

@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "negao-ai-backend"
 version = "0.1.0"
-description = "NEGÃO AI - Fundação (v0.x): esqueleto funcional da API"
+description = "Sophie AI - Fundação (v0.x): esqueleto funcional da API"
 requires-python = ">=3.13"
 dependencies = [
     "fastapi",

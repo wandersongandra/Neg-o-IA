@@ -1,7 +1,7 @@
 {
-  "name": "NEGÃO AI",
-  "short_name": "NEGÃO",
-  "description": "Centro de comando da IA NEGÃO",
+  "name": "Sophie AI",
+  "short_name": "Sophie",
+  "description": "Centro de comando da IA Sophie",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#05070b",
@@ -63,7 +63,7 @@
     {
       "name": "Conversa",
       "short_name": "Conversa",
-      "description": "Abrir conversa com NEGÃO",
+      "description": "Abrir conversa com Sophie",
       "url": "/conversa",
       "icons": [
         {
@@ -76,7 +76,7 @@
     {
       "name": "Voz",
       "short_name": "Voz",
-      "description": "Interface de voz do NEGÃO",
+      "description": "Interface de voz da Sophie",
       "url": "/voz",
       "icons": [
         {
@@ -89,7 +89,7 @@
     {
       "name": "Monitor",
       "short_name": "Monitor",
-      "description": "Monitor de sistema do NEGÃO",
+      "description": "Monitor de sistema da Sophie",
       "url": "/monitor",
       "icons": [
         {

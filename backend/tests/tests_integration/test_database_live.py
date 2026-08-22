@@ -45,9 +45,7 @@ async def test_roundtrip_api_key_and_audit(engine: AsyncEngine) -> None:
         async with engine.begin() as conn:
             await conn.run_sync(
                 lambda sync_conn: sync_conn.execute(
-                    __import__("sqlalchemy").text(
-                        "SELECT 1 FROM events.audit_events LIMIT 1"
-                    )
+                    __import__("sqlalchemy").text("SELECT 1 FROM events.audit_events LIMIT 1")
                 )
             )
 

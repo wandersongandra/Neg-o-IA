@@ -52,9 +52,7 @@ async def create_api_key(
 
 async def verify_api_key(session: AsyncSession, key: str) -> ApiKeyRecord | None:
     """Valida uma chave: hash, existência e não revogação. Atualiza last_used_at."""
-    result = await session.execute(
-        select(ApiKeyORM).where(ApiKeyORM.key_hash == hash_api_key(key))
-    )
+    result = await session.execute(select(ApiKeyORM).where(ApiKeyORM.key_hash == hash_api_key(key)))
     record = result.scalar_one_or_none()
     if record is None or record.revoked_at is not None:
         return None
@@ -71,9 +69,7 @@ async def verify_api_key(session: AsyncSession, key: str) -> ApiKeyRecord | None
     )
 
 
-async def register_audit_event(
-    session: AsyncSession, envelope: EventEnvelope
-) -> AuditEventRecord:
+async def register_audit_event(session: AsyncSession, envelope: EventEnvelope) -> AuditEventRecord:
     """Persiste um evento no esquema `events` (base da auditoria completa)."""
     row = AuditEventORM(
         id=uuid.UUID(envelope.id),
@@ -81,9 +77,7 @@ async def register_audit_event(
         version=envelope.version,
         producer=envelope.producer,
         trace_id=uuid.UUID(envelope.trace_id) if envelope.trace_id else None,
-        correlation_id=(
-            uuid.UUID(envelope.correlation_id) if envelope.correlation_id else None
-        ),
+        correlation_id=(uuid.UUID(envelope.correlation_id) if envelope.correlation_id else None),
         parent_id=uuid.UUID(envelope.parent_id) if envelope.parent_id else None,
         user_id=uuid.UUID(envelope.user_id) if envelope.user_id else None,
         session_id=uuid.UUID(envelope.session_id) if envelope.session_id else None,
@@ -131,18 +125,14 @@ async def list_audit_events(session: AsyncSession, limit: int = 100) -> list[Aud
 
 
 async def get_config(session: AsyncSession, key: str) -> AppConfigRecord | None:
-    result = await session.execute(
-        select(AppConfigORM).where(AppConfigORM.key == key)
-    )
+    result = await session.execute(select(AppConfigORM).where(AppConfigORM.key == key))
     row = result.scalar_one_or_none()
     if row is None:
         return None
     return AppConfigRecord(key=row.key, value=row.value, updated_at=row.updated_at)
 
 
-async def set_config(
-    session: AsyncSession, key: str, value: dict[str, Any]
-) -> AppConfigRecord:
+async def set_config(session: AsyncSession, key: str, value: dict[str, Any]) -> AppConfigRecord:
     row = await session.get(AppConfigORM, key)
     if row is None:
         row = AppConfigORM(key=key, value=value)

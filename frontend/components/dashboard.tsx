@@ -47,7 +47,7 @@ interface Command {
 }
 
 const COMMANDS: Command[] = [
-  { label: "Abrir conversa com o NEGÃO", icon: MessageSquareText, href: "/conversa" },
+  { label: "Abrir conversa com a Sophie", icon: MessageSquareText, href: "/conversa" },
   { label: "Voz", icon: Mic, href: "/voz" },
   { label: "Monitor", icon: Activity, href: "/monitor" },
   { label: "Consultar memória", icon: Brain },
@@ -177,7 +177,6 @@ export default function Dashboard() {
         />
 
         <main className="flex-1 space-y-6 overflow-x-hidden p-5 md:p-6 page-transition">
-          {/* Mobile Menu Button — IMPROVED: CSS-based, no JS logic */}
           <button
             className="glass glass-hover interactive-control lg:hidden flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
             onClick={() => setSidebarOpen(true)}
@@ -256,7 +255,7 @@ export default function Dashboard() {
                 id="command-palette-title"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
-                placeholder="Comando para o NEGÃO…"
+                placeholder="Comando para a Sophie…"
                 className="flex-1 bg-transparent text-base text-[var(--text-primary)] outline-none placeholder:text-[var(--text-secondary)] sm:text-sm"
                 aria-label="Pesquisa de comandos"
                 role="combobox"

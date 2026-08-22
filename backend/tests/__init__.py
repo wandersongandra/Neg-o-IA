@@ -1,1 +1,1 @@
-"""Testes do NEGÃO AI (v0.x — Fundação)."""
+"""Testes da Sophie (v0.x — Fundação)."""

@@ -1,185 +1,152 @@
 #!/bin/bash
 
-# 🚀 NEGÃO AI — Quick Start Script
-# Automatiza a inicialização do projeto
+# Sophie local setup
 
 set -e
 
-echo "╔════════════════════════════════════════════════════════╗"
-echo "║         🤖 NEGÃO AI - Quick Start                     ║"
-echo "╚════════════════════════════════════════════════════════╝"
+echo "Sophie local setup"
 
-# Cores
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Funções
 check_command() {
-  if command -v $1 &> /dev/null; then
-    echo -e "${GREEN}✓${NC} $1 encontrado"
+  if command -v "$1" &> /dev/null; then
+    echo "[OK] $1 encontrado"
     return 0
   else
-    echo -e "${RED}✗${NC} $1 não encontrado"
+    echo "[ERROR] $1 não encontrado"
     return 1
   fi
 }
 
 print_section() {
-  echo -e "\n${BLUE}▶ $1${NC}"
+  echo
+  echo "$1"
 }
 
-# ============================================================================
-# STEP 1: Verificar Dependências
-# ============================================================================
-print_section "STEP 1: Verificando dependências"
+print_section "1. Verificando dependências"
 
-check_command "node" || echo -e "${YELLOW}⚠${NC} Node.js necessário para o frontend"
-check_command "python" || echo -e "${YELLOW}⚠${NC} Python 3.13+ necessário para o backend"
+check_command "node" || echo "[WARN] Node.js é necessário para o frontend"
+check_command "python" || echo "[WARN] Python 3.13+ é necessário para o backend"
 check_command "docker" && DOCKER_AVAILABLE=1 || DOCKER_AVAILABLE=0
 check_command "docker-compose" && DOCKER_COMPOSE_AVAILABLE=1 || DOCKER_COMPOSE_AVAILABLE=0
 
-# ============================================================================
-# STEP 2: Criar .env se não existir
-# ============================================================================
-print_section "STEP 2: Configurando variáveis de ambiente"
+print_section "2. Configurando variáveis de ambiente"
 
 if [ ! -f ".env" ]; then
-  echo -e "${YELLOW}⚠${NC} Arquivo .env não encontrado. Criando a partir de .env.example..."
+  echo "[WARN] Arquivo .env não encontrado. Criando a partir de .env.example..."
   if [ -f ".env.example" ]; then
     cp .env.example .env
-    echo -e "${GREEN}✓${NC} .env criado"
+    echo "[OK] .env criado"
   else
-    echo -e "${RED}✗${NC} .env.example não encontrado!"
+    echo "[ERROR] .env.example não encontrado"
     exit 1
   fi
 else
-  echo -e "${GREEN}✓${NC} .env já existe"
+  echo "[OK] .env já existe"
 fi
 
 if [ ! -f "frontend/.env.local" ]; then
-  echo -e "${YELLOW}⚠${NC} Arquivo frontend/.env.local não encontrado. Criando..."
+  echo "[WARN] Arquivo frontend/.env.local não encontrado. Criando..."
   cat > frontend/.env.local << 'EOF'
 NEXT_PUBLIC_API_URL=http://localhost:8000
 NEGAO_API_URL=http://localhost:8000
-NEGAO_API_KEY=REDACTED
+NEGAO_SERVICE_API_KEY=troque-por-uma-chave-local
 EOF
-  echo -e "${GREEN}✓${NC} frontend/.env.local criado"
+  echo "[OK] frontend/.env.local criado"
 else
-  echo -e "${GREEN}✓${NC} frontend/.env.local já existe"
+  echo "[OK] frontend/.env.local já existe"
 fi
 
-# ============================================================================
-# STEP 3: Iniciar Docker Compose (se disponível)
-# ============================================================================
-print_section "STEP 3: Iniciando serviços de infraestrutura"
+print_section "3. Iniciando serviços de infraestrutura"
 
 if [ $DOCKER_COMPOSE_AVAILABLE -eq 1 ]; then
-  echo -e "${BLUE}→${NC} Iniciando Docker Compose..."
+  echo "Iniciando Docker Compose..."
   docker compose up -d
-  echo -e "${GREEN}✓${NC} Docker Compose iniciado"
+  echo "[OK] Docker Compose iniciado"
   
-  echo -e "${BLUE}→${NC} Aguardando PostgreSQL e Redis ficarem prontos..."
+  echo "Aguardando PostgreSQL e Redis..."
   sleep 5
   
-  # Verificar conexão DB
   until docker compose exec -T db pg_isready -U negao &> /dev/null; do
-    echo "  ⏳ PostgreSQL não está pronto..."
+    echo "   PostgreSQL não está pronto..."
     sleep 2
   done
-  echo -e "${GREEN}✓${NC} PostgreSQL pronto"
+  echo "[OK] PostgreSQL pronto"
   
-  # Verificar Redis
   until docker compose exec -T redis redis-cli ping &> /dev/null; do
-    echo "  ⏳ Redis não está pronto..."
+    echo "   Redis não está pronto..."
     sleep 2
   done
-  echo -e "${GREEN}✓${NC} Redis pronto"
+  echo "[OK] Redis pronto"
 else
-  echo -e "${YELLOW}⚠${NC} Docker Compose não disponível"
+  echo "[WARN] Docker Compose não disponível"
   echo "   Certifique-se de que PostgreSQL e Redis estão rodando localmente"
 fi
 
-# ============================================================================
-# STEP 4: Instalar dependências do Backend
-# ============================================================================
-print_section "STEP 4: Instalando dependências do Backend"
+print_section "4. Instalando dependências do backend"
 
 if check_command "python"; then
   cd backend
   
   if [ ! -d "venv" ]; then
-    echo -e "${BLUE}→${NC} Criando ambiente virtual..."
+    echo "Criando ambiente virtual..."
     python -m venv venv
     source venv/bin/activate 2>/dev/null || . venv/Scripts/activate
-    echo -e "${GREEN}✓${NC} Ambiente virtual criado"
+    echo "[OK] Ambiente virtual criado"
   else
     source venv/bin/activate 2>/dev/null || . venv/Scripts/activate
-    echo -e "${GREEN}✓${NC} Ambiente virtual ativado"
+    echo "[OK] Ambiente virtual ativado"
   fi
   
-  echo -e "${BLUE}→${NC} Instalando pacotes Python..."
+  echo "Instalando pacotes Python..."
   pip install -q -e .
-  echo -e "${GREEN}✓${NC} Backend dependências instaladas"
+  echo "[OK] Dependências do backend instaladas"
   
   cd ..
 else
-  echo -e "${RED}✗${NC} Python não encontrado. Pulando backend setup."
+  echo "[ERROR] Python não encontrado. Etapa do backend ignorada."
 fi
 
-# ============================================================================
-# STEP 5: Instalar dependências do Frontend
-# ============================================================================
-print_section "STEP 5: Instalando dependências do Frontend"
+print_section "5. Instalando dependências do frontend"
 
 if check_command "npm"; then
   cd frontend
   
   if [ ! -d "node_modules" ]; then
-    echo -e "${BLUE}→${NC} Instalando pacotes Node..."
+    echo "Instalando pacotes Node..."
     npm install --silent
-    echo -e "${GREEN}✓${NC} Frontend dependências instaladas"
+    echo "[OK] Dependências do frontend instaladas"
   else
-    echo -e "${GREEN}✓${NC} node_modules já existe"
+    echo "[OK] node_modules já existe"
   fi
   
   cd ..
 else
-  echo -e "${RED}✗${NC} npm não encontrado. Pulando frontend setup."
+  echo "[ERROR] npm não encontrado. Etapa do frontend ignorada."
 fi
 
-# ============================================================================
-# STEP 6: Mostrar instruções de inicialização
-# ============================================================================
-print_section "STEP 6: Próximos passos"
+print_section "6. Próximos passos"
 
-echo -e "${BLUE}→ TERMINAL 1: Iniciar Backend${NC}"
+echo "Terminal 1: iniciar backend"
 echo "  cd backend"
 echo "  source venv/bin/activate  # ou: venv\Scripts\activate (Windows)"
 echo "  uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
 echo ""
 
-echo -e "${BLUE}→ TERMINAL 2: Iniciar Frontend${NC}"
+echo "Terminal 2: iniciar frontend"
 echo "  cd frontend"
 echo "  npm run dev"
 echo ""
 
-echo -e "${BLUE}→ TERMINAL 3 (Opcional): Monitor de logs${NC}"
+echo "Terminal 3 (opcional): monitorar logs"
 echo "  docker compose logs -f"
 echo ""
 
-echo -e "${GREEN}✓${NC} Setup concluído!"
+echo "Setup concluído."
 echo ""
 
-echo "╔════════════════════════════════════════════════════════╗"
-echo "║     ⚠️  NÃO ESQUEÇA DE ADICIONAR NVIDIA API KEY!       ║"
-echo "║  1. Vá a: https://build.nvidia.com                   ║"
-echo "║  2. Crie uma conta e gere API Key                    ║"
-echo "║  3. Adicione em .env:                                ║"
-echo "║     NEGAO_NVIDIA_API_KEY=sua-chave-aqui            ║"
-echo "╚════════════════════════════════════════════════════════╝"
+echo "Configure a NVIDIA API key antes de iniciar o Brain."
+echo "1. Acesse: https://build.nvidia.com"
+echo "2. Gere uma API key."
+echo "3. Defina NEGAO_NVIDIA_API_KEY no .env (ou o alias SOPHIE_NVIDIA_API_KEY)."
 echo ""
 
 echo "URLs de acesso:"
@@ -188,4 +155,4 @@ echo "  Backend API: http://localhost:8000"
 echo "  API Docs: http://localhost:8000/docs"
 echo ""
 
-echo -e "${GREEN}🚀 NEGÃO PRONTO PARA ACORDAR!${NC}"
+echo "Setup local concluído."

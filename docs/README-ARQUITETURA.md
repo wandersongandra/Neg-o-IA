@@ -1,6 +1,6 @@
-# NEGÃO AI — ARQUITETURA MESTRE (Documento Oficial v1.0)
+# Sophie AI — ARQUITETURA MESTRE (Documento Oficial v1.0)
 
-> **Escopo:** Arquitetura completa do NEGÃO AI — uma única inteligência, uma única memória, um único cérebro.
+> **Escopo:** Arquitetura completa do Sophie AI — uma única inteligência, uma única memória, um único cérebro.
 > **Status:** Aprovado para revisão — aguardando validação do usuário.
 > **Nenhum código foi escrito.** Este documento é a base para a implementação.
 
@@ -30,7 +30,7 @@
 
 ## 1. Princípio Fundamental: Cérebro Único
 
-O NEGÃO **não é** um chatbot, **não é** um conjunto de agentes. É **uma** inteligência com:
+O Sophie **não é** um chatbot, **não é** um conjunto de agentes. É **uma** inteligência com:
 
 - **Uma** personalidade (não existe system prompt por módulo)
 - **Uma** memória (todos os módulos leem/escrevem a mesma Memory)

@@ -89,9 +89,7 @@ class RetryPolicy:
         self._attempts = max(0, attempts)
         self._base_delay = base_delay_seconds
 
-    async def run(
-        self, operation: Callable[[], Awaitable[ModelResponse]]
-    ) -> ModelResponse:
+    async def run(self, operation: Callable[[], Awaitable[ModelResponse]]) -> ModelResponse:
         last_error: Exception | None = None
         for attempt in range(self._attempts + 1):
             try:
@@ -187,9 +185,7 @@ class NvidiaChatAdapter:
         started = time.perf_counter()
         payload = {
             "model": settings.brain_chat_model,
-            "messages": [
-                {"role": m.role, "content": m.content} for m in request.messages
-            ],
+            "messages": [{"role": m.role, "content": m.content} for m in request.messages],
             "temperature": (
                 request.temperature
                 if request.temperature is not None
@@ -210,13 +206,9 @@ class NvidiaChatAdapter:
 
         latency_ms = int((time.perf_counter() - started) * 1000)
         if response.status_code in {429, 500, 502, 503, 504, 529}:
-            raise RetryableProviderError(
-                f"NVIDIA {response.status_code}: {response.text[:200]}"
-            )
+            raise RetryableProviderError(f"NVIDIA {response.status_code}: {response.text[:200]}")
         if response.status_code != 200:
-            raise ProviderError(
-                f"NVIDIA {response.status_code}: {response.text[:200]}"
-            )
+            raise ProviderError(f"NVIDIA {response.status_code}: {response.text[:200]}")
         try:
             data = response.json()
             text = data["choices"][0]["message"]["content"]
@@ -243,8 +235,8 @@ class MockLLMAdapter:
         return ModelResponse(
             text=(
                 f"Opa, chefe! Meu cérebro está em modo local — configure "
-                f"NEGAO_NVIDIA_API_KEY para ativar o GPT-OSS-120B. "
-                f"(eco: {user_text[:80]})"
+                f"SOPHIE_NVIDIA_API_KEY (ou NEGAO_NVIDIA_API_KEY) para ativar o "
+                f"GPT-OSS-120B. (eco: {user_text[:80]})"
             ),
             model="local-mock",
             latency_ms=1,
@@ -304,15 +296,11 @@ class ModelRouter:
         adapter = _get_nvidia_adapter(settings)
         if await self._primary_breaker.can_execute():
             try:
-                response = await self._retry_policy.run(
-                    lambda: adapter.complete(request)
-                )
+                response = await self._retry_policy.run(lambda: adapter.complete(request))
                 await self._primary_breaker.record_success()
                 return response
             except RetryableProviderError as exc:
-                _LOGGER.warning(
-                    "primary_model_failed", extra={"error": str(exc)}
-                )
+                _LOGGER.warning("primary_model_failed", extra={"error": str(exc)})
                 await self._primary_breaker.record_failure()
 
         fallback_request = ModelRequest(
@@ -330,9 +318,7 @@ class ModelRouter:
                 return response
             except RetryableProviderError as exc:
                 await self._fallback_breaker.record_failure()
-                _LOGGER.warning(
-                    "fallback_model_failed", extra={"error": str(exc)}
-                )
+                _LOGGER.warning("fallback_model_failed", extra={"error": str(exc)})
 
         raise ModelError("todos os provedores de modelo falharam")
 
@@ -343,9 +329,7 @@ class ModelRouter:
         started = time.perf_counter()
         payload = {
             "model": settings.brain_fallback_model,
-            "messages": [
-                {"role": m.role, "content": m.content} for m in request.messages
-            ],
+            "messages": [{"role": m.role, "content": m.content} for m in request.messages],
             "temperature": (
                 request.temperature
                 if request.temperature is not None
@@ -367,9 +351,7 @@ class ModelRouter:
 
         latency_ms = int((time.perf_counter() - started) * 1000)
         if response.status_code in {429, 500, 502, 503, 504, 529}:
-            raise RetryableProviderError(
-                f"fallback {response.status_code}: {response.text[:200]}"
-            )
+            raise RetryableProviderError(f"fallback {response.status_code}: {response.text[:200]}")
         if response.status_code != 200:
             raise ProviderError(f"fallback {response.status_code}: {response.text[:200]}")
         try:

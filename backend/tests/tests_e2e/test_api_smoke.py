@@ -12,14 +12,14 @@ import pytest
 
 from app.main import create_app
 
-API_KEY = "negao-dev-api-key"
+SERVICE_KEY = "test-only-service-key"
 
 
 @pytest.fixture
 async def smoke_client(
     monkeypatch: pytest.MonkeyPatch,
 ) -> AsyncIterator[httpx.AsyncClient]:
-    monkeypatch.setenv("NEGAO_API_KEY", API_KEY)
+    monkeypatch.setenv("NEGAO_SERVICE_API_KEY", SERVICE_KEY)
     monkeypatch.setenv("NEGAO_OTEL_EXPORTER_OTLP_ENDPOINT", "")
 
     from app.modules.configuration.settings import get_settings
@@ -49,15 +49,16 @@ async def test_healthz_vivo(smoke_client: httpx.AsyncClient) -> None:
     response = await smoke_client.get("/healthz")
     assert response.status_code == 200
     assert response.json() == {"status": "alive"}
+    assert response.headers["x-request-id"]
+    assert response.headers["x-correlation-id"]
 
 
 @pytest.mark.asyncio
-async def test_security_status_com_chave(smoke_client: httpx.AsyncClient) -> None:
-    response = await smoke_client.get(
-        "/security/status", headers={"X-API-Key": API_KEY}
-    )
-    assert response.status_code == 200
-    assert response.json()["authenticated"] is True
+async def test_security_status_nao_aceita_chave_de_servico(
+    smoke_client: httpx.AsyncClient,
+) -> None:
+    response = await smoke_client.get("/security/status", headers={"X-API-Key": SERVICE_KEY})
+    assert response.status_code == 401
 
 
 @pytest.mark.asyncio

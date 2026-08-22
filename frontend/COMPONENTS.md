@@ -1,6 +1,6 @@
-# 🎨 UI Components Library
+# UI component reference
 
-This document describes the reusable UI components created during the design refinement process.
+Reusable UI components and design tokens used by the frontend.
 
 ---
 
@@ -13,35 +13,19 @@ This document describes the reusable UI components created during the design ref
 ```tsx
 import Button from "@/components/ui/button";
 import { Heart } from "lucide-react";
-
-// Basic button
 <Button>Click me</Button>
-
-// Different variants
 <Button variant="primary">Primary</Button>
 <Button variant="secondary">Secondary</Button>
 <Button variant="ghost">Ghost</Button>
 <Button variant="danger">Danger</Button>
-
-// Different sizes
 <Button size="sm">Small</Button>
 <Button size="md">Medium</Button>
 <Button size="lg">Large</Button>
-
-// With icon
 <Button icon={<Heart />}>Like</Button>
 <Button icon={<Heart />} iconPosition="right">Like This</Button>
-
-// Loading state
 <Button isLoading>Saving...</Button>
-
-// Full width
 <Button fullWidth>Full Width Button</Button>
-
-// Disabled
 <Button disabled>Disabled</Button>
-
-// Custom className
 <Button className="custom-class">Styled</Button>
 ```
 
@@ -79,23 +63,15 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 ```tsx
 import Card, { CardHeader, CardBody, CardFooter } from "@/components/ui/card";
 import { Heart } from "lucide-react";
-
-// Basic card
 <Card>
   <p>Card content</p>
 </Card>
-
-// Different variants
 <Card variant="elevated">Elevated (default)</Card>
 <Card variant="outlined">Outlined</Card>
 <Card variant="filled">Filled</Card>
-
-// Interactive card
 <Card interactive onClick={() => console.log("clicked")}>
   Click me
 </Card>
-
-// Card with structure
 <Card>
   <CardHeader
     title="Card Title"
@@ -161,26 +137,16 @@ interface CardFooterProps {
 ```tsx
 import Badge from "@/components/ui/badge";
 import { Check } from "lucide-react";
-
-// Basic badge
 <Badge>New</Badge>
-
-// Different variants
 <Badge variant="default">Default</Badge>
 <Badge variant="success">Success</Badge>
 <Badge variant="warning">Warning</Badge>
 <Badge variant="danger">Danger</Badge>
 <Badge variant="info">Info</Badge>
-
-// Different sizes
 <Badge size="sm">Small</Badge>
 <Badge size="md">Medium</Badge>
 <Badge size="lg">Large</Badge>
-
-// With icon
-<Badge icon={<Check />}>Complete</Badge>
-
-// Custom className
+<Badge icon={<Check />}>Done</Badge>
 <Badge className="custom-class">Styled</Badge>
 ```
 
@@ -217,7 +183,7 @@ All components use CSS variables from the design system in `app/globals.css`:
 - `--bg-primary` - Primary background
 - `--bg-secondary` - Secondary background
 - `--text-primary` - Primary text
-- `--text-secondary` - Secondary text (improved contrast)
+- `--text-secondary` - Secondary text
 - `--border` - Border color
 - `--color-prime` - Blue primary
 - `--color-ok` - Success green
@@ -320,7 +286,7 @@ If you're replacing old components with new ones:
 - [ ] Add Input component
 - [ ] Add Select/Dropdown component
 - [ ] Add Dialog/Modal component
-- [ ] Add Toast notifications (already exists, can be enhanced)
+- [ ] Extend toast notifications
 - [ ] Add Tabs component
 - [ ] Add Accordion component
 - [ ] Create Storybook for visual documentation

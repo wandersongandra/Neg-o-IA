@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Save, RotateCcw, Mic, Wrench, Globe, Brain, Settings, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 
-const DEFAULT_SYSTEM_PROMPT = `Você é o NEGÃO, assistente pessoal de inteligência artificial do Wanderson. Fala sempre em português brasileiro, com tom profissional, elegante e direto, inspirado no JARVIS: nunca invente fatos, admita quando não souber, e use humor sutil quando apropriado. Trate o usuário como 'chefe'. Seja conciso: prefira respostas curtas e úteis, em vez de longas explicações. Nunca repita o que o usuário acabou de dizer.`;
+const DEFAULT_SYSTEM_PROMPT = `Você é a Sophie, assistente pessoal de inteligência artificial do Wanderson. Fala sempre em português brasileiro, com tom profissional, elegante e direto, inspirado no JARVIS: nunca invente fatos, admita quando não souber, e use humor sutil quando apropriado. Trate o usuário como 'chefe'. Seja conciso: prefira respostas curtas e úteis, em vez de longas explicações. Nunca repita o que o usuário acabou de dizer.`;
 
 const MODEL_OPTIONS = [
   { value: "deepseek-ai/deepseek-v4-flash", label: "DeepSeek V4 Flash (rápido)" },
@@ -199,7 +199,7 @@ export default function ConfigPage() {
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-[var(--text-primary)]">Configuração do NEGÃO</h1>
+          <h1 className="text-3xl font-black tracking-tight text-[var(--text-primary)]">Configuração da Sophie</h1>
           <p className="text-[var(--text-secondary)] mt-1">Personalize personalidade, modelo, ferramentas e voz</p>
         </div>
         <button
@@ -239,7 +239,7 @@ export default function ConfigPage() {
               rows={8}
               maxLength={8000}
               className="w-full min-h-[160px] font-mono-data text-base sm:text-sm bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl p-4 text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] resize-y"
-              placeholder="Defina a personalidade do NEGÃO..."
+              placeholder="Defina a personalidade da Sophie..."
             />
             <div className="flex gap-2">
               <button
@@ -316,14 +316,14 @@ export default function ConfigPage() {
           <div className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <Toggle
-                label="TTS (Fala do NEGÃO)"
+                label="TTS (Fala da Sophie)"
                 desc="Respostas em áudio automáticas"
                 checked={config.voice.tts_enabled}
                 onChange={v => setConfig(prev => ({ ...prev, voice: { ...prev.voice, tts_enabled: v } }))}
               />
               <Toggle
                 label="STT (Reconhecimento de Voz)"
-                desc="Microfone para falar com o NEGÃO"
+                desc="Microfone para falar com a Sophie"
                 checked={config.voice.stt_enabled}
                 onChange={v => setConfig(prev => ({ ...prev, voice: { ...prev.voice, stt_enabled: v } }))}
               />

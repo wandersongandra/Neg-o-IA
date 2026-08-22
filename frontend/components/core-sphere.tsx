@@ -84,7 +84,7 @@ export const CoreSphere = forwardRef<CoreSphereRef, CoreSphereProps>(
     ];
 
     return (
-      <div className="relative mx-auto flex aspect-square w-full max-w-[480px] items-center justify-center" aria-label="NEGÃO Intelligence Core">
+      <div className="relative mx-auto flex aspect-square w-full max-w-[480px] items-center justify-center" aria-label="Sophie Intelligence Core">
         <div
           className="animate-glow-pulse absolute size-2/3 rounded-full bg-[var(--color-prime)]/20 blur-3xl"
           style={{ filter: "blur(60px)" }}
@@ -154,7 +154,7 @@ export const CoreSphere = forwardRef<CoreSphereRef, CoreSphereProps>(
           />
           <div className="relative text-center leading-none">
             <p className="text-3xl font-black tracking-[0.3em] text-[var(--text-primary)] drop-shadow-[0_0_14px_rgba(0,212,255,0.9)]">
-              NEGÃO
+              Sophie
             </p>
             <p className="mt-2 font-mono-data text-[9px] tracking-[0.45em] text-[var(--accent)]">
               INTELLIGENCE CORE

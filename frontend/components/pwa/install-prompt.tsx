@@ -27,7 +27,7 @@ export function InstallPrompt() {
 
     if (
       isIOSDevice &&
-      !localStorage.getItem("negao-install-dismissed")
+      !localStorage.getItem("sophie-install-dismissed")
     ) {
       setShowPrompt(true);
     }
@@ -65,7 +65,7 @@ export function InstallPrompt() {
 
   const handleDismiss = () => {
     setShowPrompt(false);
-    localStorage.setItem("negao-install-dismissed", Date.now().toString());
+    localStorage.setItem("sophie-install-dismissed", Date.now().toString());
   };
 
   if (isInstalled || !showPrompt) return null;
@@ -79,7 +79,7 @@ export function InstallPrompt() {
               <Download className="size-5 text-[var(--bg-primary)]" strokeWidth={2.2} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-[var(--text-primary)]">Instalar NEGÃO AI</p>
+              <p className="text-sm font-semibold text-[var(--text-primary)]">Instalar Sophie AI</p>
               <p className="text-xs text-[var(--text-secondary)] mt-0.5">
                 Toque em <strong>Compartilhar</strong> → <strong>Adicionar à Tela de Início</strong>
               </p>
@@ -105,7 +105,7 @@ export function InstallPrompt() {
             <Download className="size-5 text-[var(--bg-primary)]" strokeWidth={2.2} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-[var(--text-primary)]">Instalar NEGÃO AI</p>
+            <p className="text-sm font-semibold text-[var(--text-primary)]">Instalar Sophie AI</p>
             <p className="text-xs text-[var(--text-secondary)] mt-0.5">
               Acesse o centro de comando direto da tela inicial
             </p>
@@ -181,7 +181,7 @@ export function InstallButton({ onClick }: { onClick?: () => void }) {
     <button
       onClick={handleClick}
       className="glass glass-hover relative flex size-10 items-center justify-center rounded-xl text-[var(--text-secondary)]"
-      aria-label={isIOS ? "Instruções de instalação iOS" : "Instalar NEGÃO AI"}
+      aria-label={isIOS ? "Instruções de instalação iOS" : "Instalar Sophie AI"}
     >
       <Download className="size-4 transition-colors group-hover:text-[var(--accent)]" />
       {canInstall && !isIOS && (

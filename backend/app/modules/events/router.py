@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import os
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from app.modules.events.application import get_event_bus_service
 from app.modules.events.envelope import build_envelope
+from app.modules.security.domain import AuthResult
+from app.modules.security.router import require_authenticated_user
 
 router = APIRouter(prefix="/events", tags=["events"])
 
@@ -22,6 +24,7 @@ class EventPublishRequest(BaseModel):
     trace_id: str | None = None
     correlation_id: str | None = None
     parent_id: str | None = None
+    # Mantido apenas para compatibilidade de payload; a autoridade é a sessão.
     user_id: str | None = None
     session_id: str | None = None
 
@@ -46,12 +49,13 @@ async def events_status() -> dict[str, Any]:
 
 
 @router.post("/_publish")
-async def publish_event_debug(request: EventPublishRequest) -> dict[str, Any]:
+async def publish_event_debug(
+    request: EventPublishRequest,
+    auth: Annotated[AuthResult, Depends(require_authenticated_user)],
+) -> dict[str, Any]:
     """Publica um evento manualmente — disponível apenas fora de produção."""
     if _is_production():
-        raise HTTPException(
-            status_code=403, detail="publicação de debug desativada em produção"
-        )
+        raise HTTPException(status_code=403, detail="publicação de debug desativada em produção")
     service = get_event_bus_service()
     envelope = build_envelope(
         request.type,
@@ -60,7 +64,7 @@ async def publish_event_debug(request: EventPublishRequest) -> dict[str, Any]:
         trace_id=request.trace_id,
         correlation_id=request.correlation_id,
         parent_id=request.parent_id,
-        user_id=request.user_id,
+        user_id=auth.effective_user_id,
         session_id=request.session_id,
     )
     await service.publish_event(envelope)

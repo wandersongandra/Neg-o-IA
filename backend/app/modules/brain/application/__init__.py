@@ -32,7 +32,7 @@ _brain_service: BrainService | None = None
 
 
 class BrainService:
-    """Facade pública do cérebro único do NEGÃO AI."""
+    """Facade pública do cérebro único da Sophie."""
 
     async def complete(
         self,
