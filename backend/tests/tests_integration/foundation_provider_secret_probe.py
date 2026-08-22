@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable, Callable
 from pathlib import Path
+from typing import cast
 
 import httpx
 from redis.asyncio import Redis
@@ -33,7 +35,8 @@ async def main() -> None:
         )
         print(f"REDIS_ENV_ACL_ADMIN_CATEGORY={int('+@admin' in acl_text)}")
     finally:
-        await redis_client.aclose()
+        close = cast(Callable[[], Awaitable[None]], redis_client.aclose)  # type: ignore[attr-defined]
+        await close()
 
     nvidia_key = _env_value("NEGAO_NVIDIA_API_KEY")
     nvidia_base_url = _env_value("NEGAO_NVIDIA_BASE_URL").rstrip("/")

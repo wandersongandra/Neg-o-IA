@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
 from fastapi import FastAPI
 from starlette.testclient import TestClient
-from starlette.websockets import WebSocketDisconnect
+from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from app.modules.configuration.settings import Settings, get_settings
 from app.modules.conversation.application import ChatResult
@@ -195,7 +197,7 @@ async def test_voice_chunk_excede_limite_e_fecha_com_policy_code(
     )
     ws = _FakeWebSocket()
 
-    await _handle_audio_chunk(ws, session, b"123")
+    await _handle_audio_chunk(cast(WebSocket, ws), session, b"123")
 
     assert ws.messages[0]["code"] == "AUDIO_CHUNK_TOO_LARGE"
     assert ws.close_code == 1009
@@ -210,7 +212,7 @@ async def test_voice_turn_rejeita_formato_nao_declarado() -> None:
     )
     with pytest.raises(VoiceProtocolError, match="unsupported audio format"):
         await _handle_turn_start(
-            _FakeWebSocket(),
+            cast(WebSocket, _FakeWebSocket()),
             session,
             {"format": "audio/wav", "interaction_id": "interaction-1"},
         )

@@ -10,7 +10,8 @@ from __future__ import annotations
 import json
 import os
 import uuid
-from typing import Any
+from collections.abc import Awaitable, Callable
+from typing import Any, cast
 
 import httpx
 import pytest
@@ -79,7 +80,8 @@ async def _read_redis_conversation(session_id: str) -> tuple[dict[str, Any], lis
         assert messages_raw is not None
         return json.loads(meta_raw), json.loads(messages_raw)
     finally:
-        await redis.aclose()
+        close = cast(Callable[[], Awaitable[None]], redis.aclose)  # type: ignore[attr-defined]
+        await close()
 
 
 @pytest.mark.asyncio
@@ -223,8 +225,7 @@ async def test_foundation_runtime_auth_ownership_and_revocation() -> None:
         assert own_b.status_code == 200
         assert own_b.json()["user_id"] == user_b
 
-        expired_status = await _expire_db_session(session_id_a)
-        assert expired_status is None
+        await _expire_db_session(session_id_a)
         expired = await client.get("/security/status", headers=headers_a)
         assert expired.status_code == 401
 
