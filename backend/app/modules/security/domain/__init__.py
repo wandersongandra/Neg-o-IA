@@ -23,8 +23,14 @@ class APIKeyCredential:
 class AuthResult:
     authenticated: bool
     principal: str | None = None
+    user_id: str | None = None
     authorization_level: AuthorizationLevel = AuthorizationLevel.READ_ONLY
     reason: str | None = None
+    purpose: str | None = None
+    session_id: str | None = None
+    device_id: str | None = None
+    auth_method: str | None = None
+    scopes: frozenset[str] = frozenset()
     validated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
     @property
@@ -32,3 +38,8 @@ class AuthResult:
         if not self.authenticated:
             return AuthorizationLevel.READ_ONLY
         return self.authorization_level
+
+    @property
+    def effective_user_id(self) -> str | None:
+        """Identidade canônica para ownership, nunca um valor do payload."""
+        return self.user_id or self.principal

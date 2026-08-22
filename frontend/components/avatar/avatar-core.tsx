@@ -54,7 +54,6 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
   const mouthOpenRef = useRef<number>(0);
   const pulsePhaseRef = useRef<number>(0);
   const particlesRef = useRef<Particle[]>([]);
-  // Keep refs in sync with animation values
   const setMouthOpenState = useCallback((v: number) => {
     mouthOpenRef.current = v;
   }, []);
@@ -130,10 +129,8 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
       const glowColor = getComputedStyle(document.documentElement).getPropertyValue(colors.glow.replace("var(", "").replace(")", "")).trim() || colors.glow;
       const particleColor = getComputedStyle(document.documentElement).getPropertyValue(colors.particle.replace("var(", "").replace(")", "")).trim() || colors.particle;
 
-      // Pulse phase (ref-backed, no re-render)
       pulsePhaseRef.current = (pulsePhaseRef.current + dt * 0.001) % (Math.PI * 2);
 
-      // Core glow (read from ref)
       const pulse = Math.sin(pulsePhaseRef.current) * 0.15 + 0.85;
       const coreRadius = radius * pulse;
       const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreRadius * 1.5);
@@ -145,14 +142,12 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
       ctx.arc(cx, cy, coreRadius * 1.5, 0, Math.PI * 2);
       ctx.fill();
 
-      // Core border
       ctx.strokeStyle = `${primaryColor}80`;
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(cx, cy, coreRadius, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Mouth animation when speaking
       if (state === "speaking") {
         const mouthHeight = mouthOpenRef.current * radius * 0.3;
         ctx.strokeStyle = `${primaryColor}CC`;
@@ -164,7 +159,7 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
         ctx.stroke();
       }
 
-      // Update and draw particles (mutate ref directly, no re-render)
+      // Particles stay in a ref so the animation loop does not trigger React renders.
       const particles = particlesRef.current;
       for (const p of particles) {
           let orbitRadius = p.orbitRadius * radius;
@@ -188,7 +183,6 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
           p.x = cx + Math.cos(p.orbitAngle) * orbitRadius;
           p.y = cy + Math.sin(p.orbitAngle) * orbitRadius;
 
-          // Converge to center when thinking
           if (state === "thinking") {
             const dx = cx - p.x;
             const dy = cy - p.y;
@@ -199,7 +193,6 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
             }
           }
 
-          // Disperse on error
           if (state === "error") {
             const dx = p.x - cx;
             const dy = p.y - cy;
@@ -210,7 +203,6 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
             }
           }
 
-          // Draw particle
           const particleGradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius * 2);
           const particleHex = getComputedStyle(document.documentElement).getPropertyValue(colors.particle.replace("var(", "").replace(")", "")).trim() || particleColor;
           particleGradient.addColorStop(0, `${particleHex}FF`);
@@ -222,7 +214,6 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
 
       }
 
-      // Draw connections for thinking
       if (state === "thinking") {
         ctx.strokeStyle = `${particleColor}30`;
         ctx.lineWidth = 0.5;
@@ -243,7 +234,6 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
         ctx.globalAlpha = 1;
       }
 
-      // Outer ring
       ctx.strokeStyle = `${primaryColor}40`;
       ctx.lineWidth = 1;
       ctx.setLineDash([10, 10]);
@@ -343,7 +333,7 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
       ref={canvasRef}
       className={`w-full h-full max-w-[480px] max-h-[480px] ${props.className || ""}`}
       aria-hidden={props["aria-hidden"]}
-      aria-label={`Avatar NEGÃO — estado: ${state}`}
+      aria-label={`Avatar Sophie — estado: ${state}`}
       role="img"
     />
   );

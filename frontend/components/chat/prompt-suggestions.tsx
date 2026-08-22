@@ -13,7 +13,7 @@ const SUGGESTIONS: Suggestion[] = [
   {
     icon: Bot,
     title: "Apresente-se",
-    prompt: "Quem é você, NEGÃO? O que você pode fazer por mim?",
+    prompt: "Quem é você, Sophie? O que você pode fazer por mim?",
   },
   {
     icon: Brain,

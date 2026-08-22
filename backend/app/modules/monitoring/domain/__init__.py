@@ -8,7 +8,7 @@ from enum import Enum
 
 @dataclass(frozen=True, slots=True)
 class MetricsSnapshot:
-    """Instantâneo de uma métrica do NEGÃO AI."""
+    """Instantâneo de uma métrica da Sophie."""
 
     name: str
     value: float

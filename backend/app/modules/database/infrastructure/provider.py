@@ -23,7 +23,8 @@ class DatabaseProvider:
 
     @property
     def engine_url(self) -> str:
-        return str(self._engine.url).split("@")[-1]
+        """Retorna somente o driver; host/porta nunca são resposta de status."""
+        return self._engine.url.drivername
 
     async def connect(self) -> None:
         async with await asyncio.wait_for(self._engine.connect(), timeout=2) as conn:

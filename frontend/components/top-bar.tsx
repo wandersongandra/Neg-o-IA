@@ -56,7 +56,7 @@ function useTheme(): { theme: Theme; setTheme: (t: Theme) => void } {
 
   useEffect(() => {
     setMounted(true);
-    const stored = localStorage.getItem("negao-theme") as Theme | null;
+    const stored = localStorage.getItem("sophie-theme") as Theme | null;
     if (stored) {
       setThemeState(stored);
       document.documentElement.dataset.theme = stored;
@@ -66,7 +66,7 @@ function useTheme(): { theme: Theme; setTheme: (t: Theme) => void } {
   useEffect(() => {
     if (!mounted) return;
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === "negao-theme" && e.newValue) {
+      if (e.key === "sophie-theme" && e.newValue) {
         const newTheme = e.newValue as Theme;
         setThemeState(newTheme);
         document.documentElement.dataset.theme = newTheme;
@@ -78,7 +78,7 @@ function useTheme(): { theme: Theme; setTheme: (t: Theme) => void } {
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem("negao-theme", newTheme);
+    localStorage.setItem("sophie-theme", newTheme);
     document.documentElement.dataset.theme = newTheme;
   };
 
@@ -103,7 +103,7 @@ export default function TopBar({ data, onOpenPalette }: TopBarProps) {
         </div>
         <div className="hidden leading-tight min-[400px]:block">
           <p className="hud-title text-sm text-[var(--text-primary)]">
-            NEGÃO <span className="text-gradient glow-text">AI</span>
+            SOPHIE <span className="text-gradient glow-text">AI</span>
           </p>
           <p className="font-mono-data text-[10px] text-[var(--text-secondary)]">
             CENTRO DE COMANDO
@@ -118,7 +118,7 @@ export default function TopBar({ data, onOpenPalette }: TopBarProps) {
       >
         <Search className="size-4 shrink-0 text-[var(--text-secondary)] transition-colors group-hover:text-[var(--accent)]" />
         <span className="flex-1 truncate text-sm text-[var(--text-secondary)]">
-          Pesquisar ou dar um comando ao NEGÃO…
+          Pesquisar ou dar um comando à Sophie…
         </span>
         <span className="glass hidden items-center gap-1 rounded-md px-2 py-0.5 font-mono-data text-[10px] text-[var(--text-secondary)] sm:flex">
           <Command className="size-3" /> K

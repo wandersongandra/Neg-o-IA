@@ -6,6 +6,7 @@ best-effort: falha de publicação nunca quebra a transcrição/síntese.
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 import structlog
@@ -17,6 +18,7 @@ from app.modules.voice.domain import (
     STTAdapter,
     TranscriptionResult,
     TTSAdapter,
+    VoiceProviderError,
     VoiceUnavailableError,
 )
 from app.modules.voice.events import (
@@ -50,8 +52,16 @@ class VoiceService:
     async def transcribe(self, audio_bytes: bytes, *, content_type: str) -> TranscriptionResult:
         if not self._resolve_settings().nvidia_api_key:
             await self._publish(EVENT_VOICE_UNAVAILABLE, {"reason": "stt_not_configured"})
-            raise VoiceUnavailableError("STT não configurado — defina NEGAO_NVIDIA_API_KEY")
-        result = await self._stt_adapter.transcribe(audio_bytes, content_type=content_type)
+            raise VoiceUnavailableError(
+                "STT não configurado — defina SOPHIE_NVIDIA_API_KEY (ou NEGAO_NVIDIA_API_KEY)"
+            )
+        try:
+            result = await asyncio.wait_for(
+                self._stt_adapter.transcribe(audio_bytes, content_type=content_type),
+                timeout=self._resolve_settings().voice_stt_timeout_seconds,
+            )
+        except TimeoutError as exc:
+            raise VoiceProviderError("STT indisponível: tempo limite excedido") from exc
         await self._publish(
             EVENT_VOICE_TRANSCRIPTION_COMPLETED,
             {
@@ -63,7 +73,13 @@ class VoiceService:
         return result
 
     async def synthesize(self, text: str) -> AudioResult:
-        result = await self._tts_adapter.synthesize(text)
+        try:
+            result = await asyncio.wait_for(
+                self._tts_adapter.synthesize(text),
+                timeout=self._resolve_settings().voice_tts_timeout_seconds,
+            )
+        except TimeoutError as exc:
+            raise VoiceProviderError("TTS indisponível: tempo limite excedido") from exc
         await self._publish(
             EVENT_VOICE_SYNTHESIS_COMPLETED,
             {"content_type": result.content_type, "bytes": len(result.data)},
@@ -76,8 +92,8 @@ class VoiceService:
 
             service = get_event_bus_service()
             await service.publish_event(build_envelope(event_type, PRODUCER, payload))
-        except Exception as exc:
-            logger.warning("voice_event_publish_failed", event_type=event_type, error=str(exc))
+        except Exception:
+            logger.warning("voice_event_publish_failed", event_type=event_type)
 
 
 def get_voice_service() -> VoiceService:

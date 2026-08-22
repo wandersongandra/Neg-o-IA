@@ -1,4 +1,4 @@
-"""Domínio do NEGÃO AI — entidades e contratos (framework-free)."""
+"""Domínio da Sophie — entidades e contratos (framework-free)."""
 
 from app.domain.models import (
     ApiKeyRecord,

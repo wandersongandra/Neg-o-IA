@@ -5,7 +5,7 @@ services:
     image: pgvector/pgvector:pg17
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-negao}
-      POSTGRES_PASSWORD: REDACTED
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-negao}
       POSTGRES_DB: ${POSTGRES_DB:-negao}
       PGDATA: ${PGDATA:-/var/lib/postgresql/data/pgdata}
       TZ: ${TZ:-America/Sao_Paulo}
@@ -57,7 +57,7 @@ services:
       target: dev
     environment:
       NEGAO_API_URL: http://backend:8000
-      NEGAO_API_KEY: REDACTED
+      NEGAO_SERVICE_API_KEY: ${NEGAO_SERVICE_API_KEY:?defina NEGAO_SERVICE_API_KEY para o ambiente local}
     volumes:
       - ../../frontend:/app
       - /app/node_modules

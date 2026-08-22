@@ -12,7 +12,11 @@ from app.modules.conversation.application import (
     ConversationService,
 )
 from app.modules.conversation.domain import ConversationMessage
-from app.modules.conversation.infrastructure import ConversationStore
+from app.modules.conversation.infrastructure import (
+    ConversationNotFoundError,
+    ConversationPersistenceError,
+    ConversationStore,
+)
 
 SESSION_ID = "abcdef1234567890"
 
@@ -24,9 +28,7 @@ def fake_redis(monkeypatch: Any) -> FakeAsyncRedis:
     async def _get_redis() -> FakeAsyncRedis:
         return client
 
-    monkeypatch.setattr(
-        "app.infrastructure.redis.get_redis", _get_redis
-    )
+    monkeypatch.setattr("app.infrastructure.redis.get_redis", _get_redis)
     return client
 
 
@@ -36,7 +38,7 @@ def store(fake_redis: FakeAsyncRedis) -> ConversationStore:
 
 
 async def test_store_start_session_creates_empty_session(store: ConversationStore) -> None:
-    session = await store.start_session(user_id=None)
+    session = await store.start_session(user_id="user-test")
     assert session.session_id
     assert session.message_count == 0
     assert await store.get_messages(session.session_id) == []
@@ -54,10 +56,8 @@ async def test_store_append_and_read_messages(store: ConversationStore) -> None:
 
 
 async def test_store_limits_history_to_max(store: ConversationStore, monkeypatch: Any) -> None:
-    monkeypatch.setattr(
-        "app.modules.conversation.infrastructure.MAX_MESSAGES", 5
-    )
-    session = await store.start_session(user_id=None)
+    monkeypatch.setattr("app.modules.conversation.infrastructure.MAX_MESSAGES", 5)
+    session = await store.start_session(user_id="user-test")
     for i in range(8):
         await store.append_message(session.session_id, "user", f"msg {i}")
     messages = await store.get_messages(session.session_id)
@@ -111,6 +111,27 @@ async def test_store_list_sessions(store: ConversationStore) -> None:
     assert s2.session_id in ids
 
 
+async def test_service_denies_cross_user_session_access(store: ConversationStore) -> None:
+    service = ConversationService(store=store)
+    owner_session = await service.start_session(user_id="user-a")
+    await service.append_message(owner_session.session_id, "user", "privado")
+
+    with pytest.raises(ConversationNotFoundError):
+        await service.get_messages(owner_session.session_id, user_id="user-b")
+    assert not await service.owns_session(owner_session.session_id, "user-b")
+    assert await service.owns_session(owner_session.session_id, "user-a")
+
+
+async def test_store_fails_closed_when_redis_is_unavailable() -> None:
+    class BrokenRedis:
+        def pipeline(self, **kwargs: Any) -> Any:
+            raise ConnectionError("redis offline")
+
+    store = ConversationStore(redis_client=BrokenRedis())
+    with pytest.raises(ConversationPersistenceError, match="conversation storage unavailable"):
+        await store.start_session(user_id="user-a")
+
+
 class FakeBrain:
     def __init__(self) -> None:
         self.calls: list[Any] = []
@@ -121,7 +142,7 @@ class FakeBrain:
             "Resp",
             (),
             {
-                "text": "Resposta do NEGÃO",
+                "text": "Resposta da Sophie",
                 "model": "nvidia/gpt-oss-120b",
                 "latency_ms": 120,
                 "fallback_used": False,
@@ -143,16 +164,12 @@ async def test_service_chat_persists_and_publishes(
 ) -> None:
     brain = FakeBrain()
     bus = FakeBus()
-    monkeypatch.setattr(
-        "app.modules.brain.application.get_brain_service", lambda: brain
-    )
-    monkeypatch.setattr(
-        "app.modules.events.application.get_event_bus_service", lambda: bus
-    )
+    monkeypatch.setattr("app.modules.brain.application.get_brain_service", lambda: brain)
+    monkeypatch.setattr("app.modules.events.application.get_event_bus_service", lambda: bus)
     service = ConversationService(store=store)
     session = await service.start_session(user_id="wanderson")
     result = await service.chat(session.session_id, "bom dia")
-    assert result.text == "Resposta do NEGÃO"
+    assert result.text == "Resposta da Sophie"
     messages = await store.get_messages(session.session_id)
     assert [m.role for m in messages] == ["user", "assistant"]
     types = {e.type for e in bus.published}
@@ -170,11 +187,9 @@ async def test_service_chat_graceful_on_brain_error(
         async def complete(self, messages: Any, **kwargs: Any) -> Any:
             raise RuntimeError("LLM fora")
 
-    monkeypatch.setattr(
-        "app.modules.brain.application.get_brain_service", lambda: BrokenBrain()
-    )
+    monkeypatch.setattr("app.modules.brain.application.get_brain_service", lambda: BrokenBrain())
     service = ConversationService(store=store)
-    session = await service.start_session(user_id=None)
+    session = await service.start_session(user_id="user-test")
     result = await service.chat(session.session_id, "oi")
     assert result.model == "error"
     assert "engasgada" in result.text
@@ -184,6 +199,12 @@ async def test_service_chat_graceful_on_brain_error(
 
 async def test_ws_conversation_flow(store: ConversationStore, monkeypatch: Any) -> None:
     from app.main import create_app
+    from app.modules.configuration.settings import get_settings
+    from app.modules.security.infrastructure import get_security_service
+
+    monkeypatch.setenv("NEGAO_SERVICE_API_KEY", "test-only-service-key")
+    get_settings.cache_clear()
+    get_security_service.cache_clear()
 
     class FakeService:
         async def start_session(self, user_id: str | None = None) -> Any:
@@ -220,9 +241,7 @@ async def test_ws_conversation_flow(store: ConversationStore, monkeypatch: Any) 
     )
     app = create_app()
     with TestClient(app) as client:
-        with client.websocket_connect(
-            "/ws/conversation?api_key=negao-dev-api-key"
-        ) as ws:
+        with client.websocket_connect("/ws/conversation?api_key=test-only-service-key") as ws:
             ws.send_json({"type": "chat", "text": "e aí?"})
             received = []
             while True:
@@ -236,6 +255,39 @@ async def test_ws_conversation_flow(store: ConversationStore, monkeypatch: Any) 
             assert done["type"] == "done"
             assert done["session_id"] == SESSION_ID
             assert "Olá" in done["text"]
+
+
+async def test_ws_conversation_accepts_ws_ticket(monkeypatch: Any) -> None:
+    """Um ticket emitido por /security/ws-ticket autentica a conexão sem
+    nunca expor a API key real ao navegador (ver docs/sophie/CURRENT_STATE.md,
+    Finding 1)."""
+    from app.main import create_app
+    from app.modules.security.domain import AuthorizationLevel
+    from app.modules.security.infrastructure import issue_ws_ticket
+
+    ticket_redis = FakeAsyncRedis()
+    monkeypatch.setattr("app.infrastructure.redis.get_redis", lambda: ticket_redis)
+
+    class FakeService:
+        async def start_session(self, user_id: str | None = None) -> Any:
+            raise AssertionError("não esperado neste teste")
+
+        async def chat(self, session_id: str, text: str, **kwargs: Any) -> Any:
+            raise AssertionError("não esperado neste teste")
+
+        async def reset_session(self, session_id: str) -> None:
+            return None
+
+    monkeypatch.setattr(
+        "app.modules.conversation.router.get_conversation_service",
+        lambda: FakeService(),
+    )
+    ticket = await issue_ws_ticket("api_key", AuthorizationLevel.READ_ONLY)
+    app = create_app()
+    with TestClient(app) as client:
+        with client.websocket_connect(f"/ws/conversation?ticket={ticket}") as ws:
+            ws.send_json({"type": "ping"})
+            assert ws.receive_json() == {"type": "pong"}
 
 
 async def test_ws_conversation_rejects_missing_key() -> None:

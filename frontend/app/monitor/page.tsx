@@ -592,7 +592,7 @@ function InfraSection({ snapshot }: { snapshot: Snapshot }) {
         title="READYZ"
         icon={CheckCircle2}
         className="col-span-12 md:col-span-6 lg:col-span-4"
-        badge={<StatusBadge ok={readyz?.status === "ok"} />}
+        badge={<StatusBadge ok={readyz?.status === "ready"} />}
         error={snapshot.errors.readyz}
       >
         {readyz ? (
@@ -600,7 +600,7 @@ function InfraSection({ snapshot }: { snapshot: Snapshot }) {
             <InfoRow
               label="STATUS"
               value={String(readyz.status)}
-              tone={readyz.status === "ok" ? "ok" : "warn"}
+              tone={readyz.status === "ready" ? "ok" : "warn"}
             />
             {Object.keys(readyz.checks).length > 0 ? (
               <div className="space-y-1.5 border-t border-white/[0.05] pt-2">
@@ -732,7 +732,7 @@ export default function MonitorPage() {
           </div>
           <div className="leading-tight">
             <p className="text-sm font-semibold tracking-wide text-[#F8FAFC]">
-              NEGÃO <span className="text-gradient glow-text">AI</span>
+              SOPHIE <span className="text-gradient glow-text">AI</span>
             </p>
             <p className="font-mono-data text-[10px] text-[#94A3B8]">MONITORAMENTO</p>
           </div>

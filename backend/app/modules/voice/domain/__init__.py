@@ -10,6 +10,7 @@ do domínio; não há rede, HTTP ou chamadas externas nesta camada.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Protocol
 
 
@@ -60,3 +61,84 @@ class VoiceUnavailableError(VoiceError):
 
 class VoiceProviderError(VoiceError):
     """Falha do provedor externo de STT/TTS."""
+
+
+class VoiceSessionState(StrEnum):
+    """Estados observáveis da máquina de sessão do protocolo Voice V1."""
+
+    CONNECTED = "CONNECTED"
+    SESSION_READY = "SESSION_READY"
+    LISTENING = "LISTENING"
+    TRANSCRIBING = "TRANSCRIBING"
+    THINKING = "THINKING"
+    SYNTHESIZING = "SYNTHESIZING"
+    RESPONDING = "RESPONDING"
+    IDLE = "IDLE"
+    CLOSED = "CLOSED"
+    ERROR = "ERROR"
+
+
+class VoiceProtocolError(VoiceError):
+    """Mensagem ou transição inválida no protocolo Voice V1."""
+
+
+_TRANSITIONS: dict[VoiceSessionState, dict[str, VoiceSessionState]] = {
+    VoiceSessionState.CONNECTED: {
+        "session.start": VoiceSessionState.SESSION_READY,
+        "session.stop": VoiceSessionState.CLOSED,
+        "error": VoiceSessionState.ERROR,
+    },
+    VoiceSessionState.SESSION_READY: {
+        "turn.start": VoiceSessionState.LISTENING,
+        "session.stop": VoiceSessionState.CLOSED,
+        "error": VoiceSessionState.ERROR,
+    },
+    VoiceSessionState.LISTENING: {
+        "turn.end": VoiceSessionState.TRANSCRIBING,
+        "session.stop": VoiceSessionState.CLOSED,
+        "error": VoiceSessionState.ERROR,
+    },
+    VoiceSessionState.TRANSCRIBING: {
+        "transcript.final": VoiceSessionState.THINKING,
+        "turn.error": VoiceSessionState.IDLE,
+        "session.stop": VoiceSessionState.CLOSED,
+        "error": VoiceSessionState.ERROR,
+    },
+    VoiceSessionState.THINKING: {
+        "response.started": VoiceSessionState.THINKING,
+        "response.text": VoiceSessionState.SYNTHESIZING,
+        "turn.error": VoiceSessionState.IDLE,
+        "session.stop": VoiceSessionState.CLOSED,
+        "error": VoiceSessionState.ERROR,
+    },
+    VoiceSessionState.SYNTHESIZING: {
+        "response.audio": VoiceSessionState.RESPONDING,
+        "turn.error": VoiceSessionState.IDLE,
+        "session.stop": VoiceSessionState.CLOSED,
+        "error": VoiceSessionState.ERROR,
+    },
+    VoiceSessionState.RESPONDING: {
+        "response.completed": VoiceSessionState.IDLE,
+        "turn.error": VoiceSessionState.IDLE,
+        "session.stop": VoiceSessionState.CLOSED,
+        "error": VoiceSessionState.ERROR,
+    },
+    VoiceSessionState.IDLE: {
+        "turn.start": VoiceSessionState.LISTENING,
+        "session.stop": VoiceSessionState.CLOSED,
+        "error": VoiceSessionState.ERROR,
+    },
+    VoiceSessionState.ERROR: {
+        "recover": VoiceSessionState.IDLE,
+        "session.stop": VoiceSessionState.CLOSED,
+    },
+    VoiceSessionState.CLOSED: {},
+}
+
+
+def transition_voice_state(state: VoiceSessionState, event: str) -> VoiceSessionState:
+    """Aplica uma transição explícita e rejeita eventos fora de ordem."""
+    try:
+        return _TRANSITIONS[state][event]
+    except KeyError as exc:
+        raise VoiceProtocolError(f"transição inválida: {state.value} + {event}") from exc

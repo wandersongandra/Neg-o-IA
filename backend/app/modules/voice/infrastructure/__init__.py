@@ -15,7 +15,6 @@ from app.modules.voice.domain import (
     VoiceProviderError,
 )
 
-STT_TIMEOUT_SECONDS = 30.0
 _STT_FILENAME = "audio"
 
 
@@ -24,7 +23,7 @@ class NvidiaTranscriptionAdapter:
 
     def __init__(self, settings: Settings | None = None) -> None:
         self._settings = settings or get_settings()
-        self._client = httpx.AsyncClient(timeout=STT_TIMEOUT_SECONDS)
+        self._client = httpx.AsyncClient(timeout=self._settings.voice_stt_timeout_seconds)
 
     async def transcribe(self, audio_bytes: bytes, *, content_type: str) -> TranscriptionResult:
         url = f"{self._settings.nvidia_base_url}/audio/transcriptions"
@@ -36,10 +35,11 @@ class NvidiaTranscriptionAdapter:
         except httpx.HTTPError as exc:
             raise VoiceProviderError(f"STT indisponível: {exc}") from exc
         if response.status_code != 200:
-            raise VoiceProviderError(
-                f"STT indisponível: HTTP {response.status_code} — {response.text}"
-            )
-        payload = response.json()
+            raise VoiceProviderError(f"STT indisponível: HTTP {response.status_code}")
+        try:
+            payload = response.json()
+        except ValueError as exc:
+            raise VoiceProviderError("STT indisponível: resposta inválida") from exc
         return TranscriptionResult(
             text=str(payload.get("text", "")).strip(),
             language="pt",
@@ -68,7 +68,7 @@ class EdgeTTSAdapter:
                 if data:
                     buffer.extend(data)
         except Exception as exc:
-            raise VoiceProviderError(f"TTS indisponível: {exc}") from exc
+            raise VoiceProviderError("TTS indisponível") from exc
         if not buffer:
             raise VoiceProviderError("TTS indisponível: síntese vazia")
         return AudioResult(data=bytes(buffer), content_type="audio/mpeg")

@@ -13,6 +13,7 @@ RUN mkdir -p app && touch app/__init__.py \
     && pip install --no-cache-dir --root-user-action=ignore .
 
 COPY app ./app
+COPY migrations ./migrations
 
 USER negao
 

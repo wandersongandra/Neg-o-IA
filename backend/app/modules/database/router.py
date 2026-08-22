@@ -68,9 +68,7 @@ async def create_api_key_endpoint(
     session: SessionDep,
 ) -> ApiKeyCreateResponse:
     plain_key, _ = await create_api_key(session, request.name, request.scopes)
-    return ApiKeyCreateResponse(
-        api_key=plain_key, name=request.name, scopes=request.scopes
-    )
+    return ApiKeyCreateResponse(api_key=plain_key, name=request.name, scopes=request.scopes)
 
 
 @router.get("/audit", tags=["internal"])

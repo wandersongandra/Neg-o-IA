@@ -1,6 +1,6 @@
 """Contrato global do barramento de eventos — EventEnvelope (v1).
 
-Todo evento do NEGÃO AI trafega neste envelope. O `type` é estável
+Todo evento da Sophie trafega neste envelope. O `type` é estável
 (não carrega versão); `version` versiona o contrato do `payload`.
 """
 
@@ -18,7 +18,7 @@ def _utc_now_iso() -> str:
 
 
 class EventEnvelope(BaseModel):
-    """Envelope canônico de um evento do NEGÃO AI."""
+    """Envelope canônico de um evento da Sophie."""
 
     model_config = ConfigDict(extra="forbid")
 

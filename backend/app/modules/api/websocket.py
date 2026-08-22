@@ -1,4 +1,4 @@
-"""WebSocket endpoint do NEGÃO AI — protocolo JSON com heartbeat.
+"""WebSocket endpoint da Sophie — protocolo JSON com heartbeat.
 
 Protocolo (client → server): `{"type":"ping","ts":<float>}`.
 Protocolo (server → client): `{"type":"pong","ts":<float>,"server_time":<iso>}`,
@@ -20,7 +20,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.modules.api.rate_limit import RateLimiter
 from app.modules.configuration.settings import get_settings
-from app.modules.security.infrastructure import get_security_service
+from app.modules.security.infrastructure import authenticate_ws
 
 logger = structlog.get_logger("negao.ws")
 router = APIRouter(tags=["infra"])
@@ -100,9 +100,9 @@ def _get_ws_limiter() -> RateLimiter:
     return _ws_limiter
 
 
-async def _check_rate_limit(ws: WebSocket) -> bool:
+async def _check_rate_limit(ws: WebSocket, bucket: str | None = None) -> bool:
     client_ip = ws.client.host if ws.client else "unknown"
-    allowed, _, _, _ = await _get_ws_limiter().allow(client_ip)
+    allowed, _, _, _ = await _get_ws_limiter().allow(bucket or client_ip)
     if not allowed:
         logger.warning("ws_rate_limited", client_ip=client_ip)
         await ws.close(code=TRY_AGAIN_CLOSE_CODE, reason="rate limited")
@@ -125,31 +125,28 @@ async def _handle_message(ws: WebSocket, raw: object) -> None:
 
 @router.websocket("/ws")
 async def websocket_endpoint(ws: WebSocket) -> None:
-    await ws.accept()
-    if not await _check_rate_limit(ws):
-        return
-    auth = get_security_service().authenticate_api_key(
-        ws.query_params.get("api_key", "")
+    auth = await authenticate_ws(
+        ws,
+        allow_api_key_fallback=get_settings().env != "production",
     )
     if not auth.authenticated:
         logger.warning("ws_auth_failed", reason=auth.reason)
         await ws.close(code=POLICY_CLOSE_CODE, reason="invalid api key")
         return
+    if not await _check_rate_limit(ws, auth.effective_user_id):
+        return
+    await ws.accept()
     metadata = connection_manager.connect(ws)
     if metadata is None:
         await ws.close(code=TRY_AGAIN_CLOSE_CODE, reason="max connections reached")
         return
     client_id = metadata["client_id"]
-    await ws.send_json(
-        {"type": "lifecycle", "event": "connected", "client_id": client_id}
-    )
+    await ws.send_json({"type": "lifecycle", "event": "connected", "client_id": client_id})
     idle_pings = 0
     try:
         while True:
             try:
-                raw = await asyncio.wait_for(
-                    ws.receive_json(), timeout=IDLE_TIMEOUT_SECONDS
-                )
+                raw = await asyncio.wait_for(ws.receive_json(), timeout=IDLE_TIMEOUT_SECONDS)
             except TimeoutError:
                 idle_pings += 1
                 await ws.send_json(

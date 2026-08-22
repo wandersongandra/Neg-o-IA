@@ -14,15 +14,9 @@ EVENT_CONVERSATION_MESSAGE_STORED: Final[str] = "conversation.message.stored"
 EVENT_CONVERSATION_MESSAGE_RESPONDED: Final[str] = "conversation.message.responded"
 
 EVENT_CATALOG: Final[dict[str, str]] = {
-    EVENT_CONVERSATION_STARTED: (
-        "Nova sessão de conversa criada (retomável pelo session_id)"
-    ),
-    EVENT_CONVERSATION_MESSAGE_STORED: (
-        "Mensagem do usuário persistida no histórico da sessão"
-    ),
-    EVENT_CONVERSATION_MESSAGE_RESPONDED: (
-        "Resposta do NEGÃO persistida no histórico da sessão"
-    ),
+    EVENT_CONVERSATION_STARTED: ("Nova sessão de conversa criada (retomável pelo session_id)"),
+    EVENT_CONVERSATION_MESSAGE_STORED: ("Mensagem do usuário persistida no histórico da sessão"),
+    EVENT_CONVERSATION_MESSAGE_RESPONDED: ("Resposta da Sophie persistida no histórico da sessão"),
 }
 
 PUBLISHED: Final[frozenset[str]] = frozenset(

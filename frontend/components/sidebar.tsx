@@ -71,7 +71,7 @@ interface SidebarProps {
 export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname();
   const version = data?.root?.version ?? "--";
-  const ready = data?.readyz?.status === "ok";
+  const ready = data?.readyz?.status === "ready";
 
   const handleLinkClick = useCallback(() => {
     onClose?.();
@@ -79,7 +79,6 @@ export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: S
 
   return (
     <>
-      {/* Mobile Backdrop — Only visible when sidebar is open */}
       {isOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
@@ -88,7 +87,6 @@ export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: S
         />
       )}
 
-      {/* Sidebar — IMPROVED: CSS-based responsive, no JS logic */}
       <aside
         id="sidebar"
         className={`
@@ -100,7 +98,6 @@ export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: S
         role="navigation"
         aria-label="Navegação principal"
       >
-        {/* Close Button (Mobile Only) */}
         <button
           onClick={onClose}
           className="absolute right-3 top-3 lg:hidden p-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
@@ -109,7 +106,6 @@ export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: S
           <X className="size-5" />
         </button>
 
-        {/* Navigation */}
         <nav className="flex-1 space-y-0.5 overflow-y-auto p-3 mt-6 lg:mt-0">
           {MAIN_NAV.map((item) => {
             const active = pathname === item.href;
@@ -142,7 +138,6 @@ export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: S
             );
           })}
 
-          {/* Coming Soon Section */}
           <p className="px-3 pb-1 pt-4 font-mono-data text-[10px] font-semibold tracking-widest text-[var(--text-secondary)]">
             EM BREVE
           </p>
@@ -160,14 +155,13 @@ export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: S
           ))}
         </nav>
 
-        {/* Core Status Footer */}
         <div className="border-t border-[var(--border)] p-3">
           <div className="glass core-status rounded-xl p-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Brain className="size-4 text-[var(--accent)]" />
                 <span className="font-mono-data text-[11px] font-semibold tracking-widest text-[var(--text-primary)]">
-                  NEGÃO CORE
+                  SOPHIE CORE
                 </span>
               </div>
               <span className="relative flex size-2">

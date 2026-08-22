@@ -1,6 +1,6 @@
-# NEGÃO AI — Documento de Arquitetura de Referência (v0.1)
+# Sophie AI — Documento de Arquitetura de Referência (v0.1)
 
-*Arquiteto Principal — NEGÃO AI. Escopo: design. Nenhuma implementação incluída.*
+*Arquiteto Principal — Sophie AI. Escopo: design. Nenhuma implementação incluída.*
 
 ---
 
@@ -35,7 +35,7 @@ interfaces  →  application  →  domain  ←  infrastructure
 
 ### 1.3 O Conceito de "Cérebro Único"
 
-NEGÃO AI é **uma** inteligência. Os módulos são **órgãos do mesmo cérebro**, não agentes. Não há personalidade, memória ou agenda própria em nenhum módulo — não há `system prompt` por módulo, não há loop autônomo por módulo, não há estado "de propósito" fora da memória única.
+Sophie AI é **uma** inteligência. Os módulos são **órgãos do mesmo cérebro**, não agentes. Não há personalidade, memória ou agenda própria em nenhum módulo — não há `system prompt` por módulo, não há loop autônomo por módulo, não há estado "de propósito" fora da memória única.
 
 **Regra de ouro:** *nenhum módulo chama outro módulo diretamente.* Toda comunicação passa por exatamente um de dois caminhos:
 
@@ -74,7 +74,7 @@ negao-ai/
 │   │   │   ├── context.py                    # RequestContext (trace_id, correlation_id…)
 │   │   │   ├── event_bus.py                  # Contratos do barramento (port)
 │   │   │   └── di.py                         # Composição/Injeção de dependência raiz
-│   │   ├── modules/                          # ★ Os 17 módulos — um por pasta ★
+│   │   ├── modules/                          #  Os 17 módulos — um por pasta
 │   │   │   ├── brain/                        # #1 Brain (núcleo — vive em core/, portais aqui)
 │   │   │   ├── memory/                       # #2 Memory (domain: contratos | infra: adapters)
 │   │   │   ├── knowledge/                    # #3 Knowledge
@@ -155,7 +155,7 @@ app/modules/tool_manager/
 | 8 | **Voice** | interfaces + infrastructure | Entrada de fala (ASR) e saída de voz (TTS) | Faz: transcrição, síntese, VAD. **Não faz:** interpretar o texto (é do Reasoning) |
 | 9 | **Vision** | interfaces + infrastructure | Análise de imagens (captura e descrição/OCR) | Faz: captura, OCR, descrição. **Não faz:** decidir ação sobre a imagem |
 | 10 | **Automation** | application | Executar rotinas automáticas "se-então" disparadas por eventos/scheduler | Faz: avaliar regras, disparar pedidos no Brain. **Não faz:** criar regras sozinho |
-| 11 | **Scheduler** | domain + infrastructure | Agendar tarefas temporais (cron-like) e acordar o Brain | Faz: agendamento, cron, lembretes. **Não faz:** conteúdo das tarefas |
+| 11 | **Scheduler** | domain + infrastructure | Agendar tarefas temporais (cron-like) e acionar o Brain | Faz: agendamento, cron, lembretes. **Não faz:** conteúdo das tarefas |
 | 12 | **Events** | domain + infrastructure | Barramento de eventos: streams, entrega, DLQ, deduplicação | Faz: publish/subscribe, versionamento. **Não faz:** lógica de negócio |
 | 13 | **API** | interfaces | Expor a interface pública REST/WebSocket e autenticar conexões | Faz: controllers, DTOs, rate limit. **Não faz:** regras de negócio |
 | 14 | **Database** | infrastructure | Gerenciar PostgreSQL: conexões, sessões, migrações Alembic | Faz: pool, transações, migrations. **Não faz:** modelagem de memória (é da Memory) |
@@ -264,7 +264,7 @@ Todo evento transporta o envelope padrão; o `payload` é livre por tipo:
 
 ```mermaid
 graph TD
-    %% Arquitetura em camadas do NEGÃO AI
+    %% Arquitetura em camadas do Sophie AI
     U["Usuário (voz, texto, imagem)"]
 
     subgraph IF["interfaces — entrada/saída"]

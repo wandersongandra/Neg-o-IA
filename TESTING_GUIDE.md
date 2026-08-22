@@ -1,10 +1,10 @@
-# 🧪 TESTE DE INTEGRAÇÃO — NEGÃO AI
+# Testes de integração
 
 Depois que o backend e frontend estiverem rodando, use esse documento para testar tudo.
 
 ---
 
-## ✅ TESTE 1: Backend está respondendo?
+## 1. Backend está respondendo?
 
 ### 1.1 Health Check
 ```bash
@@ -19,7 +19,7 @@ curl http://localhost:8000/health
 ### 1.2 Brain Status
 ```bash
 curl http://localhost:8000/api/v1/brain/status \
-  -H "X-API-Key: negao-dev-api-key"
+  -H "X-API-Key: ${NEGAO_SERVICE_API_KEY}"
 ```
 
 **Esperado:**
@@ -34,11 +34,11 @@ curl http://localhost:8000/api/v1/brain/status \
 
 ---
 
-## ✅ TESTE 2: Criar uma Conversação
+## 2. Criar uma conversação
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/conversation/start \
-  -H "X-API-Key: negao-dev-api-key" \
+  -H "X-API-Key: ${NEGAO_SERVICE_API_KEY}" \
   -H "Content-Type: application/json" \
   -d '{"user_id": "teste-user"}'
 ```
@@ -56,15 +56,15 @@ curl -X POST http://localhost:8000/api/v1/conversation/start \
 
 ---
 
-## ✅ TESTE 3: Enviar uma Mensagem (HTTP)
+## 3. Enviar uma mensagem (HTTP)
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/conversation/message \
-  -H "X-API-Key: negao-dev-api-key" \
+  -H "X-API-Key: ${NEGAO_SERVICE_API_KEY}" \
   -H "Content-Type: application/json" \
   -d '{
     "session_id": "SEU_SESSION_ID_AQUI",
-    "text": "Olá NEGÃO! Qual é o seu nome?"
+    "text": "Olá Sophie. Qual é o seu nome?"
   }'
 ```
 
@@ -73,14 +73,14 @@ curl -X POST http://localhost:8000/api/v1/conversation/message \
 {
   "session_id": "seu-session-id",
   "role": "assistant",
-  "text": "Olá! Meu nome é NEGÃO, assistente pessoal de inteligência artificial...",
+  "text": "Olá. Meu nome é Sophie, assistente pessoal de inteligência artificial.",
   "timestamp": "2024-12-19T10:00:01Z"
 }
 ```
 
 ---
 
-## ✅ TESTE 4: WebSocket (Chat em Tempo Real)
+## 4. WebSocket (chat em tempo real)
 
 Use o `wscat` ou teste diretamente no Frontend.
 
@@ -99,11 +99,11 @@ wscat -c "ws://localhost:8000/api/v1/ws/conversation/SEU_SESSION_ID_AQUI"
 {"text": "Qual é a capital do Brasil?"}
 ```
 
-**Esperado:** NEGÃO responde em tempo real com streaming de tokens.
+**Esperado:** Sophie responde em tempo real com streaming de tokens.
 
 ---
 
-## ✅ TESTE 5: Frontend (o grande teste!)
+## 5. Frontend
 
 ### 5.1 Abrir no Navegador
 ```
@@ -112,9 +112,9 @@ http://localhost:3000
 
 ### 5.2 Testes Manuais
 1. Clique no ícone **Conversa** (chat)
-2. Digite: `"Olá NEGÃO, como você está?"`
+2. Digite: `"Olá Sophie, como você está?"`
 3. Pressione **Enter**
-4. 🎉 Esperado: NEGÃO responde em tempo real!
+4. Esperado: Sophie responde em tempo real.
 
 ### 5.3 Testes Adicionais
 - [ ] Teste em Desktop (1920x1080)
@@ -128,20 +128,20 @@ http://localhost:3000
 
 ---
 
-## 🔊 TESTE 6: Voz (TTS)
+## 6. Voz (TTS)
 
 ### 6.1 Teste no Frontend
 1. Vá para página de **Voz**
 2. Fale algo no microfone
-3. NEGÃO deve responder em áudio
+3. Sophie deve responder em áudio.
 
 ### 6.2 Teste via API
 ```bash
 curl -X POST http://localhost:8000/api/v1/voice/tts \
-  -H "X-API-Key: negao-dev-api-key" \
+  -H "X-API-Key: ${NEGAO_SERVICE_API_KEY}" \
   -H "Content-Type: application/json" \
   -d '{
-    "text": "Olá! Eu sou o NEGÃO.",
+    "text": "Olá. Eu sou a Sophie.",
     "voice": "pt-BR-FranciscaNeural",
     "rate": "+0%"
   }' \
@@ -152,7 +152,7 @@ curl -X POST http://localhost:8000/api/v1/voice/tts \
 
 ---
 
-## 📊 TESTE 7: Dashboard
+## 7. Dashboard
 
 ### 7.1 Abrir Dashboard
 ```
@@ -168,7 +168,7 @@ http://localhost:3000
 
 ---
 
-## 🐛 DEBUG - Se Algo Não Funcionar
+## Diagnóstico
 
 ### Erro: "Connection refused"
 ```bash
@@ -182,9 +182,9 @@ curl http://localhost:8000/health
 ### Erro: "API key invalid"
 ```bash
 # Verificar se a chave está no .env
-cat .env | grep NEGAO_API_KEY
+cat .env | grep NEGAO_SERVICE_API_KEY
 
-# Deve ser: negao-dev-api-key
+# Deve ser o valor configurado em NEGAO_SERVICE_API_KEY
 ```
 
 ### Erro: "NVIDIA API error"
@@ -215,7 +215,7 @@ curl -i -N http://localhost:8000/api/v1/ws/conversation/test
 
 ---
 
-## 📈 TESTE 8: Performance
+## 8. Performance
 
 ### 8.1 Chrome DevTools
 1. Abra `http://localhost:3000`
@@ -248,7 +248,7 @@ curl -i -N http://localhost:8000/api/v1/ws/conversation/test
 
 ---
 
-## ✅ CHECKLIST FINAL
+## Checklist final
 
 ```
 Backend Tests:
@@ -281,22 +281,6 @@ Dashboard Tests:
 
 ---
 
-## 🎉 SE TUDO PASSOU!
+## Próximos passos
 
-**PARABÉNS! NEGÃO ESTÁ ACORDADO! 🚀**
-
-Próximos passos:
-1. ✅ Phase 4: Responsive Design Testing (Já feito, mas validar)
-2. ✅ Phase 5: Performance Optimization
-3. ✅ Phase 6-10: Polish Final
-4. 🚀 Deploy em Produção
-
----
-
-**Quando os testes passarem, você está pronto para:**
-- Melhorar a responsividade
-- Otimizar performance
-- Polir a interface
-- Deploy em produção
-
-**Status:** ⏳ AGUARDANDO EXECUÇÃO DOS TESTES
+Depois dos testes locais, valide o ambiente de homologação antes de qualquer deploy.
