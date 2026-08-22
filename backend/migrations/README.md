@@ -1,11 +1,11 @@
-# Migrações Alembic — NEGÃO AI
+# Migrações Alembic — Sophie AI
 
 ## Como rodar (local, a partir de `backend/`)
 
 ```bash
-alembic upgrade head        # aplica todas as migrações
-alembic downgrade base      # desfaz tudo (para dev)
-alembic revision -m "desc"  # gera nova migração (edite upgrade/downgrade)
+alembic -c migrations/alembic.ini upgrade head        # aplica todas
+alembic -c migrations/alembic.ini downgrade base      # somente em dev
+alembic -c migrations/alembic.ini revision -m "desc"  # gera uma migração
 ```
 
 A URL é resolvida em `env.py` a partir de `NEGAO_DATABASE_URL`
@@ -14,13 +14,15 @@ A URL é resolvida em `env.py` a partir de `NEGAO_DATABASE_URL`
 Em produção, via container:
 
 ```bash
-docker compose -f infra/docker/compose/prod.yml exec backend alembic upgrade head
+docker compose -f infra/docker/compose/prod.yml exec backend \
+  alembic -c migrations/alembic.ini upgrade head
 ```
 
-## Esquema criado (0001)
+## Esquema criado (0001 + 0002)
 
 - Schemas: `identity`, `events`, `config`
 - `identity.users`, `identity.api_keys` (hash SHA-256 da chave)
+- `identity.devices`, `identity.sessions` (sessões opacas com hash, expiração e revogação)
 - `events.audit_events` — **particionada** por RANGE mensal; um trigger
   (`events.create_partition_if_missing()`) cria partições novas automaticamente.
 - `config.app_config` — pares key/value JSONB.

@@ -343,7 +343,7 @@ export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-
       ref={canvasRef}
       className={`w-full h-full max-w-[480px] max-h-[480px] ${props.className || ""}`}
       aria-hidden={props["aria-hidden"]}
-      aria-label={`Avatar NEGÃO — estado: ${state}`}
+      aria-label={`Avatar Sophie — estado: ${state}`}
       role="img"
     />
   );

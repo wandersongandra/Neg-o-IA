@@ -243,7 +243,7 @@ interface GraphNode {
   size?: number;
 }
 
-const GRAPH_CENTER = { label: "NEGÃO", x: 350, y: 200 };
+const GRAPH_CENTER = { label: "Sophie", x: 350, y: 200 };
 const GRAPH_NODES: GraphNode[] = [
   { label: "SGS", x: 180, y: 78 },
   { label: "Gandra Tecnologia", x: 350, y: 58 },
@@ -261,7 +261,7 @@ export function KnowledgeGraph() {
   return (
     <div className="glass glass-hover animate-fade-up rounded-2xl p-4">
       <SectionTitle icon={GitBranch} title="Knowledge Graph" subtitle="REDE DE CONHECIMENTO" />
-      <svg viewBox="0 0 700 420" className="w-full" aria-label="Grafo de conhecimento do NEGÃO">
+      <svg viewBox="0 0 700 420" className="w-full" aria-label="Grafo de conhecimento da Sophie">
         <defs>
           <linearGradient id="knowledge-flow" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.1" />
@@ -325,7 +325,7 @@ export function KnowledgeGraph() {
           className="fill-[var(--text-primary)] font-bold"
           style={{ fontSize: 15, fontFamily: "var(--font-jetbrains), monospace", filter: "drop-shadow(0 0 8px rgba(0,212,255,0.8))" }}
         >
-          NEGÃO
+          Sophie
         </text>
         <text
           x={GRAPH_CENTER.x}

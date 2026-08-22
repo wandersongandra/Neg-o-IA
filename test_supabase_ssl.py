@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """Test Supabase PostgreSQL Connection with SSL"""
 
+import os
 import sys
 
 try:
@@ -14,12 +15,15 @@ except ImportError:
 def test_supabase_connection():
     """Test Supabase PostgreSQL connection with SSL"""
     
-    # Supabase connection details
-    host = "db.rvxbbbssgexqnheteobf.supabase.co"
-    port = 5432
-    database = "postgres"
-    user = "postgres"
-    password = "#-Cdp4Wbu@rb7D+"
+    # Credenciais somente por ambiente; nunca manter host/senha real no source.
+    host = os.environ.get("SOPHIE_TEST_DB_HOST")
+    port = int(os.environ.get("SOPHIE_TEST_DB_PORT", "5432"))
+    database = os.environ.get("SOPHIE_TEST_DB_NAME", "postgres")
+    user = os.environ.get("SOPHIE_TEST_DB_USER", "postgres")
+    password = os.environ.get("SOPHIE_TEST_DB_PASSWORD")
+    if not host or not password:
+        print("[BLOCKED] Defina SOPHIE_TEST_DB_HOST e SOPHIE_TEST_DB_PASSWORD para executar.")
+        return False
     
     print("\n" + "="*60)
     print("    SUPABASE PostgreSQL CONNECTION TEST (with SSL)")

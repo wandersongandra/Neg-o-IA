@@ -69,7 +69,7 @@ curl http://localhost:8000/health
 
 # Brain está pronto?
 curl http://localhost:8000/api/v1/brain/status \
-  -H "X-API-Key: negao-dev-api-key"
+  -H "X-API-Key: ${NEGAO_SERVICE_API_KEY}"
 
 # Database conectado?
 psql -U negao -h localhost -d negao -c "SELECT 1;"
@@ -82,7 +82,7 @@ psql -U negao -h localhost -d negao -c "SELECT 1;"
 | Problema | Solução |
 |----------|---------|
 | "Connection refused" | Backend não está rodando. Execute PASSO 1 acima |
-| "API key invalid" | Verifique `.env` tem `NEGAO_API_KEY=negao-dev-api-key` |
+| "API key invalid" | Verifique o secret local `NEGAO_SERVICE_API_KEY` |
 | "Database error" | PostgreSQL não está rodando. Execute `docker-compose up -d` |
 | "NVIDIA error" | NVIDIA API Key inválida ou expirada. Gere nova em build.nvidia.com |
 | "WebSocket failed" | Backend ou Frontend não tá respondendo. Verifique os logs |

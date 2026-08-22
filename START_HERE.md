@@ -66,7 +66,7 @@ Abra uma **NOVA aba do terminal** e rode:
 curl http://localhost:8000/health
 
 # IA pronta?
-curl http://localhost:8000/api/v1/brain/status -H "X-API-Key: negao-dev-api-key"
+curl http://localhost:8000/api/v1/brain/status -H "X-API-Key: ${NEGAO_SERVICE_API_KEY}"
 
 # Database OK?
 psql -U negao -h localhost -d negao -c "SELECT 1;"

@@ -7,7 +7,7 @@ import { AvatarProvider } from "@/components/avatar/avatar-context";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    const stored = localStorage.getItem("negao-theme") as "azul" | "esmeralda" | "magenta" | null;
+    const stored = localStorage.getItem("sophie-theme") as "azul" | "esmeralda" | "magenta" | null;
     if (stored) {
       document.documentElement.dataset.theme = stored;
     } else {

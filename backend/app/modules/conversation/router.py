@@ -7,6 +7,7 @@ WS (/ws/conversation): chat assíncrono com streaming de tokens.
 from __future__ import annotations
 
 import asyncio
+from typing import Annotated
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
@@ -21,8 +22,13 @@ from app.modules.api.websocket import (
 )
 from app.modules.configuration.settings import get_settings
 from app.modules.conversation.application import get_conversation_service
-from app.modules.security.infrastructure import get_security_service
-from app.modules.security.router import require_api_key
+from app.modules.conversation.infrastructure import (
+    ConversationNotFoundError,
+    ConversationPersistenceError,
+)
+from app.modules.security.domain import AuthResult
+from app.modules.security.infrastructure import authenticate_ws
+from app.modules.security.router import require_authenticated_user
 
 logger = structlog.get_logger("negao.conversation")
 router = APIRouter(prefix="/conversation", tags=["conversation"])
@@ -70,12 +76,15 @@ async def conversation_status() -> dict[str, object]:
 
 @router.post("/sessions")
 async def create_session(
+    auth: Annotated[AuthResult, Depends(require_authenticated_user)],
     body: SessionCreateRequest | None = None,
-    auth: object = Depends(require_api_key),
 ) -> dict[str, object]:
-    session = await get_conversation_service().start_session(
-        user_id=getattr(auth, "principal", None)
-    )
+    try:
+        session = await get_conversation_service().start_session(
+            user_id=auth.effective_user_id,
+        )
+    except ConversationPersistenceError as exc:
+        raise HTTPException(status_code=503, detail="conversation storage unavailable") from exc
     return {
         "session_id": session.session_id,
         "user_id": session.user_id,
@@ -86,9 +95,12 @@ async def create_session(
 
 @router.get("/sessions")
 async def list_sessions(
-    auth: object = Depends(require_api_key),
+    auth: Annotated[AuthResult, Depends(require_authenticated_user)],
 ) -> dict[str, object]:
-    sessions = await get_conversation_service().list_sessions()
+    try:
+        sessions = await get_conversation_service().list_sessions(user_id=auth.effective_user_id)
+    except ConversationPersistenceError as exc:
+        raise HTTPException(status_code=503, detail="conversation storage unavailable") from exc
     return {
         "sessions": [
             {
@@ -107,14 +119,20 @@ async def list_sessions(
 @router.get("/sessions/{session_id}/messages")
 async def get_messages(
     session_id: str,
-    auth: object = Depends(require_api_key),
+    auth: Annotated[AuthResult, Depends(require_authenticated_user)],
 ) -> dict[str, object]:
-    messages = await get_conversation_service().get_messages(session_id)
+    try:
+        messages = await get_conversation_service().get_messages(
+            session_id, user_id=auth.effective_user_id
+        )
+    except ConversationNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="sessão não encontrada") from exc
+    except ConversationPersistenceError as exc:
+        raise HTTPException(status_code=503, detail="conversation storage unavailable") from exc
     return {
         "session_id": session_id,
         "messages": [
-            {"role": m.role, "content": m.content, "created_at": m.created_at}
-            for m in messages
+            {"role": m.role, "content": m.content, "created_at": m.created_at} for m in messages
         ],
     }
 
@@ -123,20 +141,30 @@ async def get_messages(
 async def rename_session(
     session_id: str,
     body: SessionRenameRequest,
-    auth: object = Depends(require_api_key),
+    auth: Annotated[AuthResult, Depends(require_authenticated_user)],
 ) -> dict[str, object]:
-    ok = await get_conversation_service().rename_session(session_id, body.name)
+    try:
+        ok = await get_conversation_service().rename_session(
+            session_id, body.name, user_id=auth.effective_user_id
+        )
+    except ConversationPersistenceError as exc:
+        raise HTTPException(status_code=503, detail="conversation storage unavailable") from exc
     if not ok:
         raise HTTPException(status_code=404, detail="sessão não encontrada")
-    return {"session_id": session_id, "name": body.name, "updated_at": get_settings().redis_url}
+    return {"session_id": session_id, "name": body.name}
 
 
 @router.delete("/sessions/{session_id}")
 async def delete_session(
     session_id: str,
-    auth: object = Depends(require_api_key),
+    auth: Annotated[AuthResult, Depends(require_authenticated_user)],
 ) -> dict[str, object]:
-    ok = await get_conversation_service().delete_session(session_id)
+    try:
+        ok = await get_conversation_service().delete_session(
+            session_id, user_id=auth.effective_user_id
+        )
+    except ConversationPersistenceError as exc:
+        raise HTTPException(status_code=503, detail="conversation storage unavailable") from exc
     if not ok:
         raise HTTPException(status_code=404, detail="sessão não encontrada")
     return {"deleted": True, "session_id": session_id}
@@ -146,14 +174,18 @@ async def delete_session(
 async def post_message(
     session_id: str,
     body: MessageRequest,
-    auth: object = Depends(require_api_key),
+    auth: Annotated[AuthResult, Depends(require_authenticated_user)],
 ) -> dict[str, object]:
     try:
         result = await get_conversation_service().chat(
-            session_id, body.text, user_id=getattr(auth, "principal", None)
+            session_id, body.text, user_id=auth.effective_user_id
         )
+    except ConversationNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="sessão não encontrada") from exc
+    except ConversationPersistenceError as exc:
+        raise HTTPException(status_code=503, detail="conversation storage unavailable") from exc
     except Exception as exc:
-        logger.exception("conversation_chat_failed", error=str(exc))
+        logger.exception("conversation_chat_failed")
         raise HTTPException(status_code=502, detail="Falha ao processar a conversa") from exc
     return {
         "text": result.text,
@@ -165,20 +197,21 @@ async def post_message(
 
 @ws_router.websocket("/ws/conversation")
 async def conversation_websocket(ws: WebSocket) -> None:
-    await ws.accept()
-    api_key = ws.query_params.get("api_key", "")
-    limit_key = f"key:{api_key}" if api_key else (
-        ws.client.host if ws.client else "unknown"
+    auth = await authenticate_ws(
+        ws,
+        expected_purpose="conversation",
+        allow_api_key_fallback=get_settings().env != "production",
     )
-    allowed, _, _, _ = await _get_ws_limiter().allow(limit_key)
-    if not allowed:
-        await ws.close(code=TRY_AGAIN_CLOSE_CODE, reason="rate limited")
-        return
-    auth = get_security_service().authenticate_api_key(api_key)
     if not auth.authenticated:
         logger.warning("conversation_ws_auth_failed", reason=auth.reason)
         await ws.close(code=POLICY_CLOSE_CODE, reason="invalid api key")
         return
+    limit_key = auth.effective_user_id or (ws.client.host if ws.client else "unknown")
+    allowed, _, _, _ = await _get_ws_limiter().allow(limit_key)
+    if not allowed:
+        await ws.close(code=TRY_AGAIN_CLOSE_CODE, reason="rate limited")
+        return
+    await ws.accept()
     metadata = connection_manager.connect(ws)
     if metadata is None:
         await ws.close(code=TRY_AGAIN_CLOSE_CODE, reason="max connections reached")
@@ -190,9 +223,7 @@ async def conversation_websocket(ws: WebSocket) -> None:
     try:
         while True:
             try:
-                raw = await asyncio.wait_for(
-                    ws.receive_json(), timeout=IDLE_TIMEOUT_SECONDS
-                )
+                raw = await asyncio.wait_for(ws.receive_json(), timeout=IDLE_TIMEOUT_SECONDS)
             except TimeoutError:
                 idle_pings += 1
                 await ws.send_json(
@@ -215,11 +246,9 @@ async def conversation_websocket(ws: WebSocket) -> None:
             if msg_type == "ping":
                 await ws.send_json({"type": "pong"})
             elif msg_type == "start":
-                session = await service.start_session(user_id=auth.principal)
+                session = await service.start_session(user_id=auth.effective_user_id)
                 session_id = session.session_id
-                await ws.send_json(
-                    {"type": "session", "session_id": session_id, "created": True}
-                )
+                await ws.send_json({"type": "session", "session_id": session_id, "created": True})
             elif msg_type == "chat":
                 text = raw.get("text")
                 if not isinstance(text, str) or not text.strip():
@@ -227,19 +256,15 @@ async def conversation_websocket(ws: WebSocket) -> None:
                     continue
                 target = raw.get("session_id") or session_id
                 if not target:
-                    session = await service.start_session(user_id=auth.principal)
+                    session = await service.start_session(user_id=auth.effective_user_id)
                     target = session.session_id
                     session_id = target
-                    await ws.send_json(
-                        {"type": "session", "session_id": target, "created": True}
-                    )
+                    await ws.send_json({"type": "session", "session_id": target, "created": True})
                 try:
-                    result = await service.chat(target, text, user_id=auth.principal)
-                except Exception as exc:
-                    logger.exception("conversation_ws_chat_failed", error=str(exc))
-                    await ws.send_json(
-                        {"type": "error", "detail": "falha ao processar a conversa"}
-                    )
+                    result = await service.chat(target, text, user_id=auth.effective_user_id)
+                except Exception:
+                    logger.exception("conversation_ws_chat_failed")
+                    await ws.send_json({"type": "error", "detail": "falha ao processar a conversa"})
                     continue
                 for chunk in _chunk_text(result.text):
                     await ws.send_json({"type": "tokens", "delta": chunk})
@@ -256,7 +281,11 @@ async def conversation_websocket(ws: WebSocket) -> None:
             elif msg_type == "reset":
                 target = raw.get("session_id") or session_id
                 if target:
-                    await service.reset_session(target)
+                    try:
+                        await service.reset_session(target, user_id=auth.effective_user_id)
+                    except ConversationNotFoundError:
+                        await ws.send_json({"type": "error", "detail": "sessão não encontrada"})
+                        continue
                     await ws.send_json({"type": "reset_ok", "session_id": target})
             else:
                 await ws.send_json({"type": "error", "detail": "tipo de mensagem não suportado"})

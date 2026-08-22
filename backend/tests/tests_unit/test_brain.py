@@ -197,9 +197,7 @@ async def test_brain_service_publishes_events(monkeypatch: Any) -> None:
         async def publish_event(self, envelope: EventEnvelope) -> None:
             published.append(envelope)
 
-    monkeypatch.setattr(
-        "app.modules.events.application.get_event_bus_service", lambda: FakeBus()
-    )
+    monkeypatch.setattr("app.modules.events.application.get_event_bus_service", lambda: FakeBus())
     monkeypatch.setattr(get_settings(), "nvidia_api_key", "")
     reset_router()
     reset_brain_service()

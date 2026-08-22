@@ -15,6 +15,29 @@ _LOGGER = logging.getLogger("app.modules.monitoring")
 _observability_ready = False
 
 negao_metrics: dict[str, Any] = {}
+_SENSITIVE_LOG_KEYS = frozenset(
+    {
+        "authorization",
+        "cookie",
+        "password",
+        "secret",
+        "token",
+        "api_key",
+        "access_token",
+        "refresh_token",
+    }
+)
+
+
+def redact_sensitive_fields(
+    _logger: Any, _method_name: str, event_dict: dict[str, Any]
+) -> dict[str, Any]:
+    """Remove credenciais de eventos estruturados antes da renderização."""
+    for key in tuple(event_dict):
+        normalized = key.lower().replace("-", "_")
+        if normalized in _SENSITIVE_LOG_KEYS or normalized.endswith("_token"):
+            event_dict[key] = "***REDACTED***"
+    return event_dict
 
 
 def _add_process_info(
@@ -35,24 +58,23 @@ def setup_observability(settings: Any, *, fastapi_app: Any | None = None) -> Non
     _observability_ready = True
 
 
-def setup_telemetry(settings: Any) -> None:
+def setup_telemetry(settings: Any, *, fastapi_app: Any | None = None) -> None:
     """Alias de boot usado pelo main.py (idempotente)."""
-    setup_observability(settings, fastapi_app=None)
+    setup_observability(settings, fastapi_app=fastapi_app)
 
 
 def _setup_structured_logging(settings: Any) -> None:
     try:
         import structlog
     except Exception as exc:
-        _LOGGER.warning(
-            "structlog indisponível — usando logging padrão", extra={"error": str(exc)}
-        )
+        _LOGGER.warning("structlog indisponível — usando logging padrão", extra={"error": str(exc)})
         return
     debug = bool(getattr(settings, "debug", False))
     common_processors: list[Any] = [
         structlog.contextvars.merge_contextvars,
         structlog.processors.add_log_level,
         structlog.processors.TimeStamper(fmt="iso"),
+        redact_sensitive_fields,
         _add_process_info,
     ]
     if debug:
@@ -100,9 +122,7 @@ def _setup_prometheus_metrics() -> None:
         "Duração das requisições HTTP",
         ["method", "path"],
     )
-    negao_metrics["active_connections"] = Gauge(
-        "negao_active_connections", "Conexões ativas"
-    )
+    negao_metrics["active_connections"] = Gauge("negao_active_connections", "Conexões ativas")
     negao_metrics["events_published_total"] = Counter(
         "negao_events_published_total",
         "Eventos publicados no barramento",
@@ -139,7 +159,10 @@ def _setup_tracing(settings: Any, fastapi_app: Any | None) -> None:
 
             FastAPIInstrumentor.instrument_app(fastapi_app)
         negao_metrics["tracer_provider"] = provider
-        _LOGGER.info("OpenTelemetry inicializado", extra={"endpoint": endpoint})
+        _LOGGER.info(
+            "OpenTelemetry inicializado",
+            extra={"endpoint_configured": bool(endpoint)},
+        )
     except Exception as exc:
         _LOGGER.warning(
             "falha ao inicializar OpenTelemetry",

@@ -13,6 +13,4 @@ from typing import Any, Protocol
 class VisionPort(Protocol):
     """Porta pública do Vision (análise de imagens)."""
 
-    async def analyze(
-        self, image_bytes: bytes, *, prompt: str | None = None
-    ) -> dict[str, Any]: ...
+    async def analyze(self, image_bytes: bytes, *, prompt: str | None = None) -> dict[str, Any]: ...

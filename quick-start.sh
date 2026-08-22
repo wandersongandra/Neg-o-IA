@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# 🚀 NEGÃO AI — Quick Start Script
+# 🚀 Sophie AI — Quick Start Script
 # Automatiza a inicialização do projeto
 
 set -e
 
 echo "╔════════════════════════════════════════════════════════╗"
-echo "║         🤖 NEGÃO AI - Quick Start                     ║"
+echo "║         🤖 Sophie AI - Quick Start                    ║"
 echo "╚════════════════════════════════════════════════════════╝"
 
 # Cores
@@ -64,7 +64,7 @@ if [ ! -f "frontend/.env.local" ]; then
   cat > frontend/.env.local << 'EOF'
 NEXT_PUBLIC_API_URL=http://localhost:8000
 NEGAO_API_URL=http://localhost:8000
-NEGAO_API_KEY=negao-dev-api-key
+NEGAO_SERVICE_API_KEY=troque-por-uma-chave-local
 EOF
   echo -e "${GREEN}✓${NC} frontend/.env.local criado"
 else
@@ -178,7 +178,7 @@ echo "║     ⚠️  NÃO ESQUEÇA DE ADICIONAR NVIDIA API KEY!       ║"
 echo "║  1. Vá a: https://build.nvidia.com                   ║"
 echo "║  2. Crie uma conta e gere API Key                    ║"
 echo "║  3. Adicione em .env:                                ║"
-echo "║     NEGAO_NVIDIA_API_KEY=sua-chave-aqui            ║"
+echo "║     SOPHIE_NVIDIA_API_KEY=sua-chave-aqui           ║"
 echo "╚════════════════════════════════════════════════════════╝"
 echo ""
 
@@ -188,4 +188,4 @@ echo "  Backend API: http://localhost:8000"
 echo "  API Docs: http://localhost:8000/docs"
 echo ""
 
-echo -e "${GREEN}🚀 NEGÃO PRONTO PARA ACORDAR!${NC}"
+echo -e "${GREEN}🚀 SOPHIE PRONTA PARA ACORDAR!${NC}"

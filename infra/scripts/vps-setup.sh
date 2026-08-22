@@ -3,7 +3,7 @@
 # Copie e cole no console VNC como root (logado via painel Hetzner)
 set -euo pipefail
 
-echo "=== NEGÃO AI — VPS First Setup ==="
+echo "=== Sophie AI — VPS First Setup ==="
 
 # 1. Instalar Docker
 if ! command -v docker &>/dev/null; then
@@ -23,6 +23,7 @@ fi
 
 # 2. Clonar repositório
 WORKDIR="/opt/negao"
+COMPOSE_FILE="${COMPOSE_FILE:-infra/docker/compose/prod.yml}"
 if [ ! -d "$WORKDIR/.git" ]; then
     echo "[2/4] Clonando repositório..."
     git clone https://github.com/complianceX/Neg-o-IA.git "$WORKDIR"
@@ -47,7 +48,7 @@ fi
 # 4. Build + deploy
 echo "[4/4] Build e deploy..."
 docker compose -f "$COMPOSE_FILE" build --pull
-docker compose -f "$COMPOSE_FILE" run --rm backend alembic upgrade head || echo "[WARN] Migration failed, continuing..."
+docker compose -f "$COMPOSE_FILE" run --rm backend alembic -c migrations/alembic.ini upgrade head
 docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
 
 echo ""

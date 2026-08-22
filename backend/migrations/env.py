@@ -21,9 +21,7 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
-_database_url = os.environ.get(
-    "DATABASE_URL", get_settings().database_url
-)
+_database_url = os.environ.get("DATABASE_URL", get_settings().database_url)
 config.set_main_option("sqlalchemy.url", _database_url)
 
 
@@ -54,9 +52,7 @@ async def run_async_migrations() -> None:
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
-        connect_args={
-            "server_settings": {"search_path": "identity,events,config,public"}
-        },
+        connect_args={"server_settings": {"search_path": "identity,events,config,public"}},
     )
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)

@@ -57,8 +57,6 @@ export default function ChatPanel() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
-  const [apiKey, setApiKey] = useState<string | null>(null);
-  const [wsBase, setWsBase] = useState<string | null>(null);
   const [recording, setRecording] = useState(false);
   const [ttsMuted, setTtsMuted] = useState(false);
   const [sessions, setSessions] = useState<ConversationSession[]>([]);
@@ -115,25 +113,6 @@ export default function ChatPanel() {
     el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
   }, []);
 
-  // Fetch ws-info on mount
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/ws-info", { cache: "no-store" })
-      .then((res) => {
-        if (!res.ok) throw new Error(`ws-info ${res.status}`);
-        return res.json() as Promise<WsInfo>;
-      })
-      .then((info) => {
-        if (cancelled) return;
-        setApiKey(info.api_key);
-        setWsBase(info.ws_base);
-      })
-      .catch(() => {
-        if (!cancelled) setStatus("offline");
-      });
-    return () => { cancelled = true; };
-  }, []);
-
   // Fetch sessions list
   const fetchSessions = useCallback(async () => {
     try {
@@ -171,8 +150,6 @@ export default function ChatPanel() {
 
   // WebSocket connection
   useEffect(() => {
-    if (!apiKey) return;
-
     let disposed = false;
     let socket: WebSocket | null = null;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -281,16 +258,27 @@ export default function ChatPanel() {
       reconnectTimer = setTimeout(connect, delay);
     };
 
-    function connect() {
+    async function connect() {
       if (disposed) return;
       setStatus("conectando");
 
+      let info: WsInfo;
+      try {
+        const res = await fetch("/api/ws-info", { cache: "no-store" });
+        if (!res.ok) throw new Error(`ws-info ${res.status}`);
+        info = (await res.json()) as WsInfo;
+      } catch {
+        scheduleReconnect();
+        return;
+      }
+      if (disposed) return;
+
       let url: string;
-      if (wsBase !== null && /^wss?:\/\//.test(wsBase)) {
-        url = `${wsBase}/ws/conversation?api_key=${apiKey}`;
+      if (info.ws_base !== null && /^wss?:\/\//.test(info.ws_base)) {
+        url = `${info.ws_base}/ws/conversation?ticket=${info.ticket}`;
       } else {
         const protocol = location.protocol === "https:" ? "wss" : "ws";
-        url = `${protocol}://${location.host}/ws/conversation?api_key=${apiKey}`;
+        url = `${protocol}://${location.host}/ws/conversation?ticket=${info.ticket}`;
       }
 
       let nextSocket: WebSocket;
@@ -326,7 +314,7 @@ export default function ChatPanel() {
       };
     }
 
-    connect();
+    void connect();
 
     return () => {
       disposed = true;
@@ -373,7 +361,7 @@ export default function ChatPanel() {
           setAvatarState("idle");
         });
     }
-  }, [apiKey, wsBase, setAvatarState, speak, clearGenTimer]);
+  }, [setAvatarState, speak, clearGenTimer]);
 
   // Heartbeat
   useEffect(() => {
@@ -496,7 +484,7 @@ export default function ChatPanel() {
                   ...m,
                   status: "error",
                   content:
-                    "O NEGÃO demorou para responder. Tente novamente.",
+                    "A Sophie demorou para responder. Tente novamente.",
                 }
               : m
           )
@@ -750,7 +738,7 @@ export default function ChatPanel() {
         </div>
         <div className="min-w-0 leading-tight">
           <h2 className="truncate text-sm font-semibold tracking-wide text-[#F8FAFC]">
-            Conversa com o NEGÃO
+            Conversa com a Sophie
           </h2>
           <p className="truncate font-mono-data text-[10px] uppercase tracking-widest text-[#94A3B8]">
             {thinking
@@ -788,7 +776,7 @@ export default function ChatPanel() {
           type="button"
           onClick={toggleTtsMuted}
           className={`glass glass-hover flex size-9 shrink-0 items-center justify-center rounded-lg text-[#00D4FF] hover:bg-[var(--accent-muted)]`}
-          aria-label={ttsMuted ? "Ativar voz do NEGÃO" : "Mutar voz do NEGÃO"}
+          aria-label={ttsMuted ? "Ativar voz da Sophie" : "Mutar voz da Sophie"}
           title={ttsMuted ? "Ativar voz" : "Mutar voz"}
         >
           {ttsMuted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}

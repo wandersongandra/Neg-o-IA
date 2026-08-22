@@ -1,10 +1,10 @@
-# NEGÃO AI
+# Sophie AI
 
 > **Uma única inteligência. Uma única memória. Uma evolução contínua.**
 
-**NEGÃO AI** é um **Sistema Operacional de Inteligência Artificial (AI Operating System)** desenvolvido para ser um assistente pessoal permanente, capaz de aprender continuamente, construir memória de longo prazo, organizar conhecimento, automatizar tarefas e evoluir ao longo dos anos.
+**Sophie AI** é um **Sistema Operacional de Inteligência Artificial (AI Operating System)** desenvolvido para ser um assistente pessoal permanente, capaz de aprender continuamente, construir memória de longo prazo, organizar conhecimento, automatizar tarefas e evoluir ao longo dos anos.
 
-Diferente das arquiteturas tradicionais baseadas em múltiplos agentes independentes, o **NEGÃO AI** foi projetado como **uma única inteligência**.
+Diferente das arquiteturas tradicionais baseadas em múltiplos agentes independentes, a **Sophie AI** foi projetada como **uma única inteligência**.
 
 Todos os componentes internos representam partes do mesmo cérebro.
 
@@ -12,13 +12,13 @@ Não existem personalidades diferentes.
 
 Não existem agentes concorrentes.
 
-Existe apenas **o NEGÃO**.
+Existe apenas **a Sophie**.
 
 ---
 
 # Filosofia
 
-O NEGÃO foi inspirado em uma ideia simples:
+A Sophie foi inspirada em uma ideia simples:
 
 > **Uma inteligência deveria crescer junto com seu usuário durante toda a vida.**
 
@@ -52,14 +52,14 @@ Ele deve:
 
 # Arquitetura
 
-O NEGÃO utiliza uma arquitetura modular baseada em **Clean Architecture**, **DDD**, **Event Driven Architecture** e **SOLID**.
+A Sophie utiliza uma arquitetura modular baseada em **Clean Architecture**, **DDD**, **Event Driven Architecture** e **SOLID**.
 
 Os módulos não representam agentes.
 
 São órgãos especializados pertencentes ao mesmo cérebro.
 
 ```text
-                    NEGÃO AI
+                    Sophie AI
 
                        Brain
                          │
@@ -148,7 +148,7 @@ Makefile
 
 # Memória
 
-O NEGÃO possui um sistema de memória inspirado na memória humana.
+A Sophie possui um sistema de memória inspirado na memória humana.
 
 ### Memória de Curto Prazo
 
@@ -433,7 +433,7 @@ O projeto segue o princípio do menor privilégio.
 
 # Visão
 
-O objetivo do NEGÃO não é apenas responder perguntas.
+O objetivo da Sophie não é apenas responder perguntas.
 
 O objetivo é criar uma inteligência capaz de acompanhar seu usuário durante anos, aprendendo continuamente, preservando conhecimento e tornando-se um verdadeiro parceiro de trabalho.
 

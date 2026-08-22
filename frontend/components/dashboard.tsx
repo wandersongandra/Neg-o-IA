@@ -47,7 +47,7 @@ interface Command {
 }
 
 const COMMANDS: Command[] = [
-  { label: "Abrir conversa com o NEGÃO", icon: MessageSquareText, href: "/conversa" },
+  { label: "Abrir conversa com a Sophie", icon: MessageSquareText, href: "/conversa" },
   { label: "Voz", icon: Mic, href: "/voz" },
   { label: "Monitor", icon: Activity, href: "/monitor" },
   { label: "Consultar memória", icon: Brain },
@@ -256,7 +256,7 @@ export default function Dashboard() {
                 id="command-palette-title"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
-                placeholder="Comando para o NEGÃO…"
+                placeholder="Comando para a Sophie…"
                 className="flex-1 bg-transparent text-base text-[var(--text-primary)] outline-none placeholder:text-[var(--text-secondary)] sm:text-sm"
                 aria-label="Pesquisa de comandos"
                 role="combobox"

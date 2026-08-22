@@ -68,9 +68,7 @@ class RateLimiter:
         async with self._redis_check_lock:
             if now - self._last_redis_check >= _REDIS_RECHECK_SECONDS:
                 try:
-                    pong = await asyncio.wait_for(
-                        self._redis.ping(), timeout=_REDIS_PING_TIMEOUT
-                    )
+                    pong = await asyncio.wait_for(self._redis.ping(), timeout=_REDIS_PING_TIMEOUT)
                     self._redis_available = bool(pong)
                 except Exception:
                     self._redis_available = False
@@ -117,9 +115,7 @@ def make_rate_limit_dependency(limit: int) -> Callable[[Request], Awaitable[None
     limiter = RateLimiter(limit=limit)
 
     async def rate_limit_dependency(request: Request) -> None:
-        allowed, limit_, remaining, retry_after = await limiter.allow(
-            _extract_key(request)
-        )
+        allowed, limit_, remaining, retry_after = await limiter.allow(_extract_key(request))
         if not allowed:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,

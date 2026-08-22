@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { resolveApiConfig } from "@/lib/env";
 import type {
   DashboardData,
   DatabaseStatus,
@@ -10,8 +12,7 @@ import type {
   SecurityStatus,
 } from "@/lib/types";
 
-const API_URL = process.env.NEGAO_API_URL ?? "http://localhost:8000";
-const API_KEY = process.env.NEGAO_API_KEY ?? "negao-dev-api-key";
+const { apiUrl: API_URL, serviceApiKey: SERVICE_API_KEY } = resolveApiConfig();
 const FETCH_TIMEOUT_MS = 3500;
 const LOGS_URLS = ["/monitoring/logs"];
 
@@ -19,8 +20,12 @@ async function getJson<T>(path: string): Promise<T | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
+    const headers: Record<string, string> = { Accept: "application/json" };
+    const sessionToken = (await cookies()).get("sophie_session")?.value;
+    if (sessionToken) headers.Authorization = `Bearer ${sessionToken}`;
+    else if (SERVICE_API_KEY && process.env.NODE_ENV !== "production") headers["X-API-Key"] = SERVICE_API_KEY;
     const res = await fetch(`${API_URL}${path}`, {
-      headers: { "X-API-Key": API_KEY, Accept: "application/json" },
+      headers,
       signal: controller.signal,
       cache: "no-store",
     });
@@ -37,8 +42,12 @@ async function getLogs(): Promise<string[] | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 2000);
   try {
+    const headers: Record<string, string> = { Accept: "application/json" };
+    const sessionToken = (await cookies()).get("sophie_session")?.value;
+    if (sessionToken) headers.Authorization = `Bearer ${sessionToken}`;
+    else if (SERVICE_API_KEY && process.env.NODE_ENV !== "production") headers["X-API-Key"] = SERVICE_API_KEY;
     const res = await fetch(`${API_URL}${LOGS_URLS[0]}`, {
-      headers: { "X-API-Key": API_KEY, Accept: "application/json" },
+      headers,
       signal: controller.signal,
       cache: "no-store",
     });

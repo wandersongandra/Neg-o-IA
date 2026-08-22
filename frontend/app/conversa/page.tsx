@@ -3,8 +3,8 @@ import ChatPanel from "@/components/chat/chat-panel";
 import ConversaShell from "@/components/chat/conversa-shell";
 
 export const metadata: Metadata = {
-  title: "Conversa — NEGÃO AI",
-  description: "Chat em tempo real com o NEGÃO",
+  title: "Conversa — Sophie AI",
+  description: "Chat em tempo real com a Sophie",
 };
 
 export default function ConversaPage() {
@@ -16,7 +16,7 @@ export default function ConversaPage() {
             Conversa
           </h1>
           <p className="font-mono-data text-xs uppercase tracking-widest text-[var(--text-secondary)]">
-            Bata um papo com o NEGÃO em tempo real
+            Bata um papo com a Sophie em tempo real
           </p>
         </header>
         <ChatPanel />

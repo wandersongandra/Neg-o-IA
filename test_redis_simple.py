@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """Test Redis Connection"""
 
+import os
 import sys
 import time
 
@@ -109,10 +110,10 @@ def main():
     print("         REDIS CONNECTION TEST")
     print("="*60)
 
-    redis_url = (
-        "redis://default:fxopEpoaJsGw3fjuKMoLhKc1ydNm3tZI@"
-        "potato-tail-supermodern-53945.db.redis.io:15412/0"
-    )
+    redis_url = os.getenv("SOPHIE_REDIS_URL") or os.getenv("NEGAO_REDIS_URL")
+    if not redis_url:
+        print("[BLOCKED] Set SOPHIE_REDIS_URL or NEGAO_REDIS_URL in an ignored environment file.")
+        return 2
 
     success = test_redis_connection(redis_url)
 

@@ -56,6 +56,15 @@ def _current_partition() -> str:
     return datetime.now(UTC).strftime("%Y_%m")
 
 
+def _current_partition_bounds() -> tuple[str, str]:
+    current = datetime.now(UTC).date().replace(day=1)
+    if current.month == 12:
+        following = current.replace(year=current.year + 1, month=1)
+    else:
+        following = current.replace(month=current.month + 1)
+    return current.isoformat(), following.isoformat()
+
+
 def upgrade() -> None:
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
     op.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
@@ -108,11 +117,12 @@ def upgrade() -> None:
         """
     )
     partition = _current_partition()
+    partition_start, partition_end = _current_partition_bounds()
     op.execute(
         f"""
         CREATE TABLE events.audit_events_{partition} PARTITION OF events.audit_events
-        FOR VALUES FROM (date_trunc('month', now())::date)
-                       TO (date_trunc('month', now())::date + interval '1 month')
+        FOR VALUES FROM (DATE '{partition_start}')
+                       TO (DATE '{partition_end}')
         """
     )
     op.execute(

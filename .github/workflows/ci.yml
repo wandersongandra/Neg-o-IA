@@ -9,6 +9,29 @@ jobs:
   backend:
     name: Backend (lint, typecheck, testes)
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: negao
+          POSTGRES_PASSWORD: negao-ci-password
+          POSTGRES_DB: negao
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U negao -d negao"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
     steps:
       - uses: actions/checkout@v4
 
@@ -23,11 +46,34 @@ jobs:
       - name: Lint (ruff)
         run: ruff check backend
 
+      - name: Formatter (ruff)
+        run: ruff format --check backend
+
+      - name: Static security analysis (Semgrep)
+        run: |
+          python -m pip install semgrep
+          semgrep scan --config p/python --error --metrics off backend/app
+
       - name: Typecheck (mypy)
         run: mypy backend
 
       - name: Testes (pytest)
         run: pytest backend/tests -q
+
+      - name: Migrations (PostgreSQL limpo)
+        env:
+          NEGAO_ENV: test
+          NEGAO_DATABASE_URL: postgresql+asyncpg://negao:negao-ci-password@127.0.0.1:5432/negao
+          NEGAO_REDIS_URL: redis://127.0.0.1:6379/0
+        run: |
+          cd backend
+          python -m alembic -c migrations/alembic.ini upgrade head
+          python -m alembic -c migrations/alembic.ini current
+
+      - name: Dependency audit (Python)
+        run: |
+          python -m pip install pip-audit
+          pip-audit
 
   frontend:
     name: Frontend (lint e build)
@@ -55,3 +101,22 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Dependency audit (produção)
+        run: npm audit --omit=dev --audit-level=high
+
+  secret_scan:
+    name: Secret scan (working tree)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan tracked checkout with Gitleaks
+        run: |
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/repo:ro" \
+            zricethezav/gitleaks:latest \
+            dir --redact --no-banner --exit-code 1 /repo

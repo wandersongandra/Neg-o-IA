@@ -1,7 +1,7 @@
 """Contratos do módulo conversation — domain (framework-free).
 
 Responsabilidade: sessões de conversa retomáveis com histórico limitado,
-persona do NEGÃO e contexto para o Brain. Não chama LLM diretamente.
+persona da Sophie e contexto para o Brain. Não chama LLM diretamente.
 """
 
 from __future__ import annotations

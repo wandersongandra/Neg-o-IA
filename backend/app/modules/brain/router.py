@@ -12,10 +12,11 @@ from pydantic import BaseModel, Field
 from app.infrastructure.redis import get_redis
 from app.modules.brain.application import get_brain_service
 from app.modules.brain.domain import ChatMessage, TaskType
+from app.modules.brain.identity import SYSTEM_PROMPT
 from app.modules.brain.infrastructure import get_model_router
 from app.modules.configuration.settings import get_settings
 from app.modules.security.domain import AuthResult
-from app.modules.security.router import require_api_key
+from app.modules.security.router import require_authenticated_user
 
 logger = structlog.get_logger("negao.brain")
 router = APIRouter(prefix="/brain", tags=["brain"])
@@ -23,14 +24,7 @@ router = APIRouter(prefix="/brain", tags=["brain"])
 CONFIG_KEY = "agent:config"
 
 DEFAULT_CONFIG = {
-    "system_prompt": (
-        "Você é o NEGÃO, assistente pessoal de inteligência artificial do Wanderson. "
-        "Fala sempre em português brasileiro, com tom profissional, elegante e direto, "
-        "inspirado no JARVIS: nunca invente fatos, admita quando não souber, e use humor "
-        "sutil quando apropriado. Trate o usuário como 'chefe'. Seja conciso: prefira "
-        "respostas curtas e úteis, em vez de longas explicações. Nunca repita o que o "
-        "usuário acabou de dizer."
-    ),
+    "system_prompt": SYSTEM_PROMPT,
     "primary_model": "deepseek-ai/deepseek-v4-flash",
     "fallback_model": "meta/llama-3.1-8b-instruct",
     "temperature": 0.3,
@@ -44,6 +38,7 @@ DEFAULT_CONFIG = {
     },
 }
 
+
 async def _load_config() -> dict[str, Any]:
     client = get_redis()
     raw = await client.get(CONFIG_KEY)
@@ -51,9 +46,11 @@ async def _load_config() -> dict[str, Any]:
         return dict(json.loads(raw))
     return DEFAULT_CONFIG.copy()
 
+
 async def _save_config(config: dict[str, Any]) -> None:
     client = get_redis()
     await client.set(CONFIG_KEY, json.dumps(config), ex=86400 * 30)
+
 
 class CompleteRequest(BaseModel):
     """Pedido de completion (formato OpenAI-compatível)."""
@@ -105,7 +102,7 @@ async def brain_status() -> dict[str, object]:
 @router.post("/complete")
 async def brain_complete(
     body: CompleteRequest,
-    auth: Annotated[AuthResult, Depends(require_api_key)],
+    auth: Annotated[AuthResult, Depends(require_authenticated_user)],
 ) -> dict[str, object]:
     try:
         messages = _parse_messages(body.messages)
@@ -117,10 +114,10 @@ async def brain_complete(
             messages,
             task_type=task_type,
             session_id="debug",
-            user_id=auth.principal,
+            user_id=auth.effective_user_id,
         )
     except Exception as exc:
-        logger.exception("brain_complete_failed", error=str(exc))
+        logger.exception("brain_complete_failed")
         raise HTTPException(
             status_code=502, detail="Falha ao processar no modelo de linguagem"
         ) from exc
@@ -136,10 +133,10 @@ async def brain_complete(
 @router.post("/debug")
 async def brain_debug(
     body: DebugRequest,
-    auth: Annotated[AuthResult, Depends(require_api_key)],
+    auth: Annotated[AuthResult, Depends(require_authenticated_user)],
 ) -> dict[str, object]:
     return await get_brain_service().process_input(
-        body.text, session_id="debug", user_id=auth.principal
+        body.text, session_id="debug", user_id=auth.effective_user_id
     )
 
 
@@ -157,9 +154,9 @@ async def brain_router_status() -> dict[str, object]:
 
 @router.get("/config")
 async def get_agent_config(
-    auth: Annotated[AuthResult, Depends(require_api_key)],
+    auth: Annotated[AuthResult, Depends(require_authenticated_user)],
 ) -> dict[str, Any]:
-    """Configuração atual do agente NEGÃO."""
+    """Configuração atual do agente Sophie."""
     config = await _load_config()
     # Merge com settings atuais para modelos
     settings = get_settings()
@@ -171,7 +168,7 @@ async def get_agent_config(
 @router.patch("/config")
 async def update_agent_config(
     body: AgentConfigUpdate,
-    auth: Annotated[AuthResult, Depends(require_api_key)],
+    auth: Annotated[AuthResult, Depends(require_authenticated_user)],
 ) -> dict[str, Any]:
     """Atualiza configuração do agente (merge parcial)."""
     config = await _load_config()

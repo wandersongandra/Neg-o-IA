@@ -22,7 +22,7 @@ _memory_service: MemoryService | None = None
 
 
 class MemoryService:
-    """Facade pública da memória do NEGÃO AI (v0: curto prazo em Redis)."""
+    """Facade pública da memória da Sophie (v0: curto prazo em Redis)."""
 
     def __init__(self, store: RedisShortTermMemory) -> None:
         self._store = store

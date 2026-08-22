@@ -11,9 +11,7 @@ from starlette.middleware.base import RequestResponseEndpoint
 from starlette.requests import Request
 from starlette.responses import Response
 
-current_request: ContextVar[RequestContext | None] = ContextVar(
-    "current_request", default=None
-)
+current_request: ContextVar[RequestContext | None] = ContextVar("current_request", default=None)
 
 
 @dataclass(slots=True)
@@ -44,6 +42,8 @@ async def request_context_middleware(
     request: Request, call_next: RequestResponseEndpoint
 ) -> Response:
     context = RequestContext(correlation_id=request.headers.get("x-correlation-id"))
+    if context.correlation_id is None:
+        context.correlation_id = context.request_id
     token = current_request.set(context)
     structlog.contextvars.bind_contextvars(
         request_id=context.request_id,
@@ -57,4 +57,5 @@ async def request_context_middleware(
         structlog.contextvars.clear_contextvars()
     response.headers["x-trace-id"] = context.trace_id
     response.headers["x-request-id"] = context.request_id
+    response.headers["x-correlation-id"] = context.correlation_id
     return response

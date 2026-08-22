@@ -5,6 +5,7 @@
 Testa conexão com Redis na nuvem
 """
 
+import os
 import sys
 import time
 from typing import Optional
@@ -117,11 +118,10 @@ def main():
     print("║              Test Redis Cloud Connection              ║")
     print("╚════════════════════════════════════════════════════════╝")
 
-    # Usar URL do .env
-    redis_url = (
-        "redis://default:fxopEpoaJsGw3fjuKMoLhKc1ydNm3tZI@"
-        "potato-tail-supermodern-53945.db.redis.io:15412/0"
-    )
+    redis_url = os.getenv("SOPHIE_REDIS_URL") or os.getenv("NEGAO_REDIS_URL")
+    if not redis_url:
+        print("[BLOCKED] Defina SOPHIE_REDIS_URL ou NEGAO_REDIS_URL em ambiente ignorado.")
+        return 2
 
     success = test_redis_connection(redis_url)
 

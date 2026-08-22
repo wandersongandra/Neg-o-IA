@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# deploy-vps.sh — Deploy do NEGÃO AI na VPS Ubuntu 26.04
+# deploy-vps.sh — Deploy da Sophie AI na VPS Ubuntu 26.04
 # Requisitos na VPS: Docker + Docker Compose v2
 # Uso: chmod +x deploy-vps.sh && ./deploy-vps.sh
 set -euo pipefail
@@ -8,7 +8,7 @@ REPO="https://github.com/complianceX/Neg-o-IA.git"
 WORKDIR="/opt/negao"
 COMPOSE_FILE="infra/docker/compose/prod.yml"
 
-echo "=== NEGÃO AI — Deploy VPS ==="
+echo "=== Sophie AI — Deploy VPS ==="
 
 # --- Verifica Docker ---
 if ! command -v docker &>/dev/null; then
@@ -51,9 +51,7 @@ docker compose -f "$COMPOSE_FILE" build --pull
 
 # --- Migrate ---
 echo "[4/5] Migrações do banco..."
-docker compose -f "$COMPOSE_FILE" run --rm backend alembic upgrade head || {
-    echo "[WARN] Migração falhou — continuando mesmo assim"
-}
+docker compose -f "$COMPOSE_FILE" run --rm backend alembic -c migrations/alembic.ini upgrade head
 
 # --- Up ---
 echo "[5/5] Subindo stack..."
@@ -62,13 +60,13 @@ docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
 # --- Healthcheck ---
 echo ""
 echo "=== Aguardando healthcheck ==="
-HEALTH_URL="http://localhost/healthz"
+HEALTH_URL="${NEGAO_HEALTH_URL:-http://localhost/readyz}"
 RETRIES="${NEGAO_HEALTH_RETRIES:-30}"
 SLEEP="${NEGAO_HEALTH_SLEEP:-5}"
 
 for i in $(seq 1 "$RETRIES"); do
     if curl -fsS "$HEALTH_URL" >/dev/null 2>&1; then
-        echo "✅ Deploy concluído! NEGÃO AI está online em http://$(hostname -I | awk '{print $1}')"
+        echo "✅ Deploy concluído! Sophie AI está online em http://$(hostname -I | awk '{print $1}')"
         docker compose -f "$COMPOSE_FILE" ps
         exit 0
     fi

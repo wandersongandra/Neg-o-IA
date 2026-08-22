@@ -1,7 +1,7 @@
 export interface RootInfo {
   name: string;
   version: string;
-  status: string;
+  status: "ready" | "not_ready" | string;
   environment: string;
 }
 
@@ -116,13 +116,94 @@ export interface VoiceStatus {
   tts_available: boolean;
   stt_model: string;
   tts_voice: string;
+  protocol_version?: number;
+  audio_format?: string;
+  limits?: {
+    max_chunk_bytes: number;
+    max_turn_bytes: number;
+    max_turn_seconds: number;
+  };
 }
+
+export type VoiceState =
+  | "IDLE"
+  | "CONNECTING"
+  | "LISTENING"
+  | "TRANSCRIBING"
+  | "THINKING"
+  | "SPEAKING"
+  | "ERROR";
+
+export interface AudioDevice {
+  deviceId: string;
+  groupId: string;
+  label: string;
+  kind: "audioinput" | "audiooutput";
+}
+
+export type VoiceServerMessage =
+  | {
+      type: "voice.session.started";
+      version: 1;
+      session_id: string;
+    }
+  | {
+      type: "voice.state";
+      version: 1;
+      state: string;
+      session_id: string | null;
+      interaction_id: string | null;
+    }
+  | {
+      type: "voice.transcript.final";
+      version: 1;
+      interaction_id: string;
+      text: string;
+    }
+  | {
+      type: "voice.response.started";
+      version: 1;
+      interaction_id: string;
+    }
+  | {
+      type: "voice.response.text";
+      version: 1;
+      interaction_id: string;
+      text: string;
+    }
+  | {
+      type: "voice.response.audio";
+      version: 1;
+      interaction_id: string;
+      format: string;
+      bytes: number;
+    }
+  | {
+      type: "voice.response.completed";
+      version: 1;
+      interaction_id: string;
+    }
+  | {
+      type: "voice.session.stopped";
+      version: 1;
+      session_id: string | null;
+    }
+  | {
+      type: "voice.error";
+      version: 1;
+      code: string;
+      message: string;
+      interaction_id: string | null;
+    };
 
 // --- WebSocket / Chat --------------------------------------------------------
 
 export interface WsInfo {
-  api_key: string;
+  ticket: string;
   ws_base: string | null;
+  expires_in?: number;
+  purpose?: "conversation" | "voice";
+  session_id?: string | null;
 }
 
 export type WsServerMessage =

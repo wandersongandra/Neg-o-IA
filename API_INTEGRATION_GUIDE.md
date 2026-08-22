@@ -15,7 +15,7 @@
 # Essenciais para IA responder:
 NEGAO_ENV=development
 NEGAO_DEBUG=true
-NEGAO_API_KEY=negao-dev-api-key
+NEGAO_SERVICE_API_KEY=troque-por-uma-chave-local
 
 # Database (use docker compose ou servidor local)
 NEGAO_DATABASE_URL=postgresql://negao:negao@localhost:5432/negao
@@ -42,7 +42,7 @@ NEGAO_CORS_ORIGINS=http://localhost:3000,http://localhost:3001
 # Como o frontend acessa o backend
 NEXT_PUBLIC_API_URL=http://localhost:8000
 NEGAO_API_URL=http://localhost:8000
-NEGAO_API_KEY=negao-dev-api-key
+NEGAO_SERVICE_API_KEY=troque-por-uma-chave-local
 ```
 
 ---
@@ -151,13 +151,13 @@ npm run dev
 ```bash
 # Criar uma conversa
 curl -X POST http://localhost:8000/api/v1/conversation/start \
-  -H "X-API-Key: negao-dev-api-key" \
+  -H "X-API-Key: ${NEGAO_SERVICE_API_KEY}" \
   -H "Content-Type: application/json" \
   -d '{"user": "teste"}'
 
 # Enviar mensagem
 curl -X POST http://localhost:8000/api/v1/conversation/message \
-  -H "X-API-Key: negao-dev-api-key" \
+  -H "X-API-Key: ${NEGAO_SERVICE_API_KEY}" \
   -H "Content-Type: application/json" \
   -d '{
     "session_id": "sua-session-id-aqui",
@@ -178,10 +178,9 @@ lsof -i :8000
 ```
 
 ### ❌ "API key invalid"
-**Solução:** Verifique se `NEGAO_API_KEY` está configurado corretamente
+**Solução:** Verifique se `NEGAO_SERVICE_API_KEY` está configurado somente no backend local
 ```bash
-echo $NEGAO_API_KEY  # Backend
-echo $NEGAO_API_KEY  # Frontend (via env.local)
+echo $NEGAO_SERVICE_API_KEY  # somente em terminal local autorizado
 ```
 
 ### ❌ "Database connection error"
@@ -220,19 +219,19 @@ curl -i -N -H "Connection: Upgrade" -H "Upgrade: websocket" http://localhost:800
 │  │ Voice UI         │ HTTP  │ Proxy Routes             │   │
 │  │ Dashboard        │ WS    │                          │   │
 │  └──────────────────┘       │ Services:                │   │
-│       Port 3000              │ • Brain (LLM - NVIDIA)   │   │
+│       Port 3000              │ • Brain (LLM - NVIDIA)  │   │
 │                             │ • Conversation (DB)      │   │
 │                             │ • Voice (STT/TTS)        │   │
 │                             │ • Memory (Redis)         │   │
 │                             └──────────────────────────┘   │
-│                                     ▲                       │
+│                                     ▲                      │
 │                   ┌─────────────────┴──────────────────┐   │
 │                   ▼                                    ▼   │
 │            ┌────────────────┐            ┌──────────────┐  │
 │            │ PostgreSQL     │            │ Redis        │  │
 │            │ (Conversation) │            │ (Cache)      │  │
 │            └────────────────┘            └──────────────┘  │
-│                                                             │
+│                                                            │
 │                   ┌──────────────────────────┐             │
 │                   │ NVIDIA API (Cloud)       │             │
 │                   │ • gpt-oss-120b           │             │
@@ -272,7 +271,7 @@ curl -i -N -H "Connection: Upgrade" -H "Upgrade: websocket" http://localhost:800
 ## ✅ CHECKLIST FINAL
 
 - [ ] Backend `.env` configurado com NVIDIA_API_KEY
-- [ ] Frontend `.env.local` configurado com API_URL e API_KEY
+- [ ] Frontend `.env.local` configurado com API_URL; login usa cookie HttpOnly
 - [ ] PostgreSQL rodando e migrações executadas
 - [ ] Redis rodando
 - [ ] Backend iniciado (uvicorn rodando)

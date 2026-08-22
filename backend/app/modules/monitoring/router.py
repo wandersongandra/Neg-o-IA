@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, Depends, HTTPException, Response
 
 from app.modules.monitoring.application import get_monitoring_service
+from app.modules.security.domain import AuthResult
+from app.modules.security.router import require_authenticated_user
 
 router = APIRouter(prefix="/monitoring", tags=["monitoring"])
 
@@ -58,7 +60,9 @@ async def monitoring_metrics() -> Response:
 
 
 @router.get("/logs")
-async def monitoring_logs() -> dict[str, Any]:
+async def monitoring_logs(
+    _auth: Annotated[AuthResult, Depends(require_authenticated_user)],
+) -> dict[str, Any]:
     """Últimas 100 linhas do arquivo de log — apenas em ambiente debug."""
     if not _is_debug():
         raise HTTPException(status_code=403, detail="logs disponíveis apenas em debug")

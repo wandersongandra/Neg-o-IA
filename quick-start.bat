@@ -1,11 +1,11 @@
 @echo off
-REM 🚀 NEGÃO AI - Quick Start (Windows)
+REM 🚀 Sophie AI - Quick Start (Windows)
 
 setlocal enabledelayedexpansion
 
 echo.
 echo ╔════════════════════════════════════════════════════════╗
-echo ║         🤖 NEGÃO AI - Quick Start (Windows)           ║
+echo ║         🤖 Sophie AI - Quick Start (Windows)          ║
 echo ║              Acordando a IA...                        ║
 echo ╚════════════════════════════════════════════════════════╝
 echo.
@@ -126,7 +126,7 @@ echo  API Docs:    http://localhost:8000/docs
 echo  Brain:       http://localhost:8000/api/v1/brain/status
 echo.
 echo ╔════════════════════════════════════════════════════════╗
-echo ║     🚀 NEGÃO PRONTO PARA ACORDAR!                     ║
+echo ║     🚀 SOPHIE PRONTA PARA ACORDAR!                    ║
 echo ║     Pressione qualquer tecla para fechar.             ║
 echo ╚════════════════════════════════════════════════════════╝
 echo.

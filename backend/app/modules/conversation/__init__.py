@@ -1,4 +1,4 @@
-"""Módulo conversation — sessões de conversa retomáveis do NEGÃO AI."""
+"""Módulo conversation — sessões de conversa retomáveis da Sophie."""
 
 from app.modules.conversation.application import (
     ChatResult,

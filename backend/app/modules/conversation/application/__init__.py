@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from app.modules.brain.domain import ChatMessage, TaskType
+from app.modules.brain.identity import SYSTEM_PROMPT
 from app.modules.configuration.settings import get_settings
 from app.modules.conversation.domain import ConversationMessage
 from app.modules.conversation.events import (
@@ -19,21 +20,15 @@ from app.modules.conversation.events import (
     EVENT_CONVERSATION_MESSAGE_STORED,
     EVENT_CONVERSATION_STARTED,
 )
-from app.modules.conversation.infrastructure import get_conversation_store
+from app.modules.conversation.infrastructure import (
+    ConversationNotFoundError,
+    get_conversation_store,
+)
 from app.modules.events.envelope import build_envelope
 
 _LOGGER = logging.getLogger("app.modules.conversation.application")
 
 PRODUCER = "conversation"
-
-SYSTEM_PROMPT = (
-    "Você é o NEGÃO, assistente pessoal de inteligência artificial do Wanderson. "
-    "Fala sempre em português brasileiro, com tom profissional, elegante e direto, "
-    "inspirado no JARVIS: nunca invente fatos, admita quando não souber, e use humor "
-    "sutil quando apropriado. Trate o usuário como 'chefe'. Seja conciso: prefira "
-    "respostas curtas e úteis, em vez de longas explicações. Nunca repita o que o "
-    "usuário acabou de dizer."
-)
 
 FALLBACK_REPLY = (
     "Opa, chefe! Meu cérebro deu uma engasgada agora — não consegui processar isso. "
@@ -66,15 +61,22 @@ class ConversationService:
         )
         return session
 
-    async def get_messages(self, session_id: str) -> list[ConversationMessage]:
+    async def get_messages(
+        self, session_id: str, *, user_id: str | None = None
+    ) -> list[ConversationMessage]:
+        if user_id is not None and await self._store.get_owned_session(session_id, user_id) is None:
+            raise ConversationNotFoundError(session_id)
         return await self._store.get_messages(session_id)
 
-    async def list_sessions(self) -> list[Any]:
-        return await self._store.list_sessions()
+    async def list_sessions(self, *, user_id: str | None = None) -> list[Any]:
+        if user_id is None:
+            return await self._store.list_sessions()
+        return await self._store.list_sessions_for_user(user_id)
 
-    async def append_message(
-        self, session_id: str, role: str, content: str
-    ) -> ConversationMessage:
+    async def owns_session(self, session_id: str, user_id: str) -> bool:
+        return await self._store.get_owned_session(session_id, user_id) is not None
+
+    async def append_message(self, session_id: str, role: str, content: str) -> ConversationMessage:
         message = await self._store.append_message(session_id, role, content)
         await self._publish(
             EVENT_CONVERSATION_MESSAGE_STORED,
@@ -95,9 +97,9 @@ class ConversationService:
             ],
         ]
 
-    async def chat(
-        self, session_id: str, text: str, *, user_id: str | None = None
-    ) -> ChatResult:
+    async def chat(self, session_id: str, text: str, *, user_id: str | None = None) -> ChatResult:
+        if user_id is not None and await self._store.get_owned_session(session_id, user_id) is None:
+            raise ConversationNotFoundError(session_id)
         await self.append_message(session_id, "user", text)
         context = await self.get_context(session_id)
         try:
@@ -110,9 +112,7 @@ class ConversationService:
                 user_id=user_id,
             )
         except Exception as exc:
-            _LOGGER.exception(
-                "conversation_brain_failed", extra={"error": str(exc)}
-            )
+            _LOGGER.exception("conversation_brain_failed", extra={"error": str(exc)})
             return ChatResult(
                 text=FALLBACK_REPLY,
                 model="error",
@@ -137,20 +137,24 @@ class ConversationService:
             cached=response.cached,
         )
 
-    async def reset_session(self, session_id: str) -> None:
-        from app.infrastructure.redis import get_redis
+    async def reset_session(self, session_id: str, *, user_id: str | None = None) -> None:
+        if user_id is None:
+            raise ConversationNotFoundError(session_id)
+        if await self._store.get_owned_session(session_id, user_id) is None:
+            raise ConversationNotFoundError(session_id)
+        if not await self._store.reset_session(session_id, user_id):
+            raise ConversationNotFoundError(session_id)
 
-        client = get_redis()
-        try:
-            await client.delete(f"conv:{session_id}:messages")
-            await client.srem("conversation:sessions", session_id)
-        except Exception:
-            _LOGGER.debug("conversation_reset_failed", exc_info=True)
-
-    async def rename_session(self, session_id: str, name: str | None) -> bool:
+    async def rename_session(
+        self, session_id: str, name: str | None, *, user_id: str | None = None
+    ) -> bool:
+        if user_id is not None and await self._store.get_owned_session(session_id, user_id) is None:
+            return False
         return await self._store.rename_session(session_id, name)
 
-    async def delete_session(self, session_id: str) -> bool:
+    async def delete_session(self, session_id: str, *, user_id: str | None = None) -> bool:
+        if user_id is not None and await self._store.get_owned_session(session_id, user_id) is None:
+            return False
         return await self._store.delete_session(session_id)
 
     async def _publish(self, event_type: str, payload: dict[str, Any]) -> None:

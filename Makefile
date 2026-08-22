@@ -28,10 +28,10 @@ lint:
 	cd backend && .venv/Scripts/python -m mypy app
 
 db-migrate:
-	cd backend && .venv/Scripts/python -m alembic revision --autogenerate -m "$(m)"
+	cd backend && .venv/Scripts/python -m alembic -c migrations/alembic.ini revision --autogenerate -m "$(m)"
 
 db-upgrade:
-	cd backend && .venv/Scripts/python -m alembic upgrade head
+	cd backend && .venv/Scripts/python -m alembic -c migrations/alembic.ini upgrade head
 
 backup:
 	bash infra/scripts/backup.sh

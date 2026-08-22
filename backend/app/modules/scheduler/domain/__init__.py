@@ -13,8 +13,6 @@ from typing import Any, Protocol
 class SchedulerPort(Protocol):
     """Porta pública do Scheduler (agendamento temporal)."""
 
-    async def schedule(
-        self, *, name: str, cron: str, action: dict[str, Any]
-    ) -> str: ...
+    async def schedule(self, *, name: str, cron: str, action: dict[str, Any]) -> str: ...
 
     async def cancel(self, job_id: str) -> bool: ...

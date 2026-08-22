@@ -19,7 +19,7 @@ curl http://localhost:8000/health
 ### 1.2 Brain Status
 ```bash
 curl http://localhost:8000/api/v1/brain/status \
-  -H "X-API-Key: negao-dev-api-key"
+  -H "X-API-Key: ${NEGAO_SERVICE_API_KEY}"
 ```
 
 **Esperado:**
@@ -38,7 +38,7 @@ curl http://localhost:8000/api/v1/brain/status \
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/conversation/start \
-  -H "X-API-Key: negao-dev-api-key" \
+  -H "X-API-Key: ${NEGAO_SERVICE_API_KEY}" \
   -H "Content-Type: application/json" \
   -d '{"user_id": "teste-user"}'
 ```
@@ -60,7 +60,7 @@ curl -X POST http://localhost:8000/api/v1/conversation/start \
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/conversation/message \
-  -H "X-API-Key: negao-dev-api-key" \
+  -H "X-API-Key: ${NEGAO_SERVICE_API_KEY}" \
   -H "Content-Type: application/json" \
   -d '{
     "session_id": "SEU_SESSION_ID_AQUI",
@@ -138,7 +138,7 @@ http://localhost:3000
 ### 6.2 Teste via API
 ```bash
 curl -X POST http://localhost:8000/api/v1/voice/tts \
-  -H "X-API-Key: negao-dev-api-key" \
+  -H "X-API-Key: ${NEGAO_SERVICE_API_KEY}" \
   -H "Content-Type: application/json" \
   -d '{
     "text": "Olá! Eu sou o NEGÃO.",
@@ -182,9 +182,9 @@ curl http://localhost:8000/health
 ### Erro: "API key invalid"
 ```bash
 # Verificar se a chave está no .env
-cat .env | grep NEGAO_API_KEY
+cat .env | grep NEGAO_SERVICE_API_KEY
 
-# Deve ser: negao-dev-api-key
+# Deve ser o valor configurado em NEGAO_SERVICE_API_KEY
 ```
 
 ### Erro: "NVIDIA API error"

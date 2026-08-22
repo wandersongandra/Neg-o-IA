@@ -1,6 +1,6 @@
 """Contratos do módulo brain — domain (framework-free).
 
-O Brain é o núcleo de inteligência único do NEGÃO AI: recebe mensagens,
+O Brain é o núcleo de inteligência único da Sophie: recebe mensagens,
 roteia para o modelo de linguagem (com retry, circuit breaker, fallback e
 cache) e entrega a resposta. Não faz I/O externa nem conhece outros módulos.
 """
