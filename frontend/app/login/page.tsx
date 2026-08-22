@@ -38,7 +38,7 @@ export default function LoginPage() {
       <form onSubmit={submit} className="glass w-full max-w-md space-y-5 rounded-2xl p-6">
         <div>
           <p className="font-mono-data text-[10px] uppercase tracking-[0.3em] text-[var(--accent)]">
-            SOPHIE CORE // IDENTITY
+            SOPHIE CORE — IDENTITY
           </p>
           <h1 className="mt-2 text-2xl font-semibold text-[var(--text-primary)]">Entrar</h1>
           <p className="mt-1 text-sm text-[var(--text-secondary)]">

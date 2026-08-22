@@ -103,6 +103,6 @@ Após essa prova, corrigir somente os blockers encontrados no fluxo Voice V1.
 
 ```text
 FOUNDATION GATE: FAIL — RISK ACCEPTED BY OWNER
-VOICE V1 DISCOVERY: COMPLETE
+VOICE V1 DISCOVERY: REVIEWED
 VOICE V1 IMPLEMENTATION: NOT STARTED
 ```

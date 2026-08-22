@@ -54,8 +54,6 @@ export interface DashboardData {
   logs: string[] | null;
 }
 
-// --- Brain -------------------------------------------------------------------
-
 export interface BrainStatus {
   mode: string;
   primary_model: string;
@@ -79,8 +77,6 @@ export interface BrainCompleteResponse {
   cached: boolean;
   fallback_used: boolean;
 }
-
-// --- Conversation ------------------------------------------------------------
 
 export interface ConversationStatus {
   sessions: number;
@@ -108,8 +104,6 @@ export interface ConversationMessageResponse {
   latency_ms: number;
   fallback_used: boolean;
 }
-
-// --- Voice -------------------------------------------------------------------
 
 export interface VoiceStatus {
   stt_available: boolean;
@@ -195,8 +189,6 @@ export type VoiceServerMessage =
       message: string;
       interaction_id: string | null;
     };
-
-// --- WebSocket / Chat --------------------------------------------------------
 
 export interface WsInfo {
   ticket: string;

@@ -1,6 +1,6 @@
-# NEGÃO AI — Arquitetura dos Subsistemas de Memória, Aprendizado Contínuo e Knowledge Vault
+# Sophie AI — Arquitetura dos Subsistemas de Memória, Aprendizado Contínuo e Knowledge Vault
 
-**Autor:** Arquiteto Principal — NEGÃO AI
+**Autor:** Arquiteto Principal — Sophie AI
 **Data:** 2026-08-05
 **Escopo:** Design de arquitetura (sem código de implementação)
 **Stack de referência:** Python 3.13+, FastAPI, SQLAlchemy 2.x, Alembic, PostgreSQL 16+, Redis 7+, Docker Compose; Frontend Next.js/React/TypeScript.
@@ -20,7 +20,7 @@
 
 ## 1. Visão Geral — Arquitetura dos Três Níveis de Memória
 
-O NEGÃO AI opera com **três níveis de armazenamento cognitivo**, espelhando o modelo humano de memória:
+O Sophie AI opera com **três níveis de armazenamento cognitivo**, espelhando o modelo humano de memória:
 
 | Nível | Tecnologia | Papel | Persistência |
 |---|---|---|---|
@@ -93,13 +93,13 @@ Entre os níveis há três mecanismos orquestradores:
 
 | Critério | pgvector | Qdrant |
 |---|---|---|
-| Consistência transacional com metadados | ✅ Mesma transação (relações, versões, confiança) | ❌ Atualização em duas bases (sem 2PC) |
-| Operação 24/7 em VPS | ✅ Um serviço a menos, backup unificado (`pg_dump`) | ❌ +1 serviço, +1 backup, +1 monitoring |
-| Migrações | ✅ Alembic trata como coluna comum | ❌ Schema externo gerenciado à parte |
-| Escala necessária | ✅ Excelente até ~10⁶ vetores (HNSW) | Melhor em 10⁷+ e multi-tenant |
-| Filtros + híbrido | ✅ SQL nativo (filtro por categoria + similaridade na mesma query) | Requer payloads/sharding |
+| Consistência transacional com metadados |  Mesma transação (relações, versões, confiança) |  Atualização em duas bases (sem 2PC) |
+| Operação 24/7 em VPS |  Um serviço a menos, backup unificado (`pg_dump`) |  +1 serviço, +1 backup, +1 monitoring |
+| Migrações |  Alembic trata como coluna comum |  Schema externo gerenciado à parte |
+| Escala necessária |  Excelente até ~10⁶ vetores (HNSW) | Melhor em 10⁷+ e multi-tenant |
+| Filtros + híbrido |  SQL nativo (filtro por categoria + similaridade na mesma query) | Requer payloads/sharding |
 
-**Justificativa:** o NEGÃO AI é **uma inteligência, um usuário**, rodando em VPS pequena 24/7. Qdrant resolve problemas de escala e isolamento multi-tenant que simplesmente não existem aqui. O custo de operar um serviço extra e a perda de consistência transacional entre metadados e vetores são custos reais; o benefício do Qdrant (QPS massivo) é irrelevante para latência de um assistente pessoal. **pgvector 0.7+ com HNSW e halfvec** reduz memória em ~50% sem perda prática de recall.
+**Justificativa:** o Sophie AI é **uma inteligência, um usuário**, rodando em VPS pequena 24/7. Qdrant resolve problemas de escala e isolamento multi-tenant que simplesmente não existem aqui. O custo de operar um serviço extra e a perda de consistência transacional entre metadados e vetores são custos reais; o benefício do Qdrant (QPS massivo) é irrelevante para latência de um assistente pessoal. **pgvector 0.7+ com HNSW e halfvec** reduz memória em ~50% sem perda prática de recall.
 
 **Detalhamento:**
 - **Embeddings:** modelo multilingual forte em PT-BR — **BGE-M3** (1024 dims, denso + esparso). O componente esparso (lexical) alimenta a busca híbrida: complementa o denso com matching de termos exatos, essencial para nomes próprios, siglas e código.
@@ -288,7 +288,7 @@ A confiança é um **contador bayesiano simples** (0–1, com teto) atualizado p
 
 ### 4.1 O que armazena
 
-O Vault é o **conhecimento curado** do NEGÃO AI — a "biblioteca" versus a "caixa preta" da episódica:
+O Vault é o **conhecimento curado** do Sophie AI — a "biblioteca" versus a "caixa preta" da episódica:
 
 | Tipo | Exemplos | Origem típica |
 |---|---|---|
@@ -357,7 +357,7 @@ Upload (arquivo/pasta) ou git clone/pull ou evento destilado
 
 ```mermaid
 flowchart LR
-    U[Usuário] <-->|interage| AG[Agente NEGÃO AI]
+    U[Usuário] <-->|interage| AG[Agente Sophie AI]
     AG -->|escreve evento| EV[episodes/events - Registro Bruto append-only]
 
     subgraph N1[Memória de Curto Prazo - Redis]
@@ -579,4 +579,4 @@ Sem implementar código, os limites dos subsistemas são definidos por contratos
 - **Feedback → Confiança:** eventos tipados `(memória_id, evento, delta, justificativa)` — base do log auditável de aprendizado.
 
 ---
-*Fim do documento de arquitetura — NEGÃO AI, subsistemas de Memória, Aprendizado Contínuo e Knowledge Vault.*
+*Fim do documento de arquitetura — Sophie AI, subsistemas de Memória, Aprendizado Contínuo e Knowledge Vault.*

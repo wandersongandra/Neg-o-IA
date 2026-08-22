@@ -158,7 +158,6 @@ async def get_agent_config(
 ) -> dict[str, Any]:
     """Configuração atual do agente Sophie."""
     config = await _load_config()
-    # Merge com settings atuais para modelos
     settings = get_settings()
     config["primary_model"] = settings.brain_chat_model
     config["fallback_model"] = settings.brain_fallback_model
@@ -173,7 +172,6 @@ async def update_agent_config(
     """Atualiza configuração do agente (merge parcial)."""
     config = await _load_config()
     update = body.model_dump(exclude_unset=True)
-    # Deep merge para voice
     if "voice" in update and isinstance(update["voice"], dict):
         config["voice"] = {**config.get("voice", {}), **update["voice"]}
         del update["voice"]

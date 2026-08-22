@@ -26,9 +26,7 @@ def test_supabase_connection():
         print("[BLOCKED] Defina SOPHIE_TEST_DB_HOST e SOPHIE_TEST_DB_PASSWORD para executar.")
         return False
     
-    print("\n" + "="*60)
-    print("         SUPABASE PostgreSQL CONNECTION TEST")
-    print("="*60)
+    print("\nSupabase PostgreSQL connection test")
     
     print(f"\n[INFO] Connecting to Supabase PostgreSQL...")
     print(f"[INFO] Host: {host}")
@@ -36,8 +34,7 @@ def test_supabase_connection():
     print(f"[INFO] User: {user}\n")
     
     try:
-        # TEST 1: Basic Connection
-        print("[TEST 1] Establishing connection...", end=" ")
+        print("[1] Establishing connection", end=" ")
         conn = psycopg2.connect(
             host=host,
             port=port,
@@ -47,16 +44,14 @@ def test_supabase_connection():
         )
         print("[OK]")
         
-        # TEST 2: Get connection info
-        print("[TEST 2] Getting connection info...", end=" ")
+        print("[2] Getting connection info", end=" ")
         cursor = conn.cursor()
         cursor.execute("SELECT version();")
         version = cursor.fetchone()[0]
         print("[OK]")
         print(f"[INFO] PostgreSQL Version: {version.split(',')[0]}")
         
-        # TEST 3: List databases
-        print("[TEST 3] Listing databases...", end=" ")
+        print("[3] Listing databases", end=" ")
         cursor.execute(
             "SELECT datname FROM pg_database WHERE datistemplate = false;"
         )
@@ -66,8 +61,7 @@ def test_supabase_connection():
         for db in databases[:5]:
             print(f"      - {db[0]}")
         
-        # TEST 4: List schemas
-        print("[TEST 4] Listing schemas...", end=" ")
+        print("[4] Listing schemas", end=" ")
         cursor.execute(
             "SELECT schema_name FROM information_schema.schemata;"
         )
@@ -77,22 +71,20 @@ def test_supabase_connection():
         for schema in schemas:
             print(f"      - {schema[0]}")
         
-        # TEST 5: Test pgvector extension
-        print("[TEST 5] Checking pgvector extension...", end=" ")
+        print("[5] Checking pgvector extension", end=" ")
         try:
             cursor.execute("SELECT * FROM pg_extension WHERE extname='vector';")
             has_vector = cursor.fetchone()
             if has_vector:
                 print("[OK]")
-                print("[INFO] pgvector extension is installed!")
+                print("[INFO] pgvector extension is installed.")
             else:
                 print("[WARN]")
                 print("[WARN] pgvector extension not found (will install on first use)")
         except Exception as e:
             print(f"[WARN] {str(e)}")
         
-        # TEST 6: Test a simple query
-        print("[TEST 6] Testing simple query...", end=" ")
+        print("[6] Testing simple query", end=" ")
         cursor.execute("SELECT 1 as test;")
         result = cursor.fetchone()[0]
         if result == 1:
@@ -104,9 +96,8 @@ def test_supabase_connection():
         cursor.close()
         conn.close()
         
-        print("\n" + "="*60)
-        print("   SUCCESS! Supabase PostgreSQL is ready!")
-        print("="*60 + "\n")
+        print("[OK] Supabase PostgreSQL connection verified.")
+        print()
         return True
         
     except psycopg2.OperationalError as e:

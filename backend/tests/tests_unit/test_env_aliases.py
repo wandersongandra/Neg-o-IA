@@ -40,8 +40,7 @@ def test_legacy_var_alone_is_preserved_unchanged(monkeypatch: pytest.MonkeyPatch
 def test_sophie_var_takes_precedence_over_existing_legacy_value(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """SOPHIE_* deve vencer mesmo quando NEGAO_* também está definida —
-    senão a precedência declarada em REBRAND-PLAN.md não seria real."""
+    """SOPHIE_* deve vencer quando NEGAO_* também está definida."""
     monkeypatch.setenv("NEGAO_TTS_RATE", "+0%")
     monkeypatch.setenv("SOPHIE_TTS_RATE", "+99%")
     _apply_legacy_env_aliases()

@@ -85,17 +85,17 @@ Actions: `RENAME_NOW` · `ADD_ALIAS` · `KEEP_LEGACY` · `MIGRATE_LATER` · `DOC
 | Backup filename prefix, `POSTGRES_USER/DB` defaults | `infra/scripts/backup.sh:9-10,21,25`, `infra/scripts/restore.sh:13-14` | — | D | Prune/restore correctness depends on consistency | KEEP_LEGACY |
 | `NEGAO_HEALTH_URL/RETRIES/SLEEP` | `infra/scripts/deploy.sh:7`, `infra/scripts/deploy-vps.sh:66-67` | — | D | Deploy tooling config | KEEP_LEGACY |
 | `/opt/negao` VPS deploy path | `infra/scripts/deploy-vps.sh:8`, `infra/scripts/vps-setup.sh:25,39` | — | D | Live server directory — renaming needs a migration step, not a code edit | KEEP_LEGACY (§46-49) |
-| Console banner text "NEGÃO AI — Deploy VPS" etc. | `infra/scripts/deploy-vps.sh:2,11,71`, `infra/scripts/vps-setup.sh:6` | — | A | Cosmetic echo output only | RENAME_NOW (banner text only, paths/vars untouched) |
-| `quick-start.sh`/`quick-start.bat` banner text | `quick-start.sh:3,9,181,191`, `quick-start.bat:2,8,129` | — | A | Cosmetic echo output only | RENAME_NOW (banner text only; `NEGAO_API_URL/API_KEY` refs and `pg_isready -U negao` at `quick-start.sh:88` untouched) |
+| Console banner text in deploy scripts | `infra/scripts/deploy-vps.sh`, `infra/scripts/vps-setup.sh` | — | A | Cosmetic output only | Text cleaned; paths/vars untouched |
+| Quick-start output text | `quick-start.sh`, `quick-start.bat` | — | A | Cosmetic output only | Text cleaned; `NEGAO_API_URL/API_KEY` refs and `pg_isready -U negao` untouched |
 | `.env.example` — all `NEGAO_*` variable names + `NEGAO_APP_NAME=negao-ai` value | `.env.example` (whole file) | — | D | Deploy template — must stay in lockstep with `Settings` | KEEP_LEGACY + document the new optional `SOPHIE_*` aliases |
 
-## Documentation (Layer E — document only, no edits this phase except README)
+## Documentation (Layer E)
 
-`docs/ARQUITETURA.md`, `docs/ARQUITETURA-CORE-MODULOS.md`, `docs/ARQUITETURA-MEMORIA-APRENDIZADO-KNOWLEDGE.md`, `docs/README-ARQUITETURA.md`, `docs/ROADMAP.md`, and the 14 root-level `.md`/`.txt` snapshot files (`COMPLETION_SUMMARY.txt`, `DESIGN_AUDIT_REPORT.md`, `GO_GO_GO.md`, `IMPLEMENTATION_ROADMAP.md`, `INFRASTRUCTURE_READY.md`, `INTEGRATION_README.md`, `PROGRESS_REPORT.md`, `REDIS_CLOUD_CONFIG.md`, `SETUP_STATUS.md`, `START_HERE.md`, `SUMMARY.txt`, `TESTING_GUIDE.md`, `API_INTEGRATION_GUIDE.md`) already flagged in `docs/sophie/CURRENT_STATE.md` §9/§4 as duplicative work-session snapshots. Left untouched — a full rewrite of ~15 narrative documents is out of proportion to a "safe rebrand" and was already recommended for consolidation/removal independent of branding. `README.md` is the one exception: it's the living, primary entry point (explicitly listed as in-scope in §3 of the Phase 1 brief), so it gets a full literal `NEGÃO`→`Sophie` text pass (no restructuring, no content rewrite).
+The architecture documents remain as technical references. The former root-level setup and design snapshots were removed as redundant; `README.md` remains the primary entry point and the operational guides retained in the repository are listed in `CURRENT_STATE.md`.
 
 ## Summary
 
-- **RENAME_NOW** (this phase): ~120 occurrences — backend docstrings/log-adjacent prose, the two backend + one frontend copy of the system prompt (now centralized to one backend source), `app_name`/`pyproject.toml` description defaults, all frontend UI copy, `manifest.json`, `offline.html`, two `localStorage` keys, script banner text, `README.md`.
+- **Text cleanup applied**: backend docstrings/log-adjacent prose, user-facing frontend copy, script output and `README.md` were reviewed. Persistent identifiers remain listed below.
 - **ADD_ALIAS**: `SOPHIE_*` env vars (generic, all `Settings` fields) on the backend; `SOPHIE_API_URL`/`SOPHIE_API_KEY`/`SOPHIE_WS_URL` on the frontend BFF routes — both with `SOPHIE_*` taking precedence and falling back to `NEGAO_*`, dev-only deprecation log, never logging values.
 - **KEEP_LEGACY / MIGRATE_LATER**: everything Layer D (env var *names*, DB user/schema, Docker/Compose project names, Redis consumer group, Prometheus/OTel identifiers, structlog logger names, `/opt/negao` VPS path, package/registry names, `.vercel` project pointer) plus the applied migration file. None of these are touched this phase.
 - **DOCUMENT_ONLY**: architecture docs, root snapshot files, default-secret literal values (a hardening concern, not branding).

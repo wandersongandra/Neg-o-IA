@@ -177,7 +177,6 @@ export default function Dashboard() {
         />
 
         <main className="flex-1 space-y-6 overflow-x-hidden p-5 md:p-6 page-transition">
-          {/* Mobile Menu Button — IMPROVED: CSS-based, no JS logic */}
           <button
             className="glass glass-hover interactive-control lg:hidden flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
             onClick={() => setSidebarOpen(true)}

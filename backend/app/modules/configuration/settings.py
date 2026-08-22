@@ -42,7 +42,6 @@ class Settings(BaseSettings):
     auth_session_ttl_seconds: int = 8 * 60 * 60
     registration_enabled: bool = False
 
-    # --- Brain (Model Router / LLM) -------------------------------------------------
     nvidia_api_key: str = ""
     nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
     brain_chat_model: str = "deepseek-ai/deepseek-v4-flash"
@@ -55,7 +54,6 @@ class Settings(BaseSettings):
     brain_circuit_cooldown_seconds: int = 60
     brain_cache_ttl_seconds: int = 300
 
-    # --- Voice (STT/TTS) -------------------------------------------------------------
     tts_voice: str = "pt-BR-FranciscaNeural"
     tts_rate: str = "+0%"
     voice_max_chunk_bytes: int = 256 * 1024
@@ -68,7 +66,6 @@ class Settings(BaseSettings):
     voice_tts_timeout_seconds: float = 30.0
     voice_conversation_timeout_seconds: float = 60.0
 
-    # --- Conversation -----------------------------------------------------------------
     conversation_max_context_messages: int = 20
 
     @field_validator("cors_origins", mode="before")

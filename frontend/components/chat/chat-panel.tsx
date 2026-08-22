@@ -90,8 +90,8 @@ export default function ChatPanel() {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
         try {
           mediaRecorderRef.current.stop();
-        } catch {
-          // recorder já inativo
+        } catch (error) {
+          void error;
         }
       }
       if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
@@ -113,7 +113,6 @@ export default function ChatPanel() {
     el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
   }, []);
 
-  // Fetch sessions list
   const fetchSessions = useCallback(async () => {
     try {
       const res = await fetch("/api/proxy/conversation/sessions");
@@ -129,7 +128,6 @@ export default function ChatPanel() {
     fetchSessions();
   }, [fetchSessions]);
 
-  // Auto-send from ?text= (ex.: página de voz)
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
@@ -148,7 +146,6 @@ export default function ChatPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // WebSocket connection
   useEffect(() => {
     let disposed = false;
     let socket: WebSocket | null = null;
@@ -363,7 +360,6 @@ export default function ChatPanel() {
     }
   }, [setAvatarState, speak, clearGenTimer]);
 
-  // Heartbeat
   useEffect(() => {
     if (status !== "online") return;
     const id = setInterval(() => {
@@ -375,7 +371,6 @@ export default function ChatPanel() {
     return () => clearInterval(id);
   }, [status]);
 
-  // Auto scroll
   useEffect(() => {
     endRef.current?.scrollIntoView({
       behavior: messages.some((m) => m.status === "streaming") ? "auto" : "smooth",
@@ -469,7 +464,7 @@ export default function ChatPanel() {
 
       setMessages((prev) => [...prev, userMsg, assistantMsg]);
 
-      // Watchdog: se não chegar resposta em 90s, marca como erro (evita chat travado)
+      // Marca a mensagem como erro se o backend não responder em 90 segundos.
       clearGenTimer();
       genTimerRef.current = setTimeout(() => {
         if (!sendingRef.current) return;
@@ -561,7 +556,7 @@ export default function ChatPanel() {
       const userIdx = messages.findIndex((m) => m.id === prevUser.id);
       if (userIdx < 0) return;
 
-      // Remove resposta antiga + pergunta (sendMessage re-adiciona ambos)
+      // Reenvia a pergunta sem manter a resposta anterior na lista.
       setMessages(messages.slice(0, userIdx));
       setRegenMessageId(messageId);
       try {
@@ -573,7 +568,6 @@ export default function ChatPanel() {
     [messages, sendMessage]
   );
 
-  // Recording
   const startRecording = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -795,7 +789,6 @@ export default function ChatPanel() {
 
       <div className="flex-1 overflow-hidden">
         <div className="flex h-full">
-          {/* History sidebar */}
           <div
             className={`transition-all duration-300 ease-in-out ${
               historyOpen ? "w-64" : "w-0"
@@ -902,7 +895,6 @@ export default function ChatPanel() {
             )}
           </div>
 
-          {/* Chat messages */}
           <div
             role="log"
             aria-live="polite"

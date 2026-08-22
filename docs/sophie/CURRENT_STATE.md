@@ -61,7 +61,7 @@ The frontend proxy's route allowlist and the backend's actually-mounted routes a
 ## 4. AI Brain / Memory / Multimodal
 
 - **Model provider**: NVIDIA NIM only (OpenAI-compatible shape), models `deepseek-ai/deepseek-v4-flash` (primary) / `meta/llama-3.1-8b-instruct` (fallback) — both through the same `nvidia_base_url`, so a full NVIDIA outage takes down both. HTTP 529 (NVIDIA overload) is correctly treated as retryable, alongside 429/500/502/503/504.
-- **Resilience is real**: per-provider `CircuitBreaker` + `RetryPolicy` with exponential backoff + Redis response caching all implemented in `brain/infrastructure/__init__.py`. However the fallback path reimplements ~45 lines of near-identical NVIDIA-specific HTTP logic instead of reusing the `LLMAdapter` Protocol abstraction that already exists in `brain/domain/__init__.py` — adding a second real vendor means rewriting this method, not registering a new adapter.
+- **Resilience controls are implemented**: per-provider `CircuitBreaker` + `RetryPolicy` with exponential backoff + Redis response caching all implemented in `brain/infrastructure/__init__.py`. However the fallback path reimplements ~45 lines of near-identical NVIDIA-specific HTTP logic instead of reusing the `LLMAdapter` Protocol abstraction that already exists in `brain/domain/__init__.py` — adding a second real vendor means rewriting this method, not registering a new adapter.
 - **Persona/system prompt is hardcoded in three separate places** that must be kept in sync manually: `brain/router.py` (admin-config default), `conversation/application/__init__.py` (the one actually used in every live chat turn), and `frontend/app/config/page.tsx` (frontend fallback default). All three currently say: *"Você é o NEGÃO, assistente pessoal de inteligência artificial do Wanderson... Trate o usuário como 'chefe'..."* — this bakes in both the product name and a specific person's name/relationship framing.
 - **Memory**: only Redis short-term memory (24h TTL, key `stm:{session_id}:{key}`) exists. `memory` module is explicitly labeled v0/STM-only in its own docstring. `knowledge`/`learning` modules (long-term/RAG) are unmounted stubs.
 - **Voice works standalone but is not connected to Brain.** `/voice/transcribe` and `/voice/synthesize` are real, working REST endpoints (NVIDIA Parakeet STT + Microsoft edge-tts). But no code path forwards a transcript into `ConversationService`/`BrainService` — the frontend transcribes client-side and then sends the *text* into chat separately. The backend's `/ws/voice` streaming endpoint exists but nothing in the frontend connects to it (dead code). Event-catalog entries suggesting voice↔brain integration (`voice.asr.completed` etc.) have no actual subscriber code and don't even use consistent names between the two modules' catalogs.
@@ -75,7 +75,7 @@ The frontend proxy's route allowlist and the backend's actually-mounted routes a
 - **Markdown XSS fix verified as real and sound**: hand-rolled renderer never uses `dangerouslySetInnerHTML`; link protocol is validated (only https/mailto render as links). No regression found.
 - **WebSocket reconnection is solid**: exponential-ish backoff, heartbeat ping, clean teardown — not a stub.
 - **Two disconnected voice UIs** (`voice-panel.tsx`, `chat-panel.tsx`'s mic button) both use plain REST against `/voice/transcribe`/`/voice/synthesize`; neither uses the backend's `/ws/voice` streaming endpoint, which is fully implemented but orphaned.
-- **No wake-word, no barge-in** anywhere in the codebase — confirmed via grep, not even a TODO. Voice interaction is 100% push-to-talk today.
+- **No wake-word, no barge-in** anywhere in the codebase — confirmed via grep. Voice interaction is 100% push-to-talk today.
 - **The Config page's model dropdown lists model IDs that don't match what the backend actually runs** (`openai/gpt-oss-120b` in the UI vs. `nvidia/gpt-oss-120b`-style names in settings) — a real, live drift between frontend and backend config surfaces.
 - **Hardcoded personalization**: the top bar shows a literal `"Wanderson"` name and "W" avatar initial, not sourced from any session/identity — will need to become dynamic or renamed.
 - Several dashboard "chips" (memory %, learning level, confidence) show static fake numbers, not real telemetry.
@@ -98,7 +98,7 @@ The frontend proxy's route allowlist and the backend's actually-mounted routes a
 
 ## 7. Security / QA / Reliability
 
-**Overall posture: CRITICAL / not production-ready.** Clean fundamentals (no injection, no eval/subprocess, correct CSPRNG, `.env` properly gitignored, safe markdown rendering, sound generic error responses) undermined by a broken authentication model.
+**Overall posture: not approved for production.** Clean fundamentals (no injection, no eval/subprocess, correct CSPRNG, `.env` properly gitignored, safe markdown rendering, sound generic error responses) are undermined by a broken authentication model.
 
 ### Blockers
 1. **`frontend/app/api/ws-info/route.ts` returns the shared backend API key to any unauthenticated caller** — anyone who loads the site (or curls the endpoint) gets full API authority: unmetered NVIDIA spend, agent-config tampering, everything the key unlocks. This defeats the otherwise-correct BFF proxy design elsewhere.
@@ -141,7 +141,7 @@ Not part of the rebrand, surfaced during the audit, **recommend acting on immedi
 
 ## 9. Root-level clutter / dead code
 
-14 loose `.md`/`.txt` files at repo root (all dated 2026-08-05/06, a single work-session burst) cluster into two duplicated narratives — "setup/bring-up" (START_HERE, GO_GO_GO, INTEGRATION_README, SETUP_STATUS, INFRASTRUCTURE_READY, SUMMARY, TESTING_GUIDE) and "design-refinement snapshots" (COMPLETION_SUMMARY, PROGRESS_REPORT, IMPLEMENTATION_ROADMAP, DESIGN_AUDIT_REPORT) — likely sequential status reports superseding each other, candidates for consolidation independent of the rebrand. Four ad-hoc `test_*.py` scripts at root duplicate connectivity checks and contain the leaked credentials above. Three untracked `.rpm` installer binaries (~9.4MB) sit in the repo root, not referenced by any script found.
+The repository previously contained several setup and design status snapshots at the root. Those redundant reports were removed during the cleanup; operational guidance remains in `README.md`, `TESTING_GUIDE.md`, `INFRASTRUCTURE_READY.md`, and `REDIS_CLOUD_CONFIG.md`. The ad-hoc connectivity scripts remain separate from the test suite and should be consolidated when their coverage is replaced. Local RPM installers are not part of the repository.
 
 The 9 unmounted stub modules (~50 files/directories) are forward-scaffolding consistent with the documented roadmap, not leftover dead code — low-value rename targets since they do nothing yet.
 

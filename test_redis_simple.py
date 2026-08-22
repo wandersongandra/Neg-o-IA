@@ -33,8 +33,7 @@ def test_redis_connection(redis_url: str) -> bool:
     try:
         r = redis.from_url(redis_url, decode_responses=True)
 
-        # TEST 1: PING
-        print("[TEST 1] PING...", end=" ")
+        print("[1] PING", end=" ")
         result = r.ping()
         if result:
             print("[OK]")
@@ -42,10 +41,9 @@ def test_redis_connection(redis_url: str) -> bool:
             print("[FAIL]")
             return False
 
-        # TEST 2: SET/GET
-        print("[TEST 2] SET/GET...", end=" ")
+        print("[2] SET/GET", end=" ")
         test_key = f"negao:test:{int(time.time())}"
-        test_value = "NEGAO ACORDOU!"
+        test_value = "redis-probe"
         r.set(test_key, test_value)
         retrieved = r.get(test_key)
         if retrieved == test_value:
@@ -54,8 +52,7 @@ def test_redis_connection(redis_url: str) -> bool:
             print("[FAIL]")
             return False
 
-        # TEST 3: DELETE
-        print("[TEST 3] DELETE...", end=" ")
+        print("[3] DELETE", end=" ")
         r.delete(test_key)
         if r.get(test_key) is None:
             print("[OK]")
@@ -63,8 +60,7 @@ def test_redis_connection(redis_url: str) -> bool:
             print("[FAIL]")
             return False
 
-        # TEST 4: INFO
-        print("[TEST 4] INFO...", end=" ")
+        print("[4] INFO", end=" ")
         try:
             info = r.info()
             version = info.get("redis_version", "unknown")
@@ -75,8 +71,7 @@ def test_redis_connection(redis_url: str) -> bool:
         except Exception as e:
             print(f"[WARN] {str(e)}")
 
-        # TEST 5: DBSIZE
-        print("[TEST 5] DBSIZE...", end=" ")
+        print("[5] DBSIZE", end=" ")
         try:
             keys_count = r.dbsize()
             print("[OK]")
@@ -84,8 +79,8 @@ def test_redis_connection(redis_url: str) -> bool:
         except Exception as e:
             print(f"[WARN] {str(e)}")
 
-        print("\n[SUCCESS] ALL TESTS PASSED!")
-        print("[INFO] Redis is working! Ready for NEGAO!\n")
+        print("\nRedis connectivity checks passed.")
+        print("[INFO] Redis is available.\n")
         return True
 
     except redis.exceptions.ConnectionError as e:
@@ -106,9 +101,7 @@ def test_redis_connection(redis_url: str) -> bool:
 
 
 def main():
-    print("\n" + "="*60)
-    print("         REDIS CONNECTION TEST")
-    print("="*60)
+    print("\nRedis connection test")
 
     redis_url = os.getenv("SOPHIE_REDIS_URL") or os.getenv("NEGAO_REDIS_URL")
     if not redis_url:
@@ -118,14 +111,12 @@ def main():
     success = test_redis_connection(redis_url)
 
     if success:
-        print("="*60)
-        print("   SUCCESS! Redis is ready for NEGAO!")
-        print("="*60 + "\n")
+        print("[OK] Redis connection verified.")
+        print()
         return 0
     else:
-        print("="*60)
-        print("   FAILED! Check Redis connection")
-        print("="*60 + "\n")
+        print("[ERROR] Redis connection failed.")
+        print()
         return 1
 
 

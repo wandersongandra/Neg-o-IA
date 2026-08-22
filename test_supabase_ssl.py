@@ -25,17 +25,14 @@ def test_supabase_connection():
         print("[BLOCKED] Defina SOPHIE_TEST_DB_HOST e SOPHIE_TEST_DB_PASSWORD para executar.")
         return False
     
-    print("\n" + "="*60)
-    print("    SUPABASE PostgreSQL CONNECTION TEST (with SSL)")
-    print("="*60)
+    print("\nSupabase PostgreSQL connection test (SSL)")
     
     print(f"\n[INFO] Connecting to Supabase PostgreSQL...")
     print(f"[INFO] Host: {host}")
     print(f"[INFO] Database: {database}\n")
     
     try:
-        # TEST 1: Connection with SSL
-        print("[TEST 1] Connecting with SSL=require...", end=" ")
+        print("[1] Connecting with SSL=require", end=" ")
         conn = psycopg2.connect(
             host=host,
             port=port,
@@ -46,16 +43,14 @@ def test_supabase_connection():
         )
         print("[OK]")
         
-        # TEST 2: Get version
-        print("[TEST 2] Getting PostgreSQL version...", end=" ")
+        print("[2] Getting PostgreSQL version", end=" ")
         cursor = conn.cursor()
         cursor.execute("SELECT version();")
         version = cursor.fetchone()[0]
         print("[OK]")
         print(f"[INFO] Version: {version.split(',')[0]}")
         
-        # TEST 3: Simple query
-        print("[TEST 3] Testing simple query...", end=" ")
+        print("[3] Testing simple query", end=" ")
         cursor.execute("SELECT 1 as test;")
         result = cursor.fetchone()[0]
         print("[OK]")
@@ -63,9 +58,8 @@ def test_supabase_connection():
         cursor.close()
         conn.close()
         
-        print("\n" + "="*60)
-        print("   SUCCESS! Supabase is ready!")
-        print("="*60 + "\n")
+        print("[OK] Supabase connection verified.")
+        print()
         return True
         
     except Exception as e:
@@ -73,7 +67,7 @@ def test_supabase_connection():
         print(f"\n[INFO] Trying alternative: sslmode='prefer'...\n")
         
         try:
-            print("[TEST 1] Connecting with SSL=prefer...", end=" ")
+            print("[1] Connecting with SSL=prefer", end=" ")
             conn = psycopg2.connect(
                 host=host,
                 port=port,
@@ -84,7 +78,7 @@ def test_supabase_connection():
             )
             print("[OK]")
             
-            print("[TEST 2] Getting version...", end=" ")
+            print("[2] Getting version", end=" ")
             cursor = conn.cursor()
             cursor.execute("SELECT 1;")
             cursor.fetchone()
@@ -93,7 +87,7 @@ def test_supabase_connection():
             cursor.close()
             conn.close()
             
-            print("\n[SUCCESS] Connection works with prefer mode!")
+            print("\n[OK] Connection works with prefer mode.")
             print("[NOTE] Update .env to use: sslmode=prefer\n")
             return True
             

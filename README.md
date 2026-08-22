@@ -1,440 +1,68 @@
-# Sophie AI
+# Sophie
 
-> **Uma única inteligência. Uma única memória. Uma evolução contínua.**
+Sophie is a personal AI assistant with conversation, memory, knowledge, automation, voice and vision modules. The modules share one conversation core; voice and Bluetooth are input/output concerns, not a separate assistant.
 
-**Sophie AI** é um **Sistema Operacional de Inteligência Artificial (AI Operating System)** desenvolvido para ser um assistente pessoal permanente, capaz de aprender continuamente, construir memória de longo prazo, organizar conhecimento, automatizar tarefas e evoluir ao longo dos anos.
+## Architecture
 
-Diferente das arquiteturas tradicionais baseadas em múltiplos agentes independentes, a **Sophie AI** foi projetada como **uma única inteligência**.
+- Backend: FastAPI, Python 3.13, SQLAlchemy, PostgreSQL and Redis.
+- Frontend: Next.js 15, React 19 and Tailwind CSS.
+- Integrations: NVIDIA APIs for model and speech services, `edge-tts` for synthesis, WebSockets for realtime sessions.
+- Operations: Docker Compose, Nginx, Prometheus, Grafana and Loki.
 
-Todos os componentes internos representam partes do mesmo cérebro.
+The backend is organized by domain modules under `backend/app/modules`. The frontend uses the Next.js App Router under `frontend/app` and shared components under `frontend/components`.
 
-Não existem personalidades diferentes.
+## Development
 
-Não existem agentes concorrentes.
+Prerequisites:
 
-Existe apenas **a Sophie**.
+- Docker and Docker Compose v2
+- Git
+- Python 3.13
+- Node.js and npm
 
----
-
-# Filosofia
-
-A Sophie foi inspirada em uma ideia simples:
-
-> **Uma inteligência deveria crescer junto com seu usuário durante toda a vida.**
-
-Seu objetivo não é apenas responder perguntas.
-
-Ele deve:
-
-* aprender continuamente;
-* compreender contexto;
-* construir conhecimento;
-* lembrar decisões;
-* organizar informações;
-* automatizar processos;
-* evoluir sem perder identidade.
-
----
-
-# Princípios Fundamentais
-
-* Uma única inteligência.
-* Uma única memória.
-* Um único núcleo cognitivo.
-* Aprendizagem contínua.
-* Arquitetura modular.
-* Evolução permanente.
-* Segurança em primeiro lugar.
-* Total observabilidade.
-* Controle sempre nas mãos do usuário.
-
----
-
-# Arquitetura
-
-A Sophie utiliza uma arquitetura modular baseada em **Clean Architecture**, **DDD**, **Event Driven Architecture** e **SOLID**.
-
-Os módulos não representam agentes.
-
-São órgãos especializados pertencentes ao mesmo cérebro.
-
-```text
-                    Sophie AI
-
-                       Brain
-                         │
- ┌───────────────────────┼────────────────────────┐
- │                       │                        │
-Memory              Knowledge              Learning
- │                       │                        │
-Planner          Reasoning Engine      Tool Manager
- │                       │                        │
-Voice               Vision            Automation
- │                       │                        │
-Events            Scheduler          API Gateway
- │
-Database
-```
-
-Cada módulo possui responsabilidades claras, baixo acoplamento e alta coesão.
-
-Toda comunicação ocorre por eventos internos.
-
----
-
-# Stack Tecnológica
-
-| Camada          | Tecnologia              |
-| --------------- | ----------------------- |
-| Linguagem       | Python 3.13             |
-| Backend         | FastAPI                 |
-| ORM             | SQLAlchemy 2.0 Async    |
-| Banco           | PostgreSQL 17           |
-| Busca Semântica | pgvector                |
-| Cache           | Redis 7                 |
-| Frontend        | Next.js 15              |
-| UI              | React 19 + Tailwind CSS |
-| Observabilidade | OpenTelemetry           |
-| Métricas        | Prometheus              |
-| Dashboards      | Grafana                 |
-| Logs            | Loki                    |
-| Containers      | Docker                  |
-| Deploy          | Docker Compose          |
-| Proxy           | Nginx                   |
-| Infraestrutura  | VPS Linux               |
-
----
-
-# Estrutura do Projeto
-
-```text
-negao-ai/
-
-backend/
-    app/
-        brain/
-        memory/
-        learning/
-        knowledge/
-        planner/
-        reasoning/
-        tools/
-        voice/
-        vision/
-        automation/
-        events/
-        database/
-        security/
-        monitoring/
-
-frontend/
-
-infra/
-
-docs/
-
-tests/
-
-scripts/
-
-backups/
-
-.env.example
-
-Makefile
-```
-
----
-
-# Memória
-
-A Sophie possui um sistema de memória inspirado na memória humana.
-
-### Memória de Curto Prazo
-
-Redis
-
-Armazena contexto temporário.
-
----
-
-### Memória de Longo Prazo
-
-PostgreSQL
-
-Registra fatos permanentes.
-
----
-
-### Memória Semântica
-
-pgvector
-
-Permite compreender relações entre conhecimentos.
-
----
-
-### Memória Episódica
-
-Registra acontecimentos importantes.
-
----
-
-### Memória Procedural
-
-Aprende hábitos.
-
-Preferências.
-
-Fluxos de trabalho.
-
-Padrões.
-
----
-
-# Knowledge Vault
-
-O Knowledge Vault é o centro de conhecimento do sistema.
-
-Armazena:
-
-* documentação
-* código
-* projetos
-* decisões
-* normas
-* livros
-* artigos
-* conversas
-* pesquisas
-* arquitetura
-* histórico
-
-Nada é perdido.
-
-Tudo pode ser pesquisado.
-
----
-
-# Modelo de IA
-
-O núcleo utiliza um **Model Router**.
-
-Modelo principal:
-
-* NVIDIA API
-* GPT-OSS-120B
-
-A arquitetura permite adicionar novos modelos futuramente sem alterar o restante do sistema.
-
----
-
-# Observabilidade
-
-Todo componente gera telemetria.
-
-O sistema possui:
-
-* métricas
-* tracing distribuído
-* logs estruturados
-* health checks
-* auditoria
-* monitoramento em tempo real
-
----
-
-# Infraestrutura
-
-Todo o projeto foi pensado para execução contínua em VPS Linux.
-
-Componentes:
-
-* PostgreSQL
-* Redis
-* Backend
-* Frontend
-* Nginx
-* Grafana
-* Prometheus
-* Loki
-
-Todos executando em containers Docker.
-
----
-
-# Desenvolvimento
-
-## Pré-requisitos
-
-* Docker
-* Docker Compose v2
-* Git
-* Make (opcional)
-
----
-
-## Configuração
+Create a local environment from the versioned template and review every value before starting the services:
 
 ```bash
 cp .env.example .env
-```
-
-Configure todas as variáveis antes de iniciar.
-
----
-
-## Desenvolvimento
-
-```bash
 make dev
 ```
 
-Serviços disponíveis:
+The default local endpoints are:
 
-Frontend
+- Frontend: `http://localhost:3000`
+- Backend: `http://localhost:8000`
+- API documentation: `http://localhost:8000/docs`
 
-http://localhost:3000
-
-Backend
-
-http://localhost:8000
-
-Swagger
-
-http://localhost:8000/docs
-
-Grafana
-
-http://localhost:9091
-
-Prometheus
-
-http://localhost:9090
-
----
-
-# Comandos
+Useful commands:
 
 ```bash
-make dev
-
-make dev-build
-
-make prod
-
-make stop
-
-make logs
-
-make lint
-
 make test
-
-make backup
-
-make restore
-
+make lint
 make db-migrate
-
 make db-upgrade
+make logs
+make stop
 ```
 
----
+Detailed validation procedures are documented in [TESTING_GUIDE.md](TESTING_GUIDE.md). Infrastructure notes are in [INFRASTRUCTURE_READY.md](INFRASTRUCTURE_READY.md) and [REDIS_CLOUD_CONFIG.md](REDIS_CLOUD_CONFIG.md).
 
-# Roadmap
+## Voice
 
-### v0.x
+Voice V1 is exposed through `/ws/voice`. A session uses a short-lived, purpose-bound WebSocket ticket and keeps conversation context through the existing conversation service. Audio is held in memory for the active turn and is discarded after processing.
 
-Fundação
+The browser can select independent input and output devices when supported. Bluetooth pairing remains managed by the operating system.
 
-Infraestrutura
+## Security and compatibility
 
-Docker
+User sessions are server-side. Service credentials are separate from user sessions. Secrets belong in ignored environment files or a secret manager.
 
-Observabilidade
+The `NEGAO_*` environment variables, internal metric names, logger names, database identifiers and deployment paths are retained for compatibility. Optional `SOPHIE_*` aliases are documented in [docs/sophie/COMPATIBILITY.md](docs/sophie/COMPATIBILITY.md). Do not rename persistent identifiers without a migration plan.
 
-Banco
+## Repository layout
 
-Deploy
-
----
-
-### v1.x
-
-Brain
-
-Conversa
-
-Memória
-
-Model Router
-
-Knowledge Vault
-
----
-
-### v2.x
-
-Aprendizagem contínua
-
-Automação
-
-Ferramentas
-
-Observação
-
----
-
-### v3.x
-
-Voz
-
-Visão
-
-Pesquisa
-
-Planejamento avançado
-
----
-
-### v4.x
-
-Execução autônoma supervisionada
-
----
-
-### v5.x
-
-Escalabilidade
-
-Cluster
-
-Kubernetes
-
-Alta disponibilidade
-
----
-
-# Segurança
-
-O projeto segue o princípio do menor privilégio.
-
-* autenticação
-* autorização
-* auditoria
-* criptografia
-* HTTPS obrigatório
-* segredos fora do Git
-* backups automáticos
-* restauração validada
-
----
-
-# Visão
-
-O objetivo da Sophie não é apenas responder perguntas.
-
-O objetivo é criar uma inteligência capaz de acompanhar seu usuário durante anos, aprendendo continuamente, preservando conhecimento e tornando-se um verdadeiro parceiro de trabalho.
-
-**Uma única inteligência. Uma única memória. Uma evolução contínua.**
+```text
+backend/       FastAPI application and migrations
+frontend/      Next.js application
+infra/         Docker, Nginx and deployment scripts
+docs/          Architecture and compatibility references
+```

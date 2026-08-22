@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# vps-setup.sh — ONE-SHOT setup via Hetzner VNC console
+# vps-setup.sh — Initial setup via Hetzner VNC console
 # Copie e cole no console VNC como root (logado via painel Hetzner)
 set -euo pipefail
 
-echo "=== Sophie AI — VPS First Setup ==="
+echo "Sophie AI VPS initial setup"
 
 # 1. Instalar Docker
 if ! command -v docker &>/dev/null; then
@@ -52,6 +52,6 @@ docker compose -f "$COMPOSE_FILE" run --rm backend alembic -c migrations/alembic
 docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
 
 echo ""
-echo "=== Deploy concluído! ==="
+echo "[OK] Deployment completed."
 docker compose -f "$COMPOSE_FILE" ps
 echo "Acesse: http://$(hostname -I | awk '{print $1}')"

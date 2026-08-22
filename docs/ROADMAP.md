@@ -1,4 +1,4 @@
-# ROADMAP NEGÃO AI — Visão de 10 Anos (2026–2036)
+# ROADMAP Sophie AI — Visão de 10 Anos (2026–2036)
 
 *Relatório de planejamento do Arquiteto Principal. Sem código — apenas estratégia, escopo, critérios verificáveis e cronograma.*
 
@@ -80,13 +80,13 @@
 
 ### v1.0 — NÚCLEO VIVO (dez/2026 – mai/2027)
 
-**Objetivo central:** o NEGÃO **conversa naturalmente**, lembra de você e de conversas anteriores, e planeja tarefas simples — tudo servido por um Model Router plugável.
+**Objetivo central:** o Sophie **conversa naturalmente**, lembra de você e de conversas anteriores, e planeja tarefas simples — tudo servido por um Model Router plugável.
 
 **Escopo por módulo:**
 - **Configuration:** catálogo de modelos (NVIDIA API + GPT-OSS-120B), chaves por provedor, seleção de modelo padrão.
 - **Brain (Model Router):** adaptadores plugáveis, timeout, retry, circuit breaker, fallback automático, roteamento por heurística (tarefa → custo/latência → modelo), cache de respostas.
 - **Memory:** memória de curto prazo (Redis, TTL 24h — contexto da sessão); memória de longo prazo (pgvector, embeddings); extração de fatos da conversa; consolidação noturna.
-- **Conversation:** gestão de sessões (retomável), contexto limitado por tokens, persona do NEGÃO, streaming de respostas via WebSocket, respostas em PT-BR.
+- **Conversation:** gestão de sessões (retomável), contexto limitado por tokens, persona do Sophie, streaming de respostas via WebSocket, respostas em PT-BR.
 - **Planner:** parser de planos (JSON estruturado a partir de LLM), planos de 2–3 passos executados por pipeline interno (sem tools externos), reavaliação após falha.
 - **Learning (mínimo):** registro de interações para replay (base do aprendizado futuro).
 - **Events/API/Database/Monitoring:** extensões dos contratos da v0.
@@ -118,7 +118,7 @@
 
 ### v2.0 — CÉREBRO QUE APRENDE (jun/2027 – jan/2028)
 
-**Objetivo central:** o NEGÃO **aprende sozinho** com cada interação, constrói uma base de conhecimento permanente e começa a agir no tempo (agendador) com automações simples.
+**Objetivo central:** o Sophie **aprende sozinho** com cada interação, constrói uma base de conhecimento permanente e começa a agir no tempo (agendador) com automações simples.
 
 **Escopo por módulo:**
 - **Learning:** loop contínuo (captura → extração → validação → persistência), aprendizagem por reforço leve (feedback explícito do usuário), deduplicação e fusão de fatos.
@@ -154,7 +154,7 @@
 
 ### v3.0 — MÃOS (fev/2028 – nov/2028)
 
-**Objetivo central:** o NEGÃO **executa no mundo real** — com autorização granular e confirmação — via Tool Manager e plugin: GitHub, Docker, SSH, Cloudflare, Coolify, arquivos e terminal.
+**Objetivo central:** o Sophie **executa no mundo real** — com autorização granular e confirmação — via Tool Manager e plugin: GitHub, Docker, SSH, Cloudflare, Coolify, arquivos e terminal.
 
 **Escopo por módulo:**
 - **Tool Manager:** registro/descoberta de ferramentas, schema de chamada (JSON Schema), validação de argumentos, sandbox de execução, timeout e retry, histórico de execução.
@@ -185,13 +185,13 @@
 | Loop infinito de ações | Orçamento de passos por plano, limit de execução por minuto |
 | Plugin quebrado quebrando o core | Plugin roda em processo isolado (subprocess/container leve) |
 
-**Non-goals:** sem voz/visão, sem observação de ambiente (IDE/terminal), sem autonomia (tudo relevante pede confirmação), sem multi-usuário, sem K8s, sem auto-deploy do próprio NEGÃO.
+**Non-goals:** sem voz/visão, sem observação de ambiente (IDE/terminal), sem autonomia (tudo relevante pede confirmação), sem multi-usuário, sem K8s, sem auto-deploy do próprio Sophie.
 
 ---
 
 ### v4.0 — SENTIDOS (dez/2028 – nov/2029)
 
-**Objetivo central:** o NEGÃO **vê e ouve** — voz, visão e observação do ambiente do usuário (IDE, terminal, docs), tornando as interações multimodais.
+**Objetivo central:** o Sophie **vê e ouve** — voz, visão e observação do ambiente do usuário (IDE, terminal, docs), tornando as interações multimodais.
 
 **Escopo por módulo:**
 - **Voice:** STT (transcrição em PT-BR), TTS (resposta falada), sessões de voz via WebSocket, comutação voz↔texto, hotword de ativação.
@@ -226,7 +226,7 @@
 
 ### v5.0 — MATURIDADE (dez/2029 – mai/2031)
 
-**Objetivo central:** o NEGÃO **opera com autonomia validada** — executa tarefas complexas de ponta a ponta, escala para múltiplos usuários/instâncias, custa pouco e continua evoluindo.
+**Objetivo central:** o Sophie **opera com autonomia validada** — executa tarefas complexas de ponta a ponta, escala para múltiplos usuários/instâncias, custa pouco e continua evoluindo.
 
 **Escopo por módulo:**
 - **Autonomy:** execução autônoma com **validação por políticas** (níveis de autonomia por domínio/tool), auto-verificação (dry-run → simulação → execução), plano de auto-auditoria, "human-in-the-loop" apenas para ações de alto risco.
@@ -256,16 +256,16 @@
 | Complexidade K8s | Migração gradual (Compose → K8s), documentação, runbooks |
 | Custo explode com escala | Quotas, orçamento por tenant, roteamento econômico obrigatório |
 
-**Non-goals:** sem AGI/consciência (NEGÃO continua ferramenta com políticas), sem SaaS público multi-tenant na nuvem de terceiros (self-hosted), sem treinar modelo próprio, sem acesso não autorizado a terceiros.
+**Non-goals:** sem AGI/consciência (Sophie continua ferramenta com políticas), sem SaaS público multi-tenant na nuvem de terceiros (self-hosted), sem treinar modelo próprio, sem acesso não autorizado a terceiros.
 
 ---
 
 ### v6.0+ — EVOLUÇÃO CONTÍNUA (jun/2031 – 2036)
 
-**Objetivo central:** o NEGÃO **evolui sozinho** dentro de limites seguros: auto-melhoria, metacognição e inteligência ambiental 24/7.
+**Objetivo central:** o Sophie **evolui sozinho** dentro de limites seguros: auto-melhoria, metacognição e inteligência ambiental 24/7.
 
 **Escopo (direções, refináveis ao longo do caminho):**
-- Auto-melhoria supervisionada: o NEGÃO propõe melhorias em suas próprias automações e prompts, executadas com revisão.
+- Auto-melhoria supervisionada: o Sophie propõe melhorias em suas próprias automações e prompts, executadas com revisão.
 - Metacognição: auto-avaliação de confiança, pedido de ajuda quando a incerteza é alta, explicação do próprio raciocínio.
 - Inteligência ambiental: antecipar necessidades ("amanhã você tem reunião, preparei o resumo").
 - Expansão de sentidos: contexto de tela contínuo autorizado, sentidos novos (fala natural com timbre próprio).
@@ -298,7 +298,7 @@
 
 ```mermaid
 gantt
-    title ROADMAP NEGÃO AI - Visão 2026-2036
+    title ROADMAP Sophie AI - Visão 2026-2036
     dateFormat YYYY-MM-DD
     axisFormat %b/%Y
 
@@ -382,7 +382,7 @@ gantt
 
 - **10 anos, 7 fases**, cada uma com objetivo único e non-goals explícitos — o escopo de cada versão cabe numa frase.
 - **A fundação (v0) não tem IA** — infra e observabilidade primeiro, porque tudo depois depende disso.
-- **Memória vem antes de mãos e sentidos** (v1 → v2 → v3 → v4): o NEGÃO só executa (v3) e percebe (v4) o que pode lembrar (v1/v2) e planejar.
+- **Memória vem antes de mãos e sentidos** (v1 → v2 → v3 → v4): o Sophie só executa (v3) e percebe (v4) o que pode lembrar (v1/v2) e planejar.
 - **Autonomia (v5) só depois de ferramentas, sentidos e aprendizado maduros**, sempre com validação por política — a segurança é pré-condição não negociável.
 - **Cada aceitação é numérica e testável**; cada versão tem KPI e benchmark de saída — "pronto" nunca é opinião.
 

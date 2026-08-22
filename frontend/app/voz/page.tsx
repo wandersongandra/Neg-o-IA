@@ -18,7 +18,7 @@ export default function VozPage() {
           ← Voltar ao painel
         </Link>
         <p className="font-mono-data text-[10px] font-semibold tracking-[0.3em] text-[var(--accent)]">
-          SOPHIE AI // INTERFACE DE VOZ
+          Sophie AI — interface de voz
         </p>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
           Fale com a <span className="glow-text text-gradient">Sophie</span>

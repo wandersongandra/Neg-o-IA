@@ -472,7 +472,7 @@ export default function VoicePanel() {
       disposedRef.current = true;
       const recorder = recorderRef.current;
       if (recorder && recorder.state !== "inactive") {
-        try { recorder.stop(); } catch { /* recorder já foi encerrado pelo navegador */ }
+        try { recorder.stop(); } catch (error) { void error; }
       }
       releaseInput();
       const socket = socketRef.current;
