@@ -485,6 +485,7 @@ export default function VoicePanel() {
   const outputLabel = deviceLabel(outputDevices.find((device) => device.deviceId === selectedOutputId), "Padrão do sistema");
   const busy = voiceState === "CONNECTING" || voiceState === "TRANSCRIBING" || voiceState === "THINKING";
   const recording = voiceState === "LISTENING";
+  const voiceUnavailable = status !== null && (!status.stt_available || !status.tts_available);
 
   return (
     <div className="space-y-6">
@@ -497,7 +498,7 @@ export default function VoicePanel() {
       {statusError || error ? <p className="flex items-center gap-2 rounded-xl border border-[#EF4444]/30 bg-[#EF4444]/10 p-3 text-sm text-[#FCA5A5]"><TriangleAlert className="size-4 shrink-0" />{error || statusError}</p> : null}
 
       <section className="glass glass-hover animate-fade-up rounded-2xl p-5">
-        <SectionHeader icon={Bluetooth} title="SOPHIE VOICE V0" subtitle="O sistema operacional gerencia o pareamento Bluetooth" />
+        <SectionHeader icon={Bluetooth} title="SOPHIE VOICE V1" subtitle="O sistema operacional gerencia o pareamento Bluetooth" />
         <div className="grid gap-4 md:grid-cols-2">
           <label className="space-y-2 text-sm text-[#CBD5E1]">
             <span className="flex items-center gap-2 font-mono-data text-[10px] tracking-widest text-[#94A3B8]"><Mic className="size-3.5 text-[#00D4FF]" /> ENTRADA / MICROFONE</span>
@@ -511,8 +512,8 @@ export default function VoicePanel() {
           </label>
         </div>
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <button type="button" onClick={() => (sessionReady ? stopSession() : void startSession())} disabled={voiceState === "CONNECTING"} className="inline-flex items-center gap-2 rounded-xl border border-[#00D4FF]/40 bg-[#00D4FF]/10 px-4 py-2.5 text-sm font-medium text-[#00D4FF] transition-colors hover:bg-[#00D4FF]/20 disabled:cursor-not-allowed disabled:opacity-40">{voiceState === "CONNECTING" ? <Loader2 className="size-4 animate-spin" /> : sessionReady ? <Square className="size-4" /> : <Play className="size-4" />}{voiceState === "CONNECTING" ? "Conectando…" : sessionReady ? "Encerrar sessão" : "Iniciar sessão de voz"}</button>
-          <span className="text-xs text-[#64748B]">O microfone só é solicitado depois deste clique.</span>
+          <button type="button" onClick={() => (sessionReady ? stopSession() : void startSession())} disabled={voiceState === "CONNECTING" || voiceUnavailable} className="inline-flex items-center gap-2 rounded-xl border border-[#00D4FF]/40 bg-[#00D4FF]/10 px-4 py-2.5 text-sm font-medium text-[#00D4FF] transition-colors hover:bg-[#00D4FF]/20 disabled:cursor-not-allowed disabled:opacity-40">{voiceState === "CONNECTING" ? <Loader2 className="size-4 animate-spin" /> : sessionReady ? <Square className="size-4" /> : <Play className="size-4" />}{voiceState === "CONNECTING" ? "Conectando…" : sessionReady ? "Encerrar sessão" : voiceUnavailable ? "Voz indisponível" : "Iniciar sessão de voz"}</button>
+          <span className="text-xs text-[#64748B]">{voiceUnavailable ? "STT e TTS precisam estar disponíveis para iniciar uma sessão." : "O microfone só é solicitado depois deste clique."}</span>
         </div>
       </section>
 
@@ -527,10 +528,10 @@ export default function VoicePanel() {
 
       <section className="grid gap-4 md:grid-cols-2">
         <div className="glass rounded-2xl p-5"><p className="font-mono-data text-[10px] tracking-[0.25em] text-[#00D4FF]">TRANSCRIÇÃO</p><p className="mt-3 min-h-16 text-sm leading-relaxed text-[#E2E8F0]">{transcript || "A fala reconhecida aparecerá aqui."}</p></div>
-        <div className="glass rounded-2xl p-5"><p className="font-mono-data text-[10px] tracking-[0.25em] text-[#00D4FF]">SOPHIE</p><p className="mt-3 min-h-16 text-sm leading-relaxed text-[#E2E8F0]">{responseText || "A resposta da Sophie aparecerá aqui."}</p><audio ref={audioRef} controls src={audioUrl || undefined} className="mt-4 w-full" onEnded={() => { if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current); audioUrlRef.current = null; setAudioUrl(null); setVoiceState("IDLE"); setAvatarState("idle"); }} onError={() => { setError("Não foi possível reproduzir o áudio da Sophie."); setVoiceState("ERROR"); setAvatarState("error"); }} /></div>
+        <div className="glass rounded-2xl p-5"><p className="font-mono-data text-[10px] tracking-[0.25em] text-[#00D4FF]">SOPHIE</p><p className="mt-3 min-h-16 text-sm leading-relaxed text-[#E2E8F0]">{responseText || "A resposta da Sophie aparecerá aqui."}</p>{audioUrl ? <audio ref={audioRef} controls src={audioUrl} className="mt-4 w-full" onEnded={() => { if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current); audioUrlRef.current = null; setAudioUrl(null); setVoiceState("IDLE"); setAvatarState("idle"); }} onError={() => { setError("Não foi possível reproduzir o áudio da Sophie."); setVoiceState("ERROR"); setAvatarState("error"); }} /> : <p className="mt-4 text-xs text-[#64748B]">O áudio da Sophie aparecerá aqui quando uma resposta estiver disponível.</p>}</div>
       </section>
 
-      <p className="text-xs leading-relaxed text-[#64748B]">Bluetooth é tratado pelo sistema operacional como entrada e saída de áudio. A V0 usa WebSocket autenticado por ticket de curta duração, mantém o contexto da sessão e descarta o áudio bruto após o STT. <Link href="/conversa" className="text-[#93C5FD] hover:text-[#DBEAFE]">Abrir conversa textual</Link></p>
+      <p className="text-xs leading-relaxed text-[#64748B]">Bluetooth é tratado pelo sistema operacional como entrada e saída de áudio. A V1 usa WebSocket autenticado por ticket de curta duração, mantém o contexto da sessão e descarta o áudio bruto após o STT. <Link href="/conversa" className="text-[#93C5FD] hover:text-[#DBEAFE]">Abrir conversa textual</Link></p>
       {sessionId ? <p className="font-mono-data text-[10px] text-[#475569]">session_id: {sessionId}</p> : null}
     </div>
   );

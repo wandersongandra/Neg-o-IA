@@ -20,7 +20,7 @@ export default function ConversaShell({ children }: { children: ReactNode }) {
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />
-        <main className="flex flex-1 flex-col overflow-hidden">
+        <div className="flex flex-1 flex-col overflow-hidden">
           <div className="p-4 pb-0 lg:hidden">
             <button
               className="glass glass-hover interactive-control flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
@@ -34,7 +34,7 @@ export default function ConversaShell({ children }: { children: ReactNode }) {
             </button>
           </div>
           {children}
-        </main>
+        </div>
       </div>
     </div>
   );

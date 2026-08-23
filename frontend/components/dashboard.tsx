@@ -40,6 +40,16 @@ import { useToast } from "@/components/ui/toast";
 
 const POLL_MS = 5000;
 
+function isBrainStatus(value: unknown): value is BrainStatus {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    typeof (value as { mode?: unknown }).mode === "string" &&
+    typeof (value as { primary_model?: unknown }).primary_model === "string" &&
+    typeof (value as { fallback_model?: unknown }).fallback_model === "string"
+  );
+}
+
 interface Command {
   label: string;
   icon: LucideIcon;
@@ -91,7 +101,8 @@ export default function Dashboard() {
     }
     if (brainRes?.ok) {
       try {
-        setBrain((await brainRes.json()) as BrainStatus);
+        const body: unknown = await brainRes.json();
+        setBrain(isBrainStatus(body) ? body : null);
       } catch {
         setBrain(null);
       }
@@ -207,7 +218,7 @@ export default function Dashboard() {
 
           <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-12 gap-6">
             <div className="col-span-1 xl:col-span-4 min-w-0">
-              <TimelinePanel />
+              <TimelinePanel data={data} />
             </div>
             <div className="col-span-1 xl:col-span-4 min-w-0">
               <TasksPanel />

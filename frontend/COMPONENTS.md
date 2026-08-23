@@ -192,18 +192,18 @@ All components use CSS variables from the design system in `app/globals.css`:
 
 ### Spacing Scale
 ```
---spacing-xs: 4px
---spacing-sm: 8px
---spacing-md: 12px
---spacing-base: 16px
---spacing-lg: 20px
---spacing-xl: 24px
---spacing-2xl: 32px
---spacing-3xl: 40px
---spacing-4xl: 48px
---spacing-5xl: 64px
---spacing-6xl: 80px
---spacing-7xl: 96px
+--space-xs: 4px
+--space-sm: 8px
+--space-md: 12px
+--space-base: 16px
+--space-lg: 20px
+--space-xl: 24px
+--space-2xl: 32px
+--space-3xl: 40px
+--space-4xl: 48px
+--space-5xl: 64px
+--space-6xl: 80px
+--space-7xl: 96px
 ```
 
 ### Animation Timing

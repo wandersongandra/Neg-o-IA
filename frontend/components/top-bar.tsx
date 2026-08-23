@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Command,
@@ -19,8 +19,6 @@ interface TopBarProps {
   onOpenPalette: () => void;
 }
 
-const FALLBACK_MODEL = "GPT-OSS-120B";
-
 type Theme = "azul" | "esmeralda" | "magenta";
 
 const THEME_LABELS: Record<Theme, string> = {
@@ -29,8 +27,8 @@ const THEME_LABELS: Record<Theme, string> = {
   magenta: "Magenta",
 };
 
-function useBrainModel(): string {
-  const [model, setModel] = useState<string>(FALLBACK_MODEL);
+function useBrainModel(): string | null {
+  const [model, setModel] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
     const controller = new AbortController();
@@ -91,15 +89,40 @@ export default function TopBar({ data, onOpenPalette }: TopBarProps) {
   const online = data?.healthz?.status === "alive";
   const latency = data?.latency_ms ?? null;
   const level =
-    data?.security?.authorization_level ?? data?.root?.environment ?? "online";
+    data?.security?.authorization_level ?? data?.root?.environment ?? "offline";
   const { theme, setTheme } = useTheme();
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
+  const themeMenuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!themeMenuOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (themeMenuRef.current && !themeMenuRef.current.contains(event.target as Node)) {
+        setThemeMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setThemeMenuOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [themeMenuOpen]);
 
   return (
-    <header className="glass command-deck sticky top-0 z-40 flex h-16 items-center gap-3 overflow-x-hidden px-4 pt-[env(safe-area-inset-top)] sm:gap-4 sm:px-5">
+    <header
+      className="glass command-deck sticky top-0 z-40 flex h-16 items-center gap-3 overflow-x-hidden px-4 pt-[env(safe-area-inset-top)] sm:gap-4 sm:px-5"
+      data-system-status={online ? "SYSTEM // LIVE" : "SYSTEM // OFFLINE"}
+    >
       <div className="flex items-center gap-3">
         <div className="relative flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--color-prime)] to-[var(--accent)] shadow-[0_0_24px_-6px_var(--accent-glow)]">
           <Cpu className="size-5 text-[var(--bg-primary)]" strokeWidth={2.2} />
-          <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-[var(--color-ok)] ring-2 ring-[var(--bg-primary)]" />
+          <span className={`absolute -right-0.5 -top-0.5 size-2 rounded-full ${online ? "bg-[var(--color-ok)]" : "bg-[var(--color-danger)]"} ring-2 ring-[var(--bg-primary)]`} />
         </div>
         <div className="hidden leading-tight min-[400px]:block">
           <p className="hud-title text-sm text-[var(--text-primary)]">
@@ -128,7 +151,7 @@ export default function TopBar({ data, onOpenPalette }: TopBarProps) {
       <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
         <div className="glass hidden items-center gap-2 rounded-xl px-3 py-1.5 lg:flex">
           <Sparkles className="size-3.5 text-[var(--accent)]" />
-          <span className="max-w-[160px] truncate text-xs text-[var(--text-primary)]">{model}</span>
+          <span className="max-w-[160px] truncate text-xs text-[var(--text-primary)]">{model ?? "—"}</span>
         </div>
 
         <div className="glass hidden items-center gap-2 rounded-xl px-3 py-1.5 xl:flex">
@@ -156,26 +179,29 @@ export default function TopBar({ data, onOpenPalette }: TopBarProps) {
           </span>
         </div>
 
-        <div className="relative group">
+      <div ref={themeMenuRef} className="relative">
           <button
             className="glass glass-hover interactive-control flex size-9 items-center justify-center rounded-xl text-[var(--text-secondary)] sm:size-10"
             aria-label="Tema"
+            aria-haspopup="menu"
+            aria-expanded={themeMenuOpen}
+            aria-controls="theme-menu"
             type="button"
-            onClick={() => {
-              const themes: Theme[] = ["azul", "esmeralda", "magenta"];
-              const currentIndex = themes.indexOf(theme);
-              const nextTheme = themes[(currentIndex + 1) % themes.length];
-              setTheme(nextTheme);
-            }}
+            onClick={() => setThemeMenuOpen((open) => !open)}
           >
-            <Palette className="size-4 transition-colors group-hover:text-[var(--accent)]" />
+            <Palette className="size-4 transition-colors hover:text-[var(--accent)]" />
           </button>
-          <div className="absolute right-0 top-full mt-2 hidden flex-col glass rounded-xl border border-[var(--border)] p-1 shadow-lg z-50 min-w-[140px] group-hover:flex group-focus-within:flex">
+          {themeMenuOpen ? <div id="theme-menu" role="menu" className="absolute right-0 top-full z-50 mt-2 flex min-w-[140px] flex-col rounded-xl border border-[var(--border)] glass p-1 shadow-lg">
             {(["azul", "esmeralda", "magenta"] as Theme[]).map((t) => (
               <button
                 key={t}
                 type="button"
-                onClick={() => setTheme(t)}
+                role="menuitemradio"
+                aria-checked={theme === t}
+                onClick={() => {
+                  setTheme(t);
+                  setThemeMenuOpen(false);
+                }}
                 className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors ${
                   theme === t
                     ? "bg-[var(--accent-muted)] text-[var(--accent)]"
@@ -193,7 +219,7 @@ export default function TopBar({ data, onOpenPalette }: TopBarProps) {
                 {theme === t && <Palette className="size-3.5 ml-auto text-[var(--accent)]" />}
               </button>
             ))}
-          </div>
+          </div> : null}
         </div>
 
         <PushNotifications />
