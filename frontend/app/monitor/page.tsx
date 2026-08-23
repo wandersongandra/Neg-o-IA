@@ -92,11 +92,107 @@ interface FetchResult<T> {
   error: string | null;
 }
 
-async function fetchJson<T>(url: string): Promise<FetchResult<T>> {
+type Guard<T> = (value: unknown) => value is T;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isBrainRouterInfo(value: unknown): value is BrainRouterInfo {
+  return (
+    isRecord(value) &&
+    typeof value.mode === "string" &&
+    typeof value.primary_model === "string" &&
+    typeof value.fallback_model === "string" &&
+    typeof value.instance_router === "boolean"
+  );
+}
+
+function isBrainStatus(value: unknown): value is BrainStatus {
+  return (
+    isRecord(value) &&
+    typeof value.mode === "string" &&
+    typeof value.primary_model === "string" &&
+    typeof value.fallback_model === "string" &&
+    typeof value.cache_ttl_seconds === "number" &&
+    typeof value.retry_attempts === "number" &&
+    typeof value.circuit_failures === "number"
+  );
+}
+
+function isConversationStatus(value: unknown): value is ConversationStatus {
+  return isRecord(value) && typeof value.sessions === "number" && typeof value.degraded === "boolean";
+}
+
+function isConversationSession(value: unknown): value is ConversationSession {
+  return (
+    isRecord(value) &&
+    typeof value.session_id === "string" &&
+    typeof value.created_at === "string" &&
+    typeof value.updated_at === "string" &&
+    typeof value.message_count === "number"
+  );
+}
+
+function isSessionsPayload(value: unknown): value is { sessions: ConversationSession[] } {
+  return isRecord(value) && Array.isArray(value.sessions) && value.sessions.every(isConversationSession);
+}
+
+function isVoiceStatus(value: unknown): value is VoiceStatus {
+  return (
+    isRecord(value) &&
+    typeof value.stt_available === "boolean" &&
+    typeof value.tts_available === "boolean" &&
+    typeof value.stt_model === "string" &&
+    typeof value.tts_voice === "string"
+  );
+}
+
+function isMemoryStatus(value: unknown): value is MemoryStatus {
+  return isRecord(value) && typeof value.redis_connected === "boolean";
+}
+
+function isDatabaseStatus(value: unknown): value is DatabaseStatus {
+  return (
+    isRecord(value) &&
+    typeof value.connected === "boolean" &&
+    typeof value.engine_url === "string" &&
+    typeof value.active_connections === "number" &&
+    typeof value.detail === "string"
+  );
+}
+
+function isSecurityStatus(value: unknown): value is SecurityStatus {
+  return (
+    isRecord(value) &&
+    typeof value.status === "string" &&
+    typeof value.authenticated === "boolean" &&
+    typeof value.authorization_level === "string" &&
+    typeof value.authorization_level_id === "number" &&
+    typeof value.principal === "string"
+  );
+}
+
+function isHealthz(value: unknown): value is Healthz {
+  return isRecord(value) && typeof value.status === "string";
+}
+
+function isReadyz(value: unknown): value is Readyz {
+  return (
+    isRecord(value) &&
+    typeof value.status === "string" &&
+    isRecord(value.checks) &&
+    Object.values(value.checks).every((check) => typeof check === "string")
+  );
+}
+
+async function fetchJson<T>(url: string, guard?: Guard<T>): Promise<FetchResult<T>> {
   try {
     const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(12_000) });
     if (!res.ok) return { value: null, error: `HTTP ${res.status}` };
-    return { value: (await res.json()) as T, error: null };
+    const body: unknown = await res.json();
+    if (guard && !guard(body)) return { value: null, error: "formato inesperado" };
+    return { value: body as T, error: null };
   } catch {
     return { value: null, error: "sem resposta" };
   }
@@ -263,9 +359,9 @@ function formatWhen(iso: string): string {
 
 function BrainSection({ snapshot }: { snapshot: Snapshot }) {
   const { brain, router } = snapshot;
-  const mode = brain?.mode ?? router?.mode ?? null;
-  const primary = brain?.primary_model ?? router?.primary_model ?? null;
-  const fallback = brain?.fallback_model ?? router?.fallback_model ?? null;
+  const mode = typeof brain?.mode === "string" ? brain.mode : typeof router?.mode === "string" ? router.mode : null;
+  const primary = typeof brain?.primary_model === "string" ? brain.primary_model : typeof router?.primary_model === "string" ? router.primary_model : null;
+  const fallback = typeof brain?.fallback_model === "string" ? brain.fallback_model : typeof router?.fallback_model === "string" ? router.fallback_model : null;
   const modelError =
     brain === null && router === null
       ? (snapshot.errors.brain ?? snapshot.errors.router)
@@ -656,17 +752,17 @@ export default function MonitorPage() {
       readyz,
       logs,
     ] = await Promise.all([
-      fetchJson<BrainStatus>("/api/proxy/brain/status"),
-      fetchJson<BrainRouterInfo>("/api/proxy/brain/router"),
-      fetchJson<ConversationStatus>("/api/proxy/conversation/status"),
-      fetchJson<{ sessions: ConversationSession[] }>("/api/proxy/conversation/sessions"),
-      fetchJson<VoiceStatus>("/api/proxy/voice/status"),
-      fetchJson<MemoryStatus>("/api/proxy/memory/status"),
-      fetchJson<DatabaseStatus>("/api/proxy/database/status"),
+      fetchJson<BrainStatus>("/api/proxy/brain/status", isBrainStatus),
+      fetchJson<BrainRouterInfo>("/api/proxy/brain/router", isBrainRouterInfo),
+      fetchJson<ConversationStatus>("/api/proxy/conversation/status", isConversationStatus),
+      fetchJson<{ sessions: ConversationSession[] }>("/api/proxy/conversation/sessions", isSessionsPayload),
+      fetchJson<VoiceStatus>("/api/proxy/voice/status", isVoiceStatus),
+      fetchJson<MemoryStatus>("/api/proxy/memory/status", isMemoryStatus),
+      fetchJson<DatabaseStatus>("/api/proxy/database/status", isDatabaseStatus),
       fetchJson<EventsStatus>("/api/proxy/events/status"),
-      fetchJson<SecurityStatus>("/api/proxy/security/status"),
-      fetchJson<Healthz>("/api/proxy/healthz"),
-      fetchJson<Readyz>("/api/proxy/readyz"),
+      fetchJson<SecurityStatus>("/api/proxy/security/status", isSecurityStatus),
+      fetchJson<Healthz>("/api/proxy/healthz", isHealthz),
+      fetchJson<Readyz>("/api/proxy/readyz", isReadyz),
       fetchLogs(),
     ]);
 
@@ -758,7 +854,7 @@ export default function MonitorPage() {
         <div className="glass flex items-center gap-3 rounded-2xl border-[#EF4444]/40 px-4 py-3">
           <AlertTriangle className="size-4 shrink-0 text-[#EF4444]" />
           <p className="text-sm text-[#EF4444]">
-            Backend inacessível — os cards abaixo exibem erro até o serviço voltar.
+            Backend inacessível ou payload inválido — os cards abaixo exibem o detalhe da falha.
           </p>
         </div>
       ) : null}

@@ -18,19 +18,19 @@
   --color-ink: #f8fafc;
   --color-mute: #a8b5c7;
 
-  /* Spacing Scale (4px baseline) */
-  --spacing-xs: 0.25rem;  /* 4px */
-  --spacing-sm: 0.5rem;   /* 8px */
-  --spacing-md: 0.75rem;  /* 12px */
-  --spacing-base: 1rem;   /* 16px */
-  --spacing-lg: 1.25rem;  /* 20px */
-  --spacing-xl: 1.5rem;   /* 24px */
-  --spacing-2xl: 2rem;    /* 32px */
-  --spacing-3xl: 2.5rem;  /* 40px */
-  --spacing-4xl: 3rem;    /* 48px */
-  --spacing-5xl: 4rem;    /* 64px */
-  --spacing-6xl: 5rem;    /* 80px */
-  --spacing-7xl: 6rem;    /* 96px */
+  /* Spacing scale (4px baseline) */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 0.75rem;
+  --space-base: 1rem;
+  --space-lg: 1.25rem;
+  --space-xl: 1.5rem;
+  --space-2xl: 2rem;
+  --space-3xl: 2.5rem;
+  --space-4xl: 3rem;
+  --space-5xl: 4rem;
+  --space-6xl: 5rem;
+  --space-7xl: 6rem;
 
   /* Animation Timing (standardized) */
   --duration-fast: 200ms;
@@ -387,7 +387,7 @@ body::after {
   }
 
   .command-deck::after {
-    content: "SYSTEM // LIVE";
+    content: attr(data-system-status);
     position: absolute;
     right: 1.25rem;
     bottom: -1px;
@@ -398,7 +398,14 @@ body::after {
   }
 
   .side-command-deck {
+    position: fixed;
     border-right-color: color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+
+  @media (min-width: 1024px) {
+    .side-command-deck {
+      position: sticky;
+    }
   }
 
   .core-status {

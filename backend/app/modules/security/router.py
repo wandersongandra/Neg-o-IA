@@ -191,7 +191,7 @@ async def require_api_key(
 
 @router.post("/register", response_model=dict[str, str], status_code=201)
 async def register(body: CredentialRequest) -> dict[str, str]:
-    if not get_settings().registration_enabled and get_settings().env == "production":
+    if not get_settings().registration_enabled:
         raise HTTPException(status_code=404, detail="registration disabled")
     factory = create_session_factory(create_engine(get_settings().database_url))
     try:
