@@ -39,6 +39,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
       ) return;
       if (anchor.origin !== window.location.origin) return;
 
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
       e.preventDefault();
       document.startViewTransition(() => {
         window.location.href = href;

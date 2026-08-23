@@ -6,12 +6,13 @@ import { useEffect, useState, type ReactNode } from "react";
 export default function AuthGuard({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const isPublicPath = pathname === "/login" || pathname === "/cadastro";
   const [state, setState] = useState<"checking" | "authenticated" | "unauthenticated">(
-    pathname === "/login" ? "authenticated" : "checking",
+    isPublicPath ? "authenticated" : "checking",
   );
 
   useEffect(() => {
-    if (pathname === "/login") {
+    if (isPublicPath) {
       setState("authenticated");
       return;
     }
@@ -34,7 +35,7 @@ export default function AuthGuard({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [pathname, router]);
+  }, [isPublicPath, pathname, router]);
 
   if (state !== "authenticated") {
     return (

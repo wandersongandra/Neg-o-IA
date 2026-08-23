@@ -10,20 +10,6 @@ interface CoreSphereProps {
   brain: BrainStatus | null;
 }
 
-interface Chip {
-  label: string;
-  value: string;
-  tone?: "ok" | "warn";
-}
-
-const BASE_CHIPS: Chip[] = [
-  { label: "MODELO ATIVO", value: "GPT-OSS-120B", tone: "ok" },
-  { label: "MEMÓRIA UTILIZADA", value: "34%" },
-  { label: "NÍVEL DE APRENDIZADO", value: "82%", tone: "ok" },
-  { label: "ESTADO COGNITIVO", value: "ESTÁVEL", tone: "ok" },
-  { label: "CONFIANÇA", value: "96%", tone: "ok" },
-];
-
 const CHIP_POSITIONS = [
   "left-0 top-[12%]",
   "right-0 top-[6%]",
@@ -72,10 +58,14 @@ export const CoreSphere = forwardRef<CoreSphereRef, CoreSphereProps>(
 
     const online = data?.healthz?.status === "alive";
     const latency = data?.latency_ms ?? null;
-    const model = brain?.primary_model ?? "GPT-OSS-120B";
+    const brainKnown = typeof brain?.mode === "string" && typeof brain?.primary_model === "string";
+    const model = brain?.primary_model ?? "—";
     const chips = [
-      { label: "MODELO ATIVO", value: model, tone: brain ? "ok" as const : "warn" as const },
-      ...BASE_CHIPS.slice(1, 5),
+      { label: "MODELO ATIVO", value: model, tone: brainKnown ? "ok" as const : "warn" as const },
+      { label: "MEMÓRIA UTILIZADA", value: "SEM DADOS", tone: "warn" as const },
+      { label: "NÍVEL DE APRENDIZADO", value: "SEM DADOS", tone: "warn" as const },
+      { label: "ESTADO COGNITIVO", value: online ? "OPERACIONAL" : "OFFLINE", tone: online ? "ok" as const : "warn" as const },
+      { label: "CONFIANÇA", value: "SEM DADOS", tone: "warn" as const },
       {
         label: "PROCESSAMENTO",
         value: latency === null ? "--" : `${latency}ms`,

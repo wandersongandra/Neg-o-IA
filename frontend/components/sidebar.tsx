@@ -91,7 +91,7 @@ export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: S
         id="sidebar"
         className={`
           glass side-command-deck flex h-[calc(100dvh-4rem)] w-60 flex-col
-          fixed left-0 z-50 transform transition-transform duration-300 ease-in-out lg:relative lg:sticky lg:translate-x-0 lg:visible
+          left-0 z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:visible
           ${isOpen ? "visible translate-x-0" : "invisible -translate-x-full"}
         `}
         style={{ top: "calc(4rem + env(safe-area-inset-top))" }}
@@ -165,8 +165,8 @@ export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: S
                 </span>
               </div>
               <span className="relative flex size-2">
-                <span className="animate-ping-soft absolute inline-flex size-full rounded-full bg-[var(--color-ok)]" />
-                <span className="relative inline-flex size-2 rounded-full bg-[var(--color-ok)]" />
+                {ready ? <span className="animate-ping-soft absolute inline-flex size-full rounded-full bg-[var(--color-ok)]" /> : null}
+                <span className={`relative inline-flex size-2 rounded-full ${ready ? "bg-[var(--color-ok)]" : "bg-[var(--color-warn)]"}`} />
               </span>
             </div>
             <div className="mt-3 space-y-1.5 font-mono-data text-[10px] text-[var(--text-secondary)]">
