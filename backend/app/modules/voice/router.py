@@ -383,7 +383,7 @@ async def _handle_turn(ws: WebSocket, session: _WsVoiceSession) -> None:
 
     try:
         audio_result = await _get_voice_service().synthesize(conversation.text)
-    except VoiceProviderError:
+    except (VoiceUnavailableError, VoiceProviderError):
         logger.warning(
             "voice_ws_synthesize_failed",
             session_id=session.session_id,
@@ -640,6 +640,11 @@ async def voice_synthesize(
 ) -> Response:
     try:
         result = await _get_voice_service().synthesize(body.text.strip())
+    except VoiceUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="TTS indisponível no momento",
+        ) from exc
     except VoiceProviderError as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
