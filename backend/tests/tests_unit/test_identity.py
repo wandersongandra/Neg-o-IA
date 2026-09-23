@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from app.modules.brain.identity import ASSISTANT_NAME, SYSTEM_PROMPT
-from app.modules.brain.router import DEFAULT_CONFIG
+from app.modules.brain.user_config import default_user_config
 from app.modules.conversation.application import (
     SYSTEM_PROMPT as CONVERSATION_SYSTEM_PROMPT,
 )
@@ -25,10 +25,8 @@ def test_system_prompt_mentions_sophie_not_legacy_name() -> None:
 
 
 def test_brain_default_config_uses_centralized_prompt() -> None:
-    """Antes da Fase 1, brain/router.py tinha sua própria cópia do prompt —
-    agora deve importar a mesma constante, eliminando o risco de divergência
-    documentado em docs/sophie/CURRENT_STATE.md."""
-    assert DEFAULT_CONFIG["system_prompt"] is SYSTEM_PROMPT
+    config = default_user_config()
+    assert config.system_prompt is SYSTEM_PROMPT
 
 
 def test_conversation_uses_centralized_prompt() -> None:
