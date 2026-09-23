@@ -254,7 +254,16 @@ async def conversation_websocket(ws: WebSocket) -> None:
                 if not isinstance(text, str) or not text.strip():
                     await ws.send_json({"type": "error", "detail": "texto vazio"})
                     continue
-                target = raw.get("session_id") or session_id
+                if len(text) > 4000:
+                    await ws.send_json({"type": "error", "detail": "texto excede o limite"})
+                    continue
+                requested_session = raw.get("session_id")
+                if requested_session is not None and (
+                    not isinstance(requested_session, str) or len(requested_session) > 64
+                ):
+                    await ws.send_json({"type": "error", "detail": "session_id inválido"})
+                    continue
+                target = requested_session or session_id
                 if not target:
                     session = await service.start_session(user_id=auth.effective_user_id)
                     target = session.session_id
@@ -279,7 +288,13 @@ async def conversation_websocket(ws: WebSocket) -> None:
                     }
                 )
             elif msg_type == "reset":
-                target = raw.get("session_id") or session_id
+                requested_session = raw.get("session_id")
+                if requested_session is not None and (
+                    not isinstance(requested_session, str) or len(requested_session) > 64
+                ):
+                    await ws.send_json({"type": "error", "detail": "session_id inválido"})
+                    continue
+                target = requested_session or session_id
                 if target:
                     try:
                         await service.reset_session(target, user_id=auth.effective_user_id)
