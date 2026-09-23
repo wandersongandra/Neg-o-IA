@@ -127,9 +127,7 @@ class ConversationService:
                 fallback_used=False,
                 cached=False,
             )
-        await self.append_message(
-            session_id, "assistant", response.text, user_id=user_id
-        )
+        await self.append_message(session_id, "assistant", response.text, user_id=user_id)
         await self._publish(
             EVENT_CONVERSATION_MESSAGE_RESPONDED,
             {
