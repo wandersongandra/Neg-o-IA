@@ -312,7 +312,4 @@ async def test_brain_service_applies_user_config(monkeypatch: Any) -> None:
     assert request.max_tokens == 321
     assert request.messages[0].role == "system"
     assert request.messages[0].content == "Prompt efetivo isolado do usuário."
-    assert all(
-        message.content != "Prompt legado."
-        for message in request.messages
-    )
+    assert all(message.content != "Prompt legado." for message in request.messages)
