@@ -75,6 +75,7 @@ class BrainService:
             EVENT_BRAIN_REQUEST_COMPLETED,
             {
                 "session_id": session_id,
+                "user_id": user_id,
                 "model": response.model,
                 "latency_ms": response.latency_ms,
                 "cached": response.cached,
