@@ -85,7 +85,8 @@ export default function Dashboard() {
   }, []);
 
   const load = useCallback(async () => {
-    const reqId = ++loadReqRef.current;    const [dashRes, brainRes] = await Promise.all([
+    const reqId = ++loadReqRef.current;
+    const [dashRes, brainRes] = await Promise.all([
       fetch("/api/dashboard", { cache: "no-store" }).catch(() => null),
       fetch("/api/proxy/brain/status", { cache: "no-store" }).catch(() => null),
     ]);
@@ -167,7 +168,7 @@ export default function Dashboard() {
         <TopBar data={null} onOpenPalette={() => undefined} />
         <div className="flex flex-1">
           <Sidebar data={null} onNavigate={() => undefined} />
-          <main className="flex-1 space-y-6 overflow-x-hidden p-5 md:p-6 page-transition">
+          <main className="page-transition flex-1 space-y-5 overflow-x-hidden p-4 sm:p-5 md:space-y-6 md:p-6">
             <SkeletonCardGrid count={6} />
           </main>
         </div>
@@ -187,7 +188,7 @@ export default function Dashboard() {
           onClose={() => setSidebarOpen(false)}
         />
 
-        <main className="flex-1 space-y-6 overflow-x-hidden p-5 md:p-6 page-transition">
+        <main id="main-content" className="page-transition flex-1 space-y-5 overflow-x-hidden p-4 sm:p-5 md:space-y-6 md:p-6">
           <button
             className="glass glass-hover interactive-control lg:hidden flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
             onClick={() => setSidebarOpen(true)}
@@ -242,15 +243,15 @@ export default function Dashboard() {
       </div>
 
       {paletteOpen && (
-        <button
-          type="button"
-          className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-6 backdrop-blur-sm md:items-center"
-          onClick={() => setPaletteOpen(false)}
-          aria-label="Fechar paleta de comandos"
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 backdrop-blur-sm sm:p-6 md:items-center"
+          onMouseDown={(event) => {
+            if (event.currentTarget === event.target) setPaletteOpen(false);
+          }}
+          role="presentation"
         >
           <div
             className="glass command-palette w-full max-w-xl animate-fade-up rounded-2xl p-2"
-            onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-labelledby="command-palette-title"
@@ -314,7 +315,7 @@ export default function Dashboard() {
               )}
             </div>
           </div>
-        </button>
+        </div>
       )}
     </div>
   );
