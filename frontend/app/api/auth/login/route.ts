@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveApiConfig } from "@/lib/env";
-import { enforceSameOriginMutation } from "@/lib/request-security";
+import {
+  enforceSameOriginMutation,
+  trustedClientIpHeaders,
+} from "@/lib/request-security";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +20,10 @@ export async function POST(request: NextRequest) {
   try {
     const upstream = await fetch(`${apiUrl}/security/login`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...trustedClientIpHeaders(request),
+      },
       body: JSON.stringify(body),
       cache: "no-store",
     });
