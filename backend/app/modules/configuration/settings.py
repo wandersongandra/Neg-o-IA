@@ -117,8 +117,8 @@ class Settings(BaseSettings):
             provider = urlparse(self.nvidia_base_url)
             if provider.scheme != "https":
                 problems.append(
-                "NEGAO_NVIDIA_BASE_URL deve usar HTTPS quando IA externa estiver ativa"
-            )
+                    "NEGAO_NVIDIA_BASE_URL deve usar HTTPS quando IA externa estiver ativa"
+                )
         if problems:
             raise ValueError("; ".join(problems))
         return self
