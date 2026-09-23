@@ -88,8 +88,7 @@ export default function TopBar({ data, onOpenPalette }: TopBarProps) {
   const model = useBrainModel();
   const online = data?.healthz?.status === "alive";
   const latency = data?.latency_ms ?? null;
-  const level =
-    data?.security?.authorization_level ?? data?.root?.environment ?? "offline";
+  const level = data?.security?.authorization_level ?? "offline";
   const { theme, setTheme } = useTheme();
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const themeMenuRef = useRef<HTMLDivElement | null>(null);
