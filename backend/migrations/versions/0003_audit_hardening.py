@@ -9,6 +9,11 @@ down_revision = "0002_identity_sessions"
 branch_labels = None
 depends_on = None
 
+_UUID_REGEX = (
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-"
+    r"[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
+)
+
 
 def upgrade() -> None:
     # Conversation session IDs are opaque strings, not UUIDs. Audit principals
@@ -53,22 +58,22 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.execute("DROP TABLE IF EXISTS events.audit_events_default")
     op.execute(
-        """
+        f"""
         ALTER TABLE events.audit_events
         ALTER COLUMN user_id TYPE uuid
         USING CASE
-            WHEN user_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+            WHEN user_id ~* '{_UUID_REGEX}'
             THEN user_id::uuid
             ELSE NULL
         END
         """
     )
     op.execute(
-        """
+        f"""
         ALTER TABLE events.audit_events
         ALTER COLUMN session_id TYPE uuid
         USING CASE
-            WHEN session_id ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+            WHEN session_id ~* '{_UUID_REGEX}'
             THEN session_id::uuid
             ELSE NULL
         END
