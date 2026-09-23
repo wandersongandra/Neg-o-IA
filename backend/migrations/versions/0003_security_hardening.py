@@ -27,8 +27,12 @@ BEGIN
     END IF;
 
     FOR offset_month IN 0..months_ahead LOOP
-        start_ts := (date_trunc('month', CURRENT_DATE) + make_interval(months => offset_month))::date;
-        end_ts := (date_trunc('month', CURRENT_DATE) + make_interval(months => offset_month + 1))::date;
+        start_ts := (
+            date_trunc('month', CURRENT_DATE) + make_interval(months => offset_month)
+        )::date;
+        end_ts := (
+            date_trunc('month', CURRENT_DATE) + make_interval(months => offset_month + 1)
+        )::date;
         partition_name := 'audit_events_' || to_char(start_ts, 'YYYY_MM');
 
         EXECUTE format(
