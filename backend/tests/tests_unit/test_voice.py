@@ -5,7 +5,8 @@ from __future__ import annotations
 from typing import cast
 
 import pytest
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from starlette.requests import Request
 from starlette.testclient import TestClient
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
@@ -28,6 +29,7 @@ from app.modules.voice.router import (
     _handle_audio_chunk,
     _handle_turn_start,
     _parse_protocol_message,
+    _read_limited_body,
     _WsVoiceSession,
     voice_ws_router,
 )
@@ -42,6 +44,35 @@ class _CapturingBus:
 
     async def publish_event(self, envelope: EventEnvelope) -> None:
         self.envelopes.append(envelope)
+
+
+@pytest.mark.asyncio
+async def test_streaming_audio_body_rejects_payload_above_limit() -> None:
+    chunks = [b"a" * 8, b"b" * 8]
+
+    async def receive() -> dict[str, object]:
+        chunk = chunks.pop(0)
+        return {
+            "type": "http.request",
+            "body": chunk,
+            "more_body": bool(chunks),
+        }
+
+    request = Request(
+        {
+            "type": "http",
+            "method": "POST",
+            "path": "/voice/transcribe",
+            "headers": [],
+            "client": ("127.0.0.1", 12345),
+        },
+        receive,
+    )
+
+    with pytest.raises(HTTPException) as exc:
+        await _read_limited_body(request, 10)
+
+    assert exc.value.status_code == 413
 
 
 class _FakeVoiceService:
