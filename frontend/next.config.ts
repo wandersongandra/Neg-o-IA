@@ -17,18 +17,6 @@ const withPWAConfig = withPWA({
   disable: process.env.NODE_ENV === "development",
   runtimeCaching: [
     {
-      urlPattern: /^https?.*/,
-      handler: "NetworkFirst",
-      options: {
-        cacheName: "api-cache",
-        expiration: {
-          maxEntries: 100,
-          maxAgeSeconds: 60 * 60 * 24,
-        },
-        networkTimeoutSeconds: 10,
-      },
-    },
-    {
       urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico|woff|woff2|ttf|eot)$/,
       handler: "CacheFirst",
       options: {
