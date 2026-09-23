@@ -73,27 +73,9 @@ class EventBus:
             maxlen=STREAM_MAXLEN,
             approximate=True,
         )
-        await self._persist_audit_event(envelope)
         if envelope.type not in META_EVENT_TYPES:
             await self._publish_meta(envelope)
         self._count_delivery("published")
-
-    async def _persist_audit_event(self, envelope: EventEnvelope) -> None:
-        """Durable audit is best-effort and never stores secrets from request headers."""
-        try:
-            from app.infrastructure.db import create_engine, create_session_factory
-            from app.modules.configuration.settings import get_settings
-            from app.modules.database.application import register_audit_event
-
-            factory = create_session_factory(create_engine(get_settings().database_url))
-            async with factory() as session:
-                await register_audit_event(session, envelope)
-                await session.commit()
-        except Exception as exc:
-            _LOGGER.warning(
-                "falha ao persistir evento de auditoria",
-                extra={"event_type": envelope.type, "error": str(exc)},
-            )
 
     async def _publish_meta(self, envelope: EventEnvelope) -> None:
         meta = build_envelope(
