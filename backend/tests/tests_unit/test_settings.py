@@ -58,7 +58,6 @@ def test_producao_rejeita_cors_wildcard() -> None:
         )
 
 
-
 def test_producao_rejeita_debug_ativo() -> None:
     with pytest.raises(ValidationError, match="NEGAO_DEBUG"):
         Settings(
@@ -71,11 +70,14 @@ def test_producao_rejeita_debug_ativo() -> None:
             redis_url="redis://:strong-redis-password@redis:6379/0",
         )
 
+
 def test_producao_aceita_configuracao_forte() -> None:
     settings = Settings(
         env="production",
         service_api_key="k" * 32,
         secret_key="s" * 32,
         cors_origins=["https://sophie.example.com"],
+        database_url="postgresql+asyncpg://sophie:strong-db-password@db:5432/sophie",
+        redis_url="redis://:strong-redis-password@redis:6379/0",
     )
     assert settings.env == "production"
