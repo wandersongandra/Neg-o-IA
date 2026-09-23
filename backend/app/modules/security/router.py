@@ -22,7 +22,7 @@ from app.core.context import get_request_context
 from app.infrastructure.db import create_engine, create_session_factory
 from app.modules.api.rate_limit import RateLimiter
 from app.modules.configuration.settings import get_settings
-from app.modules.database.application import verify_api_key
+from app.modules.database.application import PERSISTED_API_KEY_PREFIX, verify_api_key
 from app.modules.security.application.identity import (
     authenticate_password,
     create_user,
@@ -203,7 +203,7 @@ async def require_service_auth(
             headers={"WWW-Authenticate": "ApiKey"},
         )
     result = get_security_service().authenticate_api_key(x_api_key)
-    if not result.authenticated:
+    if not result.authenticated and x_api_key.startswith(PERSISTED_API_KEY_PREFIX):
         factory = create_session_factory(create_engine(get_settings().database_url))
         try:
             async with factory() as session:
