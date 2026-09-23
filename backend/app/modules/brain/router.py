@@ -90,7 +90,7 @@ def _parse_messages(raw: list[dict[str, str]]) -> list[ChatMessage]:
 async def brain_status() -> dict[str, object]:
     settings = get_settings()
     return {
-        "mode": "nvidia" if settings.nvidia_api_key else "local",
+        "mode": "nvidia" if settings.external_ai_enabled and settings.nvidia_api_key else "local",
         "primary_model": settings.brain_chat_model,
         "fallback_model": settings.brain_fallback_model,
         "cache_ttl_seconds": settings.brain_cache_ttl_seconds,
@@ -145,7 +145,7 @@ async def brain_router_status() -> dict[str, object]:
     """Estado interno do ModelRouter (para observabilidade)."""
     settings = get_settings()
     return {
-        "mode": "nvidia" if settings.nvidia_api_key else "local",
+        "mode": "nvidia" if settings.external_ai_enabled and settings.nvidia_api_key else "local",
         "primary_model": settings.brain_chat_model,
         "fallback_model": settings.brain_fallback_model,
         "instance_router": get_model_router() is not None,
