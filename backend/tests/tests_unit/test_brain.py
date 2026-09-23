@@ -104,6 +104,7 @@ async def test_circuit_breaker_half_open_allows_trial_and_closes_on_success() ->
 
 
 async def test_router_falls_back_when_primary_fails(monkeypatch: Any) -> None:
+    monkeypatch.setattr(get_settings(), "external_ai_enabled", True)
     monkeypatch.setattr(get_settings(), "nvidia_api_key", "test-key")
 
     class FailingPrimary:
@@ -133,6 +134,7 @@ async def test_router_falls_back_when_primary_fails(monkeypatch: Any) -> None:
 
 
 async def test_router_raises_when_all_providers_fail(monkeypatch: Any) -> None:
+    monkeypatch.setattr(get_settings(), "external_ai_enabled", True)
     monkeypatch.setattr(get_settings(), "nvidia_api_key", "test-key")
 
     async def failing(self: Any, _request: ModelRequest) -> ModelResponse:
@@ -163,6 +165,7 @@ async def test_mock_adapter_used_without_key(monkeypatch: Any) -> None:
 
 
 async def test_cache_hit_skips_second_call(monkeypatch: Any) -> None:
+    monkeypatch.setattr(get_settings(), "external_ai_enabled", True)
     monkeypatch.setattr(get_settings(), "nvidia_api_key", "test-key")
     fake_redis = FakeAsyncRedis()
 
