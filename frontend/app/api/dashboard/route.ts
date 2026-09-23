@@ -64,6 +64,13 @@ async function getLogs(): Promise<string[] | null> {
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const sessionToken = (await cookies()).get("sophie_session")?.value;
+  if (!sessionToken) {
+    return NextResponse.json(
+      { error: "unauthenticated" },
+      { status: 401, headers: { "Cache-Control": "no-store, max-age=0" } },
+    );
+  }
   const started = performance.now();
   const results: [
     RootInfo | null,
