@@ -29,3 +29,21 @@ class MemoryRecallResult:
 
     entries: tuple[ShortTermMemoryEntry, ...]
     score: float
+
+
+@dataclass(frozen=True, slots=True)
+class LongTermMemoryEntry:
+    """Memória persistente explicitamente autorizada pelo usuário."""
+
+    id: str
+    user_id: str
+    content: str
+    kind: str
+    importance: int
+    source_session_id: str | None
+    metadata: dict[str, Any]
+    created_at: datetime
+    updated_at: datetime
+    last_accessed_at: datetime | None
+    expires_at: datetime | None
+    score: float | None = None
