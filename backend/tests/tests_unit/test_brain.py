@@ -198,6 +198,46 @@ async def test_cache_hit_skips_second_call(monkeypatch: Any) -> None:
     assert CountingAdapter.calls == 1
 
 
+async def test_model_cache_is_isolated_by_user(monkeypatch: Any) -> None:
+    monkeypatch.setattr(get_settings(), "external_ai_enabled", True)
+    monkeypatch.setattr(get_settings(), "nvidia_api_key", "test-key")
+    fake_redis = FakeAsyncRedis()
+
+    def _get_redis() -> FakeAsyncRedis:
+        return fake_redis
+
+    monkeypatch.setattr("app.infrastructure.redis.get_redis", _get_redis)
+
+    class CountingAdapter:
+        calls = 0
+
+        async def complete(self, request: ModelRequest) -> ModelResponse:
+            CountingAdapter.calls += 1
+            return ModelResponse(text="isolado", model="test", latency_ms=1)
+
+    router = ModelRouter(get_settings())
+    monkeypatch.setattr(router, "_complete_with_resilience", CountingAdapter().complete)
+    request_a = ModelRequest(
+        messages=[ChatMessage(role="user", content="mesmo conteúdo")],
+        cache_namespace="user-a",
+    )
+    request_b = ModelRequest(
+        messages=[ChatMessage(role="user", content="mesmo conteúdo")],
+        cache_namespace="user-b",
+    )
+    try:
+        first_a = await router.complete(request_a)
+        first_b = await router.complete(request_b)
+        second_a = await router.complete(request_a)
+    finally:
+        reset_router()
+
+    assert first_a.cached is False
+    assert first_b.cached is False
+    assert second_a.cached is True
+    assert CountingAdapter.calls == 2
+
+
 async def test_brain_service_publishes_events(monkeypatch: Any) -> None:
     published: list[EventEnvelope] = []
 
