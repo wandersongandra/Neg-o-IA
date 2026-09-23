@@ -14,6 +14,8 @@ import secrets
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
+from argon2 import PasswordHasher
+from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,6 +27,13 @@ _SCRYPT_R = 8
 _SCRYPT_P = 1
 _SALT_BYTES = 16
 _SESSION_TOKEN_BYTES = 48
+_ARGON2 = PasswordHasher(
+    time_cost=3,
+    memory_cost=65_536,
+    parallelism=4,
+    hash_len=32,
+    salt_len=16,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,25 +45,13 @@ class IdentityRecord:
 
 
 def hash_password(password: str) -> str:
-    """Deriva senha com scrypt e salt aleatório; nunca retorna a senha."""
+    """Deriva senha com Argon2id; o salt aleatório é gerenciado pela biblioteca."""
     if len(password) < 12:
         raise ValueError("password must contain at least 12 characters")
-    salt = secrets.token_bytes(_SALT_BYTES)
-    derived = hashlib.scrypt(
-        password.encode("utf-8"),
-        salt=salt,
-        n=_SCRYPT_N,
-        r=_SCRYPT_R,
-        p=_SCRYPT_P,
-    )
-
-    def encode(value: bytes) -> str:
-        return base64.urlsafe_b64encode(value).decode("ascii")
-
-    return f"scrypt${_SCRYPT_N}${_SCRYPT_R}${_SCRYPT_P}${encode(salt)}${encode(derived)}"
+    return _ARGON2.hash(password)
 
 
-def verify_password(password: str, encoded: str) -> bool:
+def _verify_legacy_scrypt(password: str, encoded: str) -> bool:
     try:
         algorithm, n, r, p, salt_text, digest_text = encoded.split("$", 5)
         if algorithm != "scrypt":
@@ -72,6 +69,23 @@ def verify_password(password: str, encoded: str) -> bool:
         return False
     return hmac.compare_digest(actual, expected)
 
+
+def verify_password(password: str, encoded: str) -> bool:
+    if encoded.startswith("$argon2"):
+        try:
+            return _ARGON2.verify(encoded, password)
+        except (VerifyMismatchError, VerificationError, InvalidHashError):
+            return False
+    return _verify_legacy_scrypt(password, encoded)
+
+
+def password_needs_rehash(encoded: str) -> bool:
+    if not encoded.startswith("$argon2"):
+        return True
+    try:
+        return _ARGON2.check_needs_rehash(encoded)
+    except InvalidHashError:
+        return True
 
 def hash_session_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
@@ -115,6 +129,9 @@ async def authenticate_password(
         or not verify_password(password, user.password_hash)
     ):
         return None
+    if password_needs_rehash(user.password_hash):
+        user.password_hash = hash_password(password)
+        await session.flush()
     return IdentityRecord(str(user.id), user.username, user.display_name)
 
 
