@@ -84,6 +84,9 @@ services:
   nginx:
     build:
       context: ../../nginx
+    volumes:
+      - ${TLS_CERT_PATH:?defina TLS_CERT_PATH}:/etc/nginx/tls/fullchain.pem:ro
+      - ${TLS_KEY_PATH:?defina TLS_KEY_PATH}:/etc/nginx/tls/privkey.pem:ro
     ports:
       - "80:80"
       - "443:443"
