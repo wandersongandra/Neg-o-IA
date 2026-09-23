@@ -37,9 +37,9 @@ def test_conversation_uses_centralized_prompt() -> None:
     assert CONVERSATION_SYSTEM_PROMPT is SYSTEM_PROMPT
 
 
-def test_password_hash_is_scrypt_and_not_reversible() -> None:
+def test_password_hash_is_argon2id_and_not_reversible() -> None:
     encoded = hash_password("uma senha de teste suficientemente longa")
-    assert encoded.startswith("scrypt$")
+    assert encoded.startswith("$argon2id$")
     assert encoded != "uma senha de teste suficientemente longa"
     assert verify_password("uma senha de teste suficientemente longa", encoded)
     assert not verify_password("senha incorreta", encoded)
