@@ -2,55 +2,26 @@
 
 from __future__ import annotations
 
-import json
 from typing import Annotated, Any, Literal
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from app.infrastructure.redis import get_redis
 from app.modules.brain.application import get_brain_service
 from app.modules.brain.domain import ChatMessage, TaskType
-from app.modules.brain.identity import SYSTEM_PROMPT
 from app.modules.brain.infrastructure import get_model_router
+from app.modules.brain.user_config import (
+    UserBrainConfig,
+    load_user_config,
+    save_user_config,
+)
 from app.modules.configuration.settings import get_settings
 from app.modules.security.domain import AuthResult
 from app.modules.security.router import require_authenticated_user
 
 logger = structlog.get_logger("negao.brain")
 router = APIRouter(prefix="/brain", tags=["brain"])
-
-CONFIG_KEY = "agent:config"
-
-DEFAULT_CONFIG = {
-    "system_prompt": SYSTEM_PROMPT,
-    "primary_model": "deepseek-ai/deepseek-v4-flash",
-    "fallback_model": "meta/llama-3.1-8b-instruct",
-    "temperature": 0.3,
-    "max_tokens": 1024,
-    "tools_enabled": ["web_search", "code_exec", "file_ops", "memory", "calendar"],
-    "voice": {
-        "tts_enabled": True,
-        "stt_enabled": True,
-        "voice": "pt-BR-FranciscaNeural",
-        "rate": "+0%",
-    },
-}
-
-
-async def _load_config() -> dict[str, Any]:
-    client = get_redis()
-    raw = await client.get(CONFIG_KEY)
-    if raw:
-        return dict(json.loads(raw))
-    return DEFAULT_CONFIG.copy()
-
-
-async def _save_config(config: dict[str, Any]) -> None:
-    client = get_redis()
-    await client.set(CONFIG_KEY, json.dumps(config), ex=86400 * 30)
-
 
 class BrainMessageRequest(BaseModel):
     role: Literal["user", "assistant"]
@@ -73,20 +44,13 @@ class DebugRequest(BaseModel):
 class AgentConfigUpdate(BaseModel):
     """Atualização parcial da configuração do agente."""
 
-    system_prompt: str | None = Field(default=None, min_length=10, max_length=8000)
-    primary_model: str | None = Field(default=None, min_length=1)
-    fallback_model: str | None = Field(default=None, min_length=1)
-    temperature: float | None = Field(default=None, ge=0.0, le=2.0)
-    max_tokens: int | None = Field(default=None, ge=1, le=8192)
-    tools_enabled: list[str] | None = None
-    voice: dict[str, Any] | None = None
+    system_prompt: str = Field(min_length=10, max_length=8000)
+    temperature: float = Field(ge=0.0, le=2.0)
+    max_tokens: int = Field(ge=1, le=8192)
 
 
 def _parse_messages(raw: list[BrainMessageRequest]) -> list[ChatMessage]:
-    return [
-        ChatMessage(role="system", content=SYSTEM_PROMPT),
-        *[ChatMessage(role=item.role, content=item.content) for item in raw],
-    ]
+    return [ChatMessage(role=item.role, content=item.content) for item in raw]
 
 
 @router.get("/status")
@@ -155,16 +119,34 @@ async def brain_router_status() -> dict[str, object]:
     }
 
 
+def _config_response(config: UserBrainConfig) -> dict[str, Any]:
+    settings = get_settings()
+    return {
+        "system_prompt": config.system_prompt,
+        "temperature": config.temperature,
+        "max_tokens": config.max_tokens,
+        "primary_model": settings.brain_chat_model,
+        "fallback_model": settings.brain_fallback_model,
+        "tools_enabled": [],
+        "voice": {
+            "tts_enabled": settings.external_ai_enabled,
+            "stt_enabled": settings.external_ai_enabled and bool(settings.nvidia_api_key),
+            "voice": settings.tts_voice,
+            "rate": settings.tts_rate,
+            "managed_by_environment": True,
+        },
+    }
+
+
 @router.get("/config")
 async def get_agent_config(
     auth: Annotated[AuthResult, Depends(require_authenticated_user)],
 ) -> dict[str, Any]:
-    """Configuração atual do agente Sophie."""
-    config = await _load_config()
-    settings = get_settings()
-    config["primary_model"] = settings.brain_chat_model
-    config["fallback_model"] = settings.brain_fallback_model
-    return config
+    """Configuração efetiva do usuário, sem expor segredos."""
+    if not auth.effective_user_id:
+        raise HTTPException(status_code=403, detail="user identity required")
+    config = await load_user_config(auth.effective_user_id)
+    return _config_response(config)
 
 
 @router.patch("/config")
@@ -172,12 +154,17 @@ async def update_agent_config(
     body: AgentConfigUpdate,
     auth: Annotated[AuthResult, Depends(require_authenticated_user)],
 ) -> dict[str, Any]:
-    """Atualiza configuração do agente (merge parcial)."""
-    config = await _load_config()
-    update = body.model_dump(exclude_unset=True)
-    if "voice" in update and isinstance(update["voice"], dict):
-        config["voice"] = {**config.get("voice", {}), **update["voice"]}
-        del update["voice"]
-    config.update(update)
-    await _save_config(config)
-    return {"updated": True, "config": config}
+    """Atualiza apenas preferências que o runtime realmente consome."""
+    if not auth.effective_user_id:
+        raise HTTPException(status_code=403, detail="user identity required")
+    config = UserBrainConfig(
+        system_prompt=body.system_prompt,
+        temperature=body.temperature,
+        max_tokens=body.max_tokens,
+    )
+    try:
+        await save_user_config(auth.effective_user_id, config)
+    except Exception as exc:
+        logger.exception("brain_user_config_save_failed")
+        raise HTTPException(status_code=503, detail="configuration storage unavailable") from exc
+    return {"updated": True, "config": _config_response(config)}
