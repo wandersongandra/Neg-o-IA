@@ -10,11 +10,6 @@ from fakeredis import FakeAsyncRedis
 
 from app.modules.brain.application import get_brain_service, reset_brain_service
 from app.modules.brain.domain import ChatMessage, ModelRequest, ModelResponse, TaskType
-from app.modules.brain.user_config import (
-    UserBrainConfig,
-    load_user_config,
-    save_user_config,
-)
 from app.modules.brain.infrastructure import (
     CircuitBreaker,
     ModelError,
@@ -25,6 +20,11 @@ from app.modules.brain.infrastructure import (
     RetryPolicy,
     get_model_router,
     reset_router,
+)
+from app.modules.brain.user_config import (
+    UserBrainConfig,
+    load_user_config,
+    save_user_config,
 )
 from app.modules.configuration.settings import get_settings
 from app.modules.events.envelope import EventEnvelope
