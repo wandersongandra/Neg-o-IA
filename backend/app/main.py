@@ -122,9 +122,11 @@ async def access_log_middleware(request: Request, call_next: RequestResponseEndp
     try:
         from app.modules.monitoring.infrastructure import http_request_observed
 
+        route = request.scope.get("route")
+        metric_path = getattr(route, "path", None) or request.url.path
         http_request_observed(
             request.method,
-            request.url.path,
+            metric_path,
             response.status_code,
             elapsed_ms / 1000,
         )
@@ -133,7 +135,7 @@ async def access_log_middleware(request: Request, call_next: RequestResponseEndp
     structlog.get_logger("sophie.access").info(
         "http_request",
         method=request.method,
-        path=request.url.path,
+        path=(getattr(request.scope.get("route"), "path", None) or request.url.path),
         status_code=response.status_code,
         duration_ms=round(elapsed_ms, 2),
     )
