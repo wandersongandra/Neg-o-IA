@@ -76,11 +76,18 @@ class ConversationService:
     async def owns_session(self, session_id: str, user_id: str) -> bool:
         return await self._store.get_owned_session(session_id, user_id) is not None
 
-    async def append_message(self, session_id: str, role: str, content: str) -> ConversationMessage:
+    async def append_message(
+        self,
+        session_id: str,
+        role: str,
+        content: str,
+        *,
+        user_id: str | None = None,
+    ) -> ConversationMessage:
         message = await self._store.append_message(session_id, role, content)
         await self._publish(
             EVENT_CONVERSATION_MESSAGE_STORED,
-            {"session_id": session_id, "role": role},
+            {"session_id": session_id, "user_id": user_id, "role": role},
         )
         return message
 
@@ -100,7 +107,7 @@ class ConversationService:
     async def chat(self, session_id: str, text: str, *, user_id: str | None = None) -> ChatResult:
         if user_id is not None and await self._store.get_owned_session(session_id, user_id) is None:
             raise ConversationNotFoundError(session_id)
-        await self.append_message(session_id, "user", text)
+        await self.append_message(session_id, "user", text, user_id=user_id)
         context = await self.get_context(session_id)
         try:
             from app.modules.brain.application import get_brain_service
@@ -120,11 +127,14 @@ class ConversationService:
                 fallback_used=False,
                 cached=False,
             )
-        await self.append_message(session_id, "assistant", response.text)
+        await self.append_message(
+            session_id, "assistant", response.text, user_id=user_id
+        )
         await self._publish(
             EVENT_CONVERSATION_MESSAGE_RESPONDED,
             {
                 "session_id": session_id,
+                "user_id": user_id,
                 "model": response.model,
                 "latency_ms": response.latency_ms,
             },
@@ -162,7 +172,15 @@ class ConversationService:
             from app.modules.events.application import get_event_bus_service
 
             service = get_event_bus_service()
-            await service.publish_event(build_envelope(event_type, PRODUCER, payload))
+            await service.publish_event(
+                build_envelope(
+                    event_type,
+                    PRODUCER,
+                    payload,
+                    user_id=payload.get("user_id"),
+                    session_id=payload.get("session_id"),
+                )
+            )
         except Exception as exc:
             _LOGGER.warning(
                 "falha ao publicar evento de conversa",
