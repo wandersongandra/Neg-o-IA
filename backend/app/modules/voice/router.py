@@ -557,18 +557,32 @@ def _parse_multipart_file(body: bytes, content_type: str) -> tuple[bytes, str] |
     return None
 
 
-async def _extract_audio_upload(request: Request) -> tuple[bytes, str]:
-    """Lê áudio batch com teto de bytes e content-type explícito."""
-    settings = get_settings()
-    declared_length = request.headers.get("content-length")
-    if declared_length and declared_length.isdigit():
-        if int(declared_length) > settings.voice_max_turn_bytes + 1024 * 1024:
+async def _read_limited_body(request: Request, max_bytes: int) -> bytes:
+    body = bytearray()
+    async for chunk in request.stream():
+        body.extend(chunk)
+        if len(body) > max_bytes:
             raise HTTPException(
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
                 detail="audio payload too large",
             )
-    raw = await request.body()
+    return bytes(body)
+
+
+async def _extract_audio_upload(request: Request) -> tuple[bytes, str]:
+    """Lê áudio batch em streaming com teto de bytes e content-type explícito."""
+    settings = get_settings()
     content_type = request.headers.get("content-type", "")
+    multipart_overhead = 1024 * 1024 if content_type.startswith("multipart/form-data") else 0
+    wire_limit = settings.voice_max_turn_bytes + multipart_overhead
+    declared_length = request.headers.get("content-length")
+    if declared_length and declared_length.isdigit():
+        if int(declared_length) > wire_limit:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="audio payload too large",
+            )
+    raw = await _read_limited_body(request, wire_limit)
     if content_type.startswith("multipart/form-data"):
         parsed = _parse_multipart_file(raw, content_type)
         if parsed is None:
