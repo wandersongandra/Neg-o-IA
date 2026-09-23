@@ -121,6 +121,7 @@ def _cache_key(request: ModelRequest) -> str:
             "task_type": request.task_type.value,
             "temperature": request.temperature,
             "max_tokens": request.max_tokens,
+            "cache_namespace": request.cache_namespace,
         },
         sort_keys=True,
     )
@@ -308,6 +309,7 @@ class ModelRouter:
             task_type=request.task_type,
             temperature=request.temperature,
             max_tokens=request.max_tokens,
+            cache_namespace=request.cache_namespace,
         )
         if await self._fallback_breaker.can_execute():
             try:
