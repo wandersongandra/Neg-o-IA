@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 
 from app.modules.monitoring.application import get_monitoring_service
 from app.modules.security.domain import AuthResult
-from app.modules.security.router import require_authenticated_user
+from app.modules.security.router import require_authenticated_user, require_service_scope
 
 router = APIRouter(prefix="/monitoring", tags=["monitoring"])
 
@@ -50,7 +50,9 @@ def _tail(path: Path, max_lines: int) -> list[str]:
 
 
 @router.get("/metrics")
-async def monitoring_metrics() -> Response:
+async def monitoring_metrics(
+    _auth: Annotated[AuthResult, Depends(require_service_scope("metrics:read"))],
+) -> Response:
     """Re-exporta as métricas Prometheus para o dashboard interno."""
     service = get_monitoring_service()
     return Response(
