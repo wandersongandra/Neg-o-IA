@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from typing import Annotated, Literal
 
@@ -232,7 +233,7 @@ async def require_service_auth(
     return result
 
 
-def require_service_scope(scope: str):
+def require_service_scope(scope: str) -> Callable[..., Awaitable[AuthResult]]:
     async def dependency(
         auth: Annotated[AuthResult, Depends(require_service_auth)],
     ) -> AuthResult:
