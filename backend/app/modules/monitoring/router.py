@@ -8,6 +8,8 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Response
 
+from app.infrastructure.db import check_database_health
+from app.infrastructure.redis import check_redis_health
 from app.modules.monitoring.application import get_monitoring_service
 from app.modules.security.domain import AuthResult
 from app.modules.security.router import require_authenticated_user, require_service_scope
@@ -59,6 +61,18 @@ async def monitoring_metrics(
         content=service.get_snapshot(),
         media_type="text/plain; version=0.0.4; charset=utf-8",
     )
+
+
+@router.get("/health")
+async def monitoring_health(
+    _auth: Annotated[AuthResult, Depends(require_authenticated_user)],
+) -> dict[str, str]:
+    """Saúde sanitizada das dependências para usuários autenticados."""
+    database_ok, redis_ok = await check_database_health(), await check_redis_health()
+    return {
+        "database": "ok" if database_ok else "degraded",
+        "redis": "ok" if redis_ok else "degraded",
+    }
 
 
 @router.get("/logs")
