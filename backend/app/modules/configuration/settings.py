@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     # API keys legadas (`NEGAO_API_KEY`) não fazem parte da autoridade de
     # autenticação. Credenciais de serviço precisam ser explícitas.
     service_api_key: str = ""
+    service_api_scopes: list[str] = ["database:admin", "metrics:read"]
     database_url: str = "postgresql+asyncpg://negao:negao@localhost:5432/negao"
     redis_url: str = "redis://localhost:6379/0"
     secret_key: str = "negao-dev-secret-key"
@@ -68,7 +69,7 @@ class Settings(BaseSettings):
 
     conversation_max_context_messages: int = 20
 
-    @field_validator("cors_origins", mode="before")
+    @field_validator("cors_origins", "service_api_scopes", mode="before")
     @classmethod
     def _split_cors_origins(cls, value: object) -> object:
         if isinstance(value, str):
@@ -100,6 +101,10 @@ class Settings(BaseSettings):
             problems.append("NEGAO_CORS_ORIGINS não pode ser '*' em produção")
         if self.registration_enabled:
             problems.append("NEGAO_REGISTRATION_ENABLED deve ser false em produção")
+        if self.debug:
+            problems.append("NEGAO_DEBUG deve ser false em produção")
+        if not self.service_api_scopes:
+            problems.append("NEGAO_SERVICE_API_SCOPES deve conter ao menos um escopo em produção")
         if problems:
             raise ValueError("; ".join(problems))
         return self
