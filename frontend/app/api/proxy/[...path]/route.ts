@@ -3,6 +3,7 @@ import { resolveApiConfig } from "@/lib/env";
 import {
   enforceSameOriginMutation,
   isSafeDynamicSegment,
+  trustedClientIpHeaders,
 } from "@/lib/request-security";
 
 export const dynamic = "force-dynamic";
@@ -101,7 +102,10 @@ async function proxy(req: NextRequest, path: string[]): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const headers: Record<string, string> = { Accept: "*/*" };
+    const headers: Record<string, string> = {
+      Accept: "*/*",
+      ...trustedClientIpHeaders(req),
+    };
     const sessionToken = req.cookies.get("sophie_session")?.value;
     if (sessionToken) {
       headers.Authorization = `Bearer ${sessionToken}`;
