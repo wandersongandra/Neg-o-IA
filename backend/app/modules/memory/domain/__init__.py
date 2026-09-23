@@ -1,6 +1,6 @@
 """Contratos do módulo memory — domain (framework-free).
 
-v0: memória de curto prazo (STM) em Redis. Longo prazo/vetorial chegam em v1.
+A memória de curto prazo é sempre isolada por usuário e por sessão.
 """
 
 from __future__ import annotations
@@ -12,8 +12,9 @@ from typing import Any
 
 @dataclass(frozen=True, slots=True)
 class ShortTermMemoryEntry:
-    """Entrada de memória de curto prazo (STM) de uma sessão."""
+    """Entrada de memória de curto prazo (STM) de um usuário/sessão."""
 
+    user_id: str
     session_id: str
     key: str
     value: Any
@@ -24,7 +25,7 @@ class ShortTermMemoryEntry:
 
 @dataclass(frozen=True, slots=True)
 class MemoryRecallResult:
-    """Resultado de um recall de memória (v0: score 1.0 se houver entradas)."""
+    """Resultado de um recall de memória."""
 
     entries: tuple[ShortTermMemoryEntry, ...]
     score: float
