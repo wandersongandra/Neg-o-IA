@@ -22,6 +22,7 @@ from app.modules.brain.events import (
     EVENT_BRAIN_REQUEST_STARTED,
 )
 from app.modules.brain.infrastructure import get_model_router
+from app.modules.brain.user_config import load_user_config
 from app.modules.events.envelope import build_envelope
 
 _LOGGER = logging.getLogger("app.modules.brain.application")
@@ -53,12 +54,17 @@ class BrainService:
             },
         )
         try:
+            user_config = await load_user_config(user_id)
+            effective_messages = [
+                ChatMessage(role="system", content=user_config.system_prompt),
+                *[message for message in messages if message.role != "system"],
+            ]
             response = await get_model_router().complete(
                 ModelRequest(
-                    messages=messages,
+                    messages=effective_messages,
                     task_type=task_type,
-                    temperature=None,
-                    max_tokens=None,
+                    temperature=user_config.temperature,
+                    max_tokens=user_config.max_tokens,
                 )
             )
         except Exception as exc:
