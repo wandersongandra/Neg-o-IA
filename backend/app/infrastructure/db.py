@@ -55,30 +55,6 @@ async def get_db_session() -> AsyncIterator[AsyncSession]:
         ) from exc
 
 
-async def ensure_audit_partitions(months_ahead: int = 24) -> bool:
-    """Garante partições futuras quando a migration de hardening estiver aplicada."""
-    engine = create_engine(get_settings().database_url)
-    try:
-        async with asyncio.timeout(3.0):
-            async with engine.begin() as conn:
-                exists = await conn.execute(
-                    text(
-                        "SELECT to_regprocedure("
-                        "'events.ensure_audit_partitions(integer)'"
-                        ") IS NOT NULL"
-                    )
-                )
-                if not bool(exists.scalar_one()):
-                    return False
-                await conn.execute(
-                    text("SELECT events.ensure_audit_partitions(:months_ahead)"),
-                    {"months_ahead": max(1, min(months_ahead, 36))},
-                )
-        return True
-    except Exception:
-        return False
-
-
 async def check_database_health() -> bool:
     """Verifica conectividade com `SELECT 1` (timeout de 1,5s)."""
     engine = create_engine(get_settings().database_url)
