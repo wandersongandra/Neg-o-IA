@@ -79,8 +79,8 @@ async def register_audit_event(session: AsyncSession, envelope: EventEnvelope) -
         trace_id=uuid.UUID(envelope.trace_id) if envelope.trace_id else None,
         correlation_id=(uuid.UUID(envelope.correlation_id) if envelope.correlation_id else None),
         parent_id=uuid.UUID(envelope.parent_id) if envelope.parent_id else None,
-        user_id=uuid.UUID(envelope.user_id) if envelope.user_id else None,
-        session_id=uuid.UUID(envelope.session_id) if envelope.session_id else None,
+        user_id=envelope.user_id,
+        session_id=envelope.session_id,
         occurred_at=datetime.fromisoformat(envelope.occurred_at),
         payload=envelope.payload,
     )
