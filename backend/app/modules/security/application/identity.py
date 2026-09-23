@@ -124,7 +124,11 @@ async def authenticate_password(
     normalized = username.strip().lower()
     result = await session.execute(select(UserORM).where(UserORM.username == normalized))
     user = result.scalar_one_or_none()
-    encoded = user.password_hash if user is not None and user.password_hash else _DUMMY_PASSWORD_HASH
+    encoded = (
+        user.password_hash
+        if user is not None and user.password_hash
+        else _DUMMY_PASSWORD_HASH
+    )
     password_valid = verify_password(password, encoded)
     if (
         user is None
