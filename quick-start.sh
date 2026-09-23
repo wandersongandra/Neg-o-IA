@@ -39,7 +39,8 @@ if [ ! -f ".env" ]; then
   echo "[WARN] Arquivo .env não encontrado. Criando a partir de .env.example..."
   if [ -f ".env.example" ]; then
     cp .env.example .env
-    echo "[OK] .env criado"
+    chmod 600 .env
+    echo "[OK] .env criado com permissão 0600"
   else
     echo "[ERROR] .env.example não encontrado"
     exit 1
