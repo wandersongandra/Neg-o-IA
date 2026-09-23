@@ -10,6 +10,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _INSECURE_DEFAULT_SECRETS = {"", "negao-dev-api-key", "negao-dev-secret-key"}
 _MIN_PRODUCTION_SECRET_LENGTH = 32
+_ALLOWED_SERVICE_SCOPES = frozenset({"database:admin", "metrics:read"})
 
 _LEGACY_ENV_PREFIX = "NEGAO_"
 _NEW_ENV_PREFIX = "SOPHIE_"
@@ -107,6 +108,12 @@ class Settings(BaseSettings):
             problems.append("NEGAO_DEBUG deve ser false em produção")
         if not self.service_api_scopes:
             problems.append("NEGAO_SERVICE_API_SCOPES deve conter ao menos um escopo em produção")
+        unknown_scopes = sorted(set(self.service_api_scopes) - _ALLOWED_SERVICE_SCOPES)
+        if unknown_scopes:
+            problems.append(
+                "NEGAO_SERVICE_API_SCOPES contém escopos desconhecidos: "
+                + ", ".join(unknown_scopes)
+            )
         database = urlparse(self.database_url)
         if not database.username or not database.password or database.password == "negao":
             problems.append("NEGAO_DATABASE_URL deve usar credenciais fortes em produção")
