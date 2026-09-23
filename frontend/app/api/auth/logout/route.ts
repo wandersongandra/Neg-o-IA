@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveApiConfig } from "@/lib/env";
-import { enforceSameOriginMutation } from "@/lib/request-security";
+import {
+  enforceSameOriginMutation,
+  trustedClientIpHeaders,
+} from "@/lib/request-security";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +16,10 @@ export async function POST(request: NextRequest) {
     try {
       await fetch(`${apiUrl}/security/logout`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...trustedClientIpHeaders(request),
+        },
         cache: "no-store",
       });
     } catch {
