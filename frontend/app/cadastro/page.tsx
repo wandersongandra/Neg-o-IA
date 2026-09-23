@@ -48,7 +48,7 @@ export default function CadastroPage() {
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-[var(--bg)] p-6">
+    <main className="flex min-h-dvh items-center justify-center bg-[var(--bg-primary)] p-6">
       <form onSubmit={submit} className="glass w-full max-w-md space-y-5 rounded-2xl p-6">
         <div>
           <p className="font-mono-data text-[10px] uppercase tracking-[0.3em] text-[var(--accent)]">
@@ -75,8 +75,12 @@ export default function CadastroPage() {
           Confirmar senha
           <input required minLength={12} type="password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} className="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-[var(--text-primary)] outline-none focus:border-[var(--accent)]" autoComplete="new-password" />
         </label>
-        {error ? <p className="text-sm text-[var(--color-danger)]">{error}</p> : null}
-        <button type="submit" disabled={submitting} className="w-full rounded-xl bg-[var(--accent)] px-4 py-2.5 font-semibold text-black disabled:opacity-50">
+        {error ? (
+          <p role="alert" aria-live="polite" className="text-sm text-[var(--color-danger)]">
+            {error}
+          </p>
+        ) : null}
+        <button type="submit" disabled={submitting} className="interactive-control w-full rounded-xl bg-[var(--accent)] px-4 py-2.5 font-semibold text-black shadow-[0_10px_30px_-16px_var(--accent-glow)] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] disabled:cursor-not-allowed disabled:opacity-50">
           {submitting ? "Criando…" : "Criar conta"}
         </button>
         <p className="text-center text-sm text-[var(--text-secondary)]">
