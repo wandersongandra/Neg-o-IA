@@ -147,6 +147,20 @@ body {
   height: 100%;
 }
 
+::selection {
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+  color: var(--text-primary);
+}
+
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 78%, white);
+  outline-offset: 3px;
+}
+
+a, button, input, textarea, select {
+  accent-color: var(--accent);
+}
+
 body {
   @apply bg-[var(--bg-primary)] text-[var(--text-primary)] antialiased;
   background-image:
@@ -630,5 +644,33 @@ body::after {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+
+@media (max-width: 640px) {
+  body {
+    background-attachment: scroll;
+  }
+
+  body::before {
+    opacity: 0.18;
+  }
+
+  body::after {
+    display: none;
+  }
+
+  .glass {
+    backdrop-filter: blur(14px) saturate(125%);
+    -webkit-backdrop-filter: blur(14px) saturate(125%);
+  }
+
+  .glass-hover:hover {
+    transform: none;
+  }
+
+  .command-deck::after {
+    display: none;
   }
 }
