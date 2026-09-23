@@ -161,7 +161,7 @@ async def test_mock_adapter_used_without_key(monkeypatch: Any) -> None:
     finally:
         reset_router()
     assert response.model == "local-mock"
-    assert "NEGAO_NVIDIA_API_KEY" in response.text
+    assert "EXTERNAL_AI_ENABLED=true" in response.text
 
 
 async def test_cache_hit_skips_second_call(monkeypatch: Any) -> None:
