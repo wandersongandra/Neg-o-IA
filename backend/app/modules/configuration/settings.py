@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+from urllib.parse import urlparse
 from functools import lru_cache
 
 from pydantic import field_validator, model_validator
@@ -105,6 +106,12 @@ class Settings(BaseSettings):
             problems.append("NEGAO_DEBUG deve ser false em produção")
         if not self.service_api_scopes:
             problems.append("NEGAO_SERVICE_API_SCOPES deve conter ao menos um escopo em produção")
+        database = urlparse(self.database_url)
+        if not database.username or not database.password or database.password == "negao":
+            problems.append("NEGAO_DATABASE_URL deve usar credenciais fortes em produção")
+        redis = urlparse(self.redis_url)
+        if not redis.password:
+            problems.append("NEGAO_REDIS_URL deve exigir autenticação em produção")
         if problems:
             raise ValueError("; ".join(problems))
         return self
