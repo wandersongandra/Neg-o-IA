@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import logging
 import os
-from urllib.parse import urlparse
 from functools import lru_cache
+from urllib.parse import urlparse
 
 from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -72,7 +72,7 @@ class Settings(BaseSettings):
 
     @field_validator("cors_origins", "service_api_scopes", mode="before")
     @classmethod
-    def _split_cors_origins(cls, value: object) -> object:
+    def _split_csv_list(cls, value: object) -> object:
         if isinstance(value, str):
             return [origin.strip() for origin in value.split(",") if origin.strip()]
         return value
