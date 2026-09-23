@@ -30,3 +30,16 @@ export function resolvePublicWsBase(request: NextRequest, configured: string): s
     return null;
   }
 }
+
+
+const IP_LITERAL = /^[0-9A-Fa-f:.]{3,64}$/;
+
+export function trustedClientIpHeaders(request: NextRequest): Record<string, string> {
+  if (process.env.NODE_ENV !== "production") return {};
+  const realIp = request.headers.get("x-real-ip")?.trim() ?? "";
+  if (!IP_LITERAL.test(realIp)) return {};
+  return {
+    "X-Real-IP": realIp,
+    "X-Forwarded-For": realIp,
+  };
+}
