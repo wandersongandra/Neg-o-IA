@@ -5,12 +5,14 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from app.modules.events.domain import EventCallback
 from app.modules.events.envelope import EventEnvelope
 from app.modules.events.infrastructure import EventBus
 
+_LOGGER = logging.getLogger("app.modules.events.application")
 _event_bus_service: EventBusService | None = None
 
 
@@ -21,7 +23,36 @@ class EventBusService:
         self._bus = bus
 
     async def publish_event(self, envelope: EventEnvelope) -> None:
-        await self._bus.publish(envelope)
+        """Publica no stream e persiste auditoria; uma dependência não mascara a outra."""
+        persisted = False
+        streamed = False
+        try:
+            from app.infrastructure.db import create_engine, create_session_factory
+            from app.modules.configuration.settings import get_settings
+            from app.modules.database.application import register_audit_event
+
+            factory = create_session_factory(create_engine(get_settings().database_url))
+            async with factory() as session:
+                await register_audit_event(session, envelope)
+                await session.commit()
+            persisted = True
+        except Exception:
+            _LOGGER.warning(
+                "audit_event_persistence_failed",
+                extra={"event_type": envelope.type, "event_id": envelope.id},
+                exc_info=True,
+            )
+        try:
+            await self._bus.publish(envelope)
+            streamed = True
+        except Exception:
+            _LOGGER.warning(
+                "event_stream_publish_failed",
+                extra={"event_type": envelope.type, "event_id": envelope.id},
+                exc_info=True,
+            )
+        if not persisted and not streamed:
+            raise RuntimeError("event could not be persisted or published")
 
     def register_handler(self, event_type: str, handler: EventCallback) -> None:
         self._bus.subscribe(event_type, handler)
