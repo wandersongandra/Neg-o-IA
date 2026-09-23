@@ -20,7 +20,7 @@ async def test_readiness_returns_200_only_when_critical_dependencies_are_ready(
     response = await readyz()
 
     assert response.status_code == 200
-    assert response.body == b'{"status":"ready","checks":{"database":"ok","redis":"ok"}}'
+    assert response.body == b'{"status":"ready"}'
 
 
 async def test_readiness_returns_503_when_a_critical_dependency_is_down(
@@ -35,6 +35,4 @@ async def test_readiness_returns_503_when_a_critical_dependency_is_down(
     response = await readyz()
 
     assert response.status_code == 503
-    assert response.body == (
-        b'{"status":"not_ready","checks":{"database":"degraded","redis":"degraded"}}'
-    )
+    assert response.body == b'{"status":"not_ready"}'
