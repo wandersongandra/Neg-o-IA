@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import os
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.modules.events.application import get_event_bus_service
 from app.modules.events.envelope import build_envelope
@@ -19,14 +20,22 @@ router = APIRouter(prefix="/events", tags=["events"])
 class EventPublishRequest(BaseModel):
     """Payload de debug para publicar um evento manualmente (apenas dev)."""
 
-    type: str
+    type: str = Field(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9._:-]+$")
     payload: dict[str, Any] = Field(default_factory=dict)
-    trace_id: str | None = None
-    correlation_id: str | None = None
-    parent_id: str | None = None
+    trace_id: str | None = Field(default=None, max_length=128)
+    correlation_id: str | None = Field(default=None, max_length=128)
+    parent_id: str | None = Field(default=None, max_length=128)
     # Mantido apenas para compatibilidade de payload; a autoridade é a sessão.
-    user_id: str | None = None
-    session_id: str | None = None
+    user_id: str | None = Field(default=None, max_length=128)
+    session_id: str | None = Field(default=None, max_length=128)
+
+    @field_validator("payload")
+    @classmethod
+    def validate_payload_size(cls, payload: dict[str, Any]) -> dict[str, Any]:
+        encoded = json.dumps(payload, ensure_ascii=False, default=str).encode("utf-8")
+        if len(encoded) > 65_536:
+            raise ValueError("event payload too large")
+        return payload
 
 
 def _is_production() -> bool:
