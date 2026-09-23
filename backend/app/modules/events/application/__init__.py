@@ -91,7 +91,6 @@ def get_event_bus_service() -> EventBusService:
     global _event_bus_service
     if _event_bus_service is None:
         from app.infrastructure.redis import get_redis
-
         from app.modules.configuration.settings import get_settings
 
         audit_persister = None if get_settings().env == "test" else _persist_audit_event
