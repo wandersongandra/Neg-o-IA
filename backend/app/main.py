@@ -143,9 +143,7 @@ async def access_log_middleware(request: Request, call_next: RequestResponseEndp
 
 
 _rate_limiter: RateLimiter | None = None
-_RATE_LIMIT_WHITELIST = frozenset(
-    {"/healthz", "/health/live", "/readyz", "/health/ready"}
-)
+_RATE_LIMIT_WHITELIST = frozenset({"/healthz", "/health/live", "/readyz", "/health/ready"})
 
 
 def _rate_limit_key(request: Request) -> str:
