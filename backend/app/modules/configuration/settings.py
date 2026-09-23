@@ -112,6 +112,13 @@ class Settings(BaseSettings):
             )
         if self.cors_origins == ["*"]:
             problems.append("NEGAO_CORS_ORIGINS não pode ser '*' em produção")
+        invalid_origins = [
+            origin
+            for origin in self.cors_origins
+            if urlparse(origin).scheme != "https" or not urlparse(origin).netloc
+        ]
+        if invalid_origins:
+            problems.append("NEGAO_CORS_ORIGINS deve conter apenas origens HTTPS válidas")
         if self.registration_enabled:
             problems.append("NEGAO_REGISTRATION_ENABLED deve ser false em produção")
         if self.debug:
