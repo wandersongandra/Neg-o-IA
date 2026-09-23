@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { resolveApiConfig } from "@/lib/env";
 import type {
   DashboardData,
-  DatabaseStatus,
+  InfrastructureHealth,
   EventsStatus,
   Healthz,
   MemoryStatus,
@@ -76,7 +76,7 @@ export async function GET() {
     RootInfo | null,
     Healthz | null,
     Readyz | null,
-    DatabaseStatus | null,
+    InfrastructureHealth | null,
     MemoryStatus | null,
     EventsStatus | null,
     SecurityStatus | null,
@@ -85,13 +85,13 @@ export async function GET() {
     getJson<RootInfo>("/"),
     getJson<Healthz>("/healthz"),
     getJson<Readyz>("/readyz"),
-    getJson<DatabaseStatus>("/database/status"),
+    getJson<InfrastructureHealth>("/monitoring/health"),
     getJson<MemoryStatus>("/memory/status"),
     getJson<EventsStatus>("/events/status"),
     getJson<SecurityStatus>("/security/status"),
     getLogs(),
   ]);
-  const [root, healthz, readyz, database, memory, events, security, logs] =
+  const [root, healthz, readyz, infrastructure, memory, events, security, logs] =
     results;
   const latency_ms = Math.round(performance.now() - started);
 
@@ -102,7 +102,7 @@ export async function GET() {
     root,
     healthz,
     readyz,
-    database,
+    infrastructure,
     memory,
     events,
     security,
