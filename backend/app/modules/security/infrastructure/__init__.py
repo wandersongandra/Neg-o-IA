@@ -179,9 +179,12 @@ async def authenticate_ws(
     com fallback para `?api_key=` (scripts/testes que já possuem a chave)."""
     settings = get_settings()
     origin = ws.headers.get("origin")
-    if origin and settings.env == "production" and origin not in set(settings.cors_origins):
-        return AuthResult(authenticated=False, reason="origin_not_allowed")
     ticket = ws.query_params.get("ticket", "")
+    if settings.env == "production" and ticket:
+        if not origin or origin not in set(settings.cors_origins):
+            return AuthResult(authenticated=False, reason="origin_not_allowed")
+    elif origin and settings.env == "production" and origin not in set(settings.cors_origins):
+        return AuthResult(authenticated=False, reason="origin_not_allowed")
     if ticket:
         try:
             return await redeem_ws_ticket(ticket, expected_purpose=expected_purpose)
