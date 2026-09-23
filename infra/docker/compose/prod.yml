@@ -2,7 +2,7 @@ name: negao-prod
 
 services:
   db:
-    image: pgvector/pgvector:pg17
+    image: pgvector/pgvector:0.8.6-pg17
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-negao}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}
