@@ -142,6 +142,8 @@ jobs:
       - name: Validate Nginx configuration
         run: |
           docker run --rm \
+            --add-host backend:127.0.0.1 \
+            --add-host frontend:127.0.0.1 \
             -v /tmp/sophie-tls/fullchain.pem:/etc/nginx/tls/fullchain.pem:ro \
             -v /tmp/sophie-tls/privkey.pem:/etc/nginx/tls/privkey.pem:ro \
             sophie-nginx-ci nginx -t
