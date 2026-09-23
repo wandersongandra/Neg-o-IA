@@ -216,7 +216,7 @@ export function ToolsCard({
 }) {
   type ToolStatus = "ok" | "danger" | "warn";
   const statusFor = (known: boolean, ok: boolean): ToolStatus => (known ? (ok ? "ok" : "danger") : "warn");
-  const databaseKnown = data?.database !== null && data?.database !== undefined;
+  const infrastructureKnown = data?.infrastructure !== null && data?.infrastructure !== undefined;
   const memoryKnown = data?.memory !== null && data?.memory !== undefined;
   const brainKnown = typeof brain?.mode === "string" && typeof brain?.primary_model === "string";
   const tools: { label: string; icon: LucideIcon; status: ToolStatus }[] = [
@@ -224,8 +224,8 @@ export function ToolsCard({
     { label: "GitHub", icon: GitBranch, status: "warn" },
     { label: "Docker", icon: Boxes, status: "warn" },
     { label: "VS Code", icon: FileText, status: "warn" },
-    { label: "PostgreSQL", icon: Database, status: statusFor(databaseKnown, data?.database?.connected === true) },
-    { label: "Redis", icon: MemoryStick, status: statusFor(memoryKnown, data?.memory?.redis_connected === true) },
+    { label: "PostgreSQL", icon: Database, status: statusFor(infrastructureKnown, data?.infrastructure?.database === "ok") },
+    { label: "Redis", icon: MemoryStick, status: statusFor(infrastructureKnown || memoryKnown, data?.infrastructure?.redis === "ok" || data?.memory?.redis_connected === true) },
     { label: "SSH", icon: Wrench, status: "warn" },
     { label: "Cloudflare", icon: Cloud, status: "warn" },
     { label: "Coolify", icon: Server, status: "warn" },
