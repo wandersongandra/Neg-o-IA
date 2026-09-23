@@ -36,7 +36,7 @@ from app.modules.database.router import router as database_router
 from app.modules.events.router import router as events_router
 from app.modules.memory.router import router as memory_router
 from app.modules.monitoring.router import router as monitoring_router
-from app.modules.security.router import require_authenticated_user, require_service_auth
+from app.modules.security.router import require_authenticated_user, require_service_scope
 from app.modules.security.router import router as security_router
 from app.modules.voice.router import (
     router as voice_router,
@@ -315,7 +315,7 @@ def create_app() -> FastAPI:
     _add_middlewares(application, settings)
     _register_exception_handlers(application)
     auth_required = [Depends(require_authenticated_user)]
-    service_required = [Depends(require_service_auth)]
+    service_required = [Depends(require_service_scope("database:admin"))]
     # Público: meta, liveness/readiness e scrapes. Rotas de produto exigem
     # sessão de usuário; banco administrativo exige credencial de serviço.
     application.include_router(api_router)
