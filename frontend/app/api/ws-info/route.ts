@@ -3,6 +3,7 @@ import { resolveApiConfig, resolveWsUrl } from "@/lib/env";
 import {
   isSafeDynamicSegment,
   resolvePublicWsBase,
+  trustedClientIpHeaders,
 } from "@/lib/request-security";
 
 export const dynamic = "force-dynamic";
@@ -35,6 +36,7 @@ export async function GET(request: NextRequest) {
       headers: {
         Authorization: `Bearer ${sessionToken}`,
         "Content-Type": "application/json",
+        ...trustedClientIpHeaders(request),
       },
       body: JSON.stringify({ purpose, session_id: sessionId }),
       cache: "no-store",
