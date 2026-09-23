@@ -65,6 +65,7 @@ class BrainService:
                     task_type=task_type,
                     temperature=user_config.temperature,
                     max_tokens=user_config.max_tokens,
+                    cache_namespace=user_id,
                 )
             )
         except Exception as exc:
@@ -111,7 +112,15 @@ class BrainService:
             from app.modules.events.application import get_event_bus_service
 
             service = get_event_bus_service()
-            await service.publish_event(build_envelope(event_type, PRODUCER, payload))
+            await service.publish_event(
+                build_envelope(
+                    event_type,
+                    PRODUCER,
+                    payload,
+                    user_id=payload.get("user_id"),
+                    session_id=payload.get("session_id"),
+                )
+            )
         except Exception as exc:
             _LOGGER.warning(
                 "falha ao publicar evento do brain",
