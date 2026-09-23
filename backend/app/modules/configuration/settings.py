@@ -136,18 +136,37 @@ class Settings(BaseSettings):
             not database.username
             or not database.password
             or database.password == "negao"
+            or len(database.password) < 16
             or _looks_like_placeholder(database.password)
         ):
             problems.append("NEGAO_DATABASE_URL deve usar credenciais fortes em produção")
         redis = urlparse(self.redis_url)
-        if not redis.password or _looks_like_placeholder(redis.password):
+        if (
+            not redis.password
+            or len(redis.password) < 16
+            or _looks_like_placeholder(redis.password)
+        ):
             problems.append("NEGAO_REDIS_URL deve exigir autenticação forte em produção")
         if self.external_ai_enabled:
+            if not self.nvidia_api_key or _looks_like_placeholder(self.nvidia_api_key):
+                problems.append(
+                    "NEGAO_NVIDIA_API_KEY deve ser definida quando IA externa estiver ativa"
+                )
             provider = urlparse(self.nvidia_base_url)
             if provider.scheme != "https":
                 problems.append(
                     "NEGAO_NVIDIA_BASE_URL deve usar HTTPS quando IA externa estiver ativa"
                 )
+        credential_values = {
+            self.service_api_key,
+            self.secret_key,
+            database.password or "",
+            redis.password or "",
+        }
+        nonempty_credentials = [value for value in credential_values if value]
+        expected_credentials = 4
+        if len(nonempty_credentials) != expected_credentials:
+            problems.append("credenciais críticas de produção devem usar valores distintos")
         if problems:
             raise ValueError("; ".join(problems))
         return self
