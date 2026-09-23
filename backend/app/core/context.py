@@ -23,7 +23,6 @@ def _safe_correlation_id(value: str | None) -> str | None:
     return candidate if _SAFE_CORRELATION_ID.fullmatch(candidate) else None
 
 
-
 @dataclass(slots=True)
 class RequestContext:
     request_id: str = field(default_factory=lambda: str(uuid.uuid4()))
