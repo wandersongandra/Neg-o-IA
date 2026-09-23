@@ -20,6 +20,7 @@ from app.modules.database.application import (
     create_api_key,
     get_config,
     list_audit_events,
+    revoke_api_key,
     set_config,
 )
 from app.modules.database.domain import DatabaseStatus
@@ -69,6 +70,13 @@ async def create_api_key_endpoint(
 ) -> ApiKeyCreateResponse:
     plain_key, _ = await create_api_key(session, request.name, request.scopes)
     return ApiKeyCreateResponse(api_key=plain_key, name=request.name, scopes=request.scopes)
+
+
+@router.delete("/api-keys/{key_id}", status_code=204, response_model=None)
+async def revoke_api_key_endpoint(key_id: str, session: SessionDep) -> None:
+    revoked = await revoke_api_key(session, key_id)
+    if not revoked:
+        raise HTTPException(status_code=404, detail="api key not found")
 
 
 @router.get("/audit", tags=["internal"])
