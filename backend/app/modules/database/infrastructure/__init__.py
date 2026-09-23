@@ -147,7 +147,10 @@ class AuditEventORM(Base):
     user_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     session_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     occurred_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, server_default=text("now()")
+        DateTime(timezone=True),
+        primary_key=True,
+        nullable=False,
+        server_default=text("now()"),
     )
     payload: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, server_default=text("'{}'::jsonb")
