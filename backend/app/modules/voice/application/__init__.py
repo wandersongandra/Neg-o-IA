@@ -50,7 +50,10 @@ class VoiceService:
         return self._settings or get_settings()
 
     async def transcribe(self, audio_bytes: bytes, *, content_type: str) -> TranscriptionResult:
-        if not self._resolve_settings().nvidia_api_key:
+        if (
+            not self._resolve_settings().external_ai_enabled
+            or not self._resolve_settings().nvidia_api_key
+        ):
             await self._publish(EVENT_VOICE_UNAVAILABLE, {"reason": "stt_not_configured"})
             raise VoiceUnavailableError(
                 "STT não configurado — defina SOPHIE_NVIDIA_API_KEY (ou NEGAO_NVIDIA_API_KEY)"
@@ -73,6 +76,9 @@ class VoiceService:
         return result
 
     async def synthesize(self, text: str) -> AudioResult:
+        if not self._resolve_settings().external_ai_enabled:
+            await self._publish(EVENT_VOICE_UNAVAILABLE, {"reason": "external_ai_disabled"})
+            raise VoiceUnavailableError("TTS externo desativado por configuração de privacidade")
         try:
             result = await asyncio.wait_for(
                 self._tts_adapter.synthesize(text),
