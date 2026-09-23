@@ -84,12 +84,18 @@ export default function LoginPage() {
         >
           {submitting ? "Validando…" : "Entrar"}
         </button>
-        <p className="text-center text-sm text-[var(--text-secondary)]">
-          Primeiro acesso?{" "}
-          <Link href="/cadastro" className="text-[var(--accent)] hover:underline">
-            Criar conta
-          </Link>
-        </p>
+        {process.env.NODE_ENV !== "production" ? (
+          <p className="text-center text-sm text-[var(--text-secondary)]">
+            Primeiro acesso?{" "}
+            <Link href="/cadastro" className="text-[var(--accent)] hover:underline">
+              Criar conta
+            </Link>
+          </p>
+        ) : (
+          <p className="text-center text-xs leading-relaxed text-[var(--text-secondary)]">
+            Novos acessos são provisionados pelo administrador da instância.
+          </p>
+        )}
       </form>
     </main>
   );
