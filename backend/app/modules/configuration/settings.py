@@ -20,6 +20,7 @@ def _looks_like_placeholder(value: str | None) -> bool:
     normalized = value.strip().lower().replace("-", "_").replace(" ", "_")
     return any(marker in normalized for marker in _PLACEHOLDER_MARKERS)
 
+
 _LEGACY_ENV_PREFIX = "NEGAO_"
 _NEW_ENV_PREFIX = "SOPHIE_"
 _config_logger = logging.getLogger("sophie.config")
