@@ -46,7 +46,6 @@ fi
 if [ ! -f "frontend/.env.local" ]; then
   echo "[WARN] Arquivo frontend/.env.local não encontrado. Criando..."
   cat > frontend/.env.local << 'EOF'
-NEXT_PUBLIC_API_URL=http://localhost:8000
 NEGAO_API_URL=http://localhost:8000
 NEGAO_SERVICE_API_KEY=troque-por-uma-chave-local
 EOF
