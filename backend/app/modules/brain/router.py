@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException
@@ -52,10 +52,15 @@ async def _save_config(config: dict[str, Any]) -> None:
     await client.set(CONFIG_KEY, json.dumps(config), ex=86400 * 30)
 
 
-class CompleteRequest(BaseModel):
-    """Pedido de completion (formato OpenAI-compatível)."""
+class BrainMessageRequest(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=4000)
 
-    messages: list[dict[str, str]] = Field(min_length=1)
+
+class CompleteRequest(BaseModel):
+    """Pedido de completion autenticado e limitado."""
+
+    messages: list[BrainMessageRequest] = Field(min_length=1, max_length=20)
     task_type: str | None = None
 
 
@@ -77,13 +82,11 @@ class AgentConfigUpdate(BaseModel):
     voice: dict[str, Any] | None = None
 
 
-def _parse_messages(raw: list[dict[str, str]]) -> list[ChatMessage]:
-    messages: list[ChatMessage] = []
-    for item in raw:
-        role = item.get("role", "user")
-        content = item.get("content", "")
-        messages.append(ChatMessage(role=role, content=content))
-    return messages
+def _parse_messages(raw: list[BrainMessageRequest]) -> list[ChatMessage]:
+    return [
+        ChatMessage(role="system", content=SYSTEM_PROMPT),
+        *[ChatMessage(role=item.role, content=item.content) for item in raw],
+    ]
 
 
 @router.get("/status")
