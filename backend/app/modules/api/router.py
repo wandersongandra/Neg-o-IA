@@ -30,7 +30,6 @@ async def readyz() -> Response:
     ready = all(check_status == "ok" for check_status in checks.values())
     payload: dict[str, Any] = {
         "status": "ready" if ready else "not_ready",
-        "checks": checks,
     }
     return JSONResponse(
         status_code=status.HTTP_200_OK if ready else status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -57,5 +56,4 @@ async def events_health() -> dict[str, Any]:
         redis_available = await check_redis_health()
     except Exception:
         redis_available = False
-    payload = {"status": "ok" if redis_available else "degraded", "bus_available": redis_available}
-    return payload
+    return {"status": "ok" if redis_available else "degraded"}
