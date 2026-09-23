@@ -54,16 +54,12 @@ def upgrade() -> None:
     op.execute("DROP TRIGGER IF EXISTS audit_events_partition_trg ON events.audit_events")
     op.execute("DROP FUNCTION IF EXISTS events.create_partition_if_missing()")
 
-    # Conversation session ids are opaque references, not necessarily UUIDs.
-    op.execute(
-        "ALTER TABLE events.audit_events "
-        "ALTER COLUMN user_id TYPE text USING user_id::text"
-    )
-    op.execute(
-        "ALTER TABLE events.audit_events "
-        "ALTER COLUMN session_id TYPE text USING session_id::text"
-    )
-
+    # Audit references are opaque identifiers; they are not guaranteed to be UUIDs.
+    for column in ("trace_id", "correlation_id", "parent_id", "user_id", "session_id"):
+        op.execute(
+            "ALTER TABLE events.audit_events "
+            f"ALTER COLUMN {column} TYPE text USING {column}::text"
+        )
     op.execute(_ENSURE_PARTITIONS_FUNCTION)
     op.execute("SELECT events.ensure_audit_partitions(24)")
     op.execute(
