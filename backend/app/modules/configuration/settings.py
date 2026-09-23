@@ -11,6 +11,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 _INSECURE_DEFAULT_SECRETS = {"", "negao-dev-api-key", "negao-dev-secret-key"}
 _MIN_PRODUCTION_SECRET_LENGTH = 32
 _ALLOWED_SERVICE_SCOPES = frozenset({"database:admin", "metrics:read"})
+_PLACEHOLDER_MARKERS = ("change_me", "changeme", "troque", "substitua", "example", "exemplo")
+
+
+def _looks_like_placeholder(value: str | None) -> bool:
+    if not value:
+        return True
+    normalized = value.strip().lower().replace("-", "_").replace(" ", "_")
+    return any(marker in normalized for marker in _PLACEHOLDER_MARKERS)
 
 _LEGACY_ENV_PREFIX = "NEGAO_"
 _NEW_ENV_PREFIX = "SOPHIE_"
@@ -87,6 +95,7 @@ class Settings(BaseSettings):
         if (
             self.service_api_key in _INSECURE_DEFAULT_SECRETS
             or len(self.service_api_key) < _MIN_PRODUCTION_SECRET_LENGTH
+            or _looks_like_placeholder(self.service_api_key)
         ):
             problems.append(
                 "NEGAO_SERVICE_API_KEY deve ser definida com um valor forte "
@@ -95,6 +104,7 @@ class Settings(BaseSettings):
         if (
             self.secret_key in _INSECURE_DEFAULT_SECRETS
             or len(self.secret_key) < _MIN_PRODUCTION_SECRET_LENGTH
+            or _looks_like_placeholder(self.secret_key)
         ):
             problems.append(
                 "NEGAO_SECRET_KEY deve ser definida com um valor forte "
@@ -115,11 +125,16 @@ class Settings(BaseSettings):
                 + ", ".join(unknown_scopes)
             )
         database = urlparse(self.database_url)
-        if not database.username or not database.password or database.password == "negao":
+        if (
+            not database.username
+            or not database.password
+            or database.password == "negao"
+            or _looks_like_placeholder(database.password)
+        ):
             problems.append("NEGAO_DATABASE_URL deve usar credenciais fortes em produção")
         redis = urlparse(self.redis_url)
-        if not redis.password:
-            problems.append("NEGAO_REDIS_URL deve exigir autenticação em produção")
+        if not redis.password or _looks_like_placeholder(redis.password):
+            problems.append("NEGAO_REDIS_URL deve exigir autenticação forte em produção")
         if self.external_ai_enabled:
             provider = urlparse(self.nvidia_base_url)
             if provider.scheme != "https":
