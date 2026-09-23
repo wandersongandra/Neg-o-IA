@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resolveApiConfig } from "@/lib/env";\nimport { enforceSameOriginMutation } from "@/lib/request-security";
+import { resolveApiConfig } from "@/lib/env";
+import { enforceSameOriginMutation } from "@/lib/request-security";
 
 export const dynamic = "force-dynamic";
 
