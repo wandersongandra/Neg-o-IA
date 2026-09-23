@@ -361,6 +361,20 @@ async def create_ws_ticket(
         raise HTTPException(status_code=400, detail="voice ticket requires a session_id")
     if auth.effective_user_id is None:
         raise HTTPException(status_code=403, detail="user identity required")
+    if request.purpose == "voice" and request.session_id:
+        from app.modules.conversation.application import get_conversation_service
+        from app.modules.conversation.infrastructure import ConversationPersistenceError
+
+        try:
+            owns_session = await get_conversation_service().owns_session(
+                request.session_id, auth.effective_user_id
+            )
+        except ConversationPersistenceError as exc:
+            raise HTTPException(
+                status_code=503, detail="conversation storage unavailable"
+            ) from exc
+        if not owns_session:
+            raise HTTPException(status_code=404, detail="session not found")
     try:
         ticket = await issue_ws_ticket(
             auth.effective_user_id,
