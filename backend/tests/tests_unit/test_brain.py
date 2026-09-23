@@ -10,6 +10,11 @@ from fakeredis import FakeAsyncRedis
 
 from app.modules.brain.application import get_brain_service, reset_brain_service
 from app.modules.brain.domain import ChatMessage, ModelRequest, ModelResponse, TaskType
+from app.modules.brain.user_config import (
+    UserBrainConfig,
+    load_user_config,
+    save_user_config,
+)
 from app.modules.brain.infrastructure import (
     CircuitBreaker,
     ModelError,
@@ -232,3 +237,82 @@ async def test_process_input_returns_dict(monkeypatch: Any) -> None:
     assert isinstance(result, dict)
     assert "text" in result
     assert "model" in result
+
+
+async def test_user_brain_config_is_isolated_by_user(monkeypatch: Any) -> None:
+    fake_redis = FakeAsyncRedis(decode_responses=True)
+
+    def _get_redis() -> FakeAsyncRedis:
+        return fake_redis
+
+    monkeypatch.setattr("app.infrastructure.redis.get_redis", _get_redis)
+
+    config = UserBrainConfig(
+        system_prompt="Você é a Sophie personalizada para o usuário A.",
+        temperature=0.7,
+        max_tokens=777,
+    )
+    await save_user_config("user-a", config)
+
+    loaded_a = await load_user_config("user-a")
+    loaded_b = await load_user_config("user-b")
+
+    assert loaded_a == config
+    assert loaded_b != config
+    assert loaded_b.system_prompt
+
+
+async def test_brain_service_applies_user_config(monkeypatch: Any) -> None:
+    captured: list[ModelRequest] = []
+
+    async def fake_load(_user_id: str | None) -> UserBrainConfig:
+        return UserBrainConfig(
+            system_prompt="Prompt efetivo isolado do usuário.",
+            temperature=0.9,
+            max_tokens=321,
+        )
+
+    class FakeRouter:
+        async def complete(self, request: ModelRequest) -> ModelResponse:
+            captured.append(request)
+            return ModelResponse(text="ok", model="test", latency_ms=1)
+
+    class FakeBus:
+        async def publish_event(self, _envelope: EventEnvelope) -> None:
+            return None
+
+    monkeypatch.setattr(
+        "app.modules.brain.application.load_user_config",
+        fake_load,
+    )
+    monkeypatch.setattr(
+        "app.modules.brain.application.get_model_router",
+        lambda: FakeRouter(),
+    )
+    monkeypatch.setattr(
+        "app.modules.events.application.get_event_bus_service",
+        lambda: FakeBus(),
+    )
+    reset_brain_service()
+    try:
+        response = await get_brain_service().complete(
+            [
+                ChatMessage(role="system", content="Prompt legado."),
+                ChatMessage(role="user", content="Teste"),
+            ],
+            user_id="user-a",
+        )
+    finally:
+        reset_brain_service()
+
+    assert response.text == "ok"
+    assert len(captured) == 1
+    request = captured[0]
+    assert request.temperature == 0.9
+    assert request.max_tokens == 321
+    assert request.messages[0].role == "system"
+    assert request.messages[0].content == "Prompt efetivo isolado do usuário."
+    assert all(
+        message.content != "Prompt legado."
+        for message in request.messages
+    )
