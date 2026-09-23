@@ -35,7 +35,7 @@ export function resolvePublicWsBase(request: NextRequest, configured: string): s
 const IP_LITERAL = /^[0-9A-Fa-f:.]{3,64}$/;
 
 export function trustedClientIpHeadersFromHeaders(
-  headers: Headers,
+  headers: Pick<Headers, "get">,
 ): Record<string, string> {
   if (process.env.NODE_ENV !== "production") return {};
   const realIp = headers.get("x-real-ip")?.trim() ?? "";
