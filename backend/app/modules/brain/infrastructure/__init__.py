@@ -131,7 +131,7 @@ async def _cache_get(cache_key: str) -> ModelResponse | None:
     try:
         from app.infrastructure.redis import get_redis
 
-        client = await get_redis()
+        client = get_redis()
         raw = await client.get(f"brain:cache:{cache_key}")
         if not raw:
             return None
