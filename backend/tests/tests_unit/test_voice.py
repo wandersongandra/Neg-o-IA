@@ -129,7 +129,7 @@ async def test_service_transcribe_publica_evento_e_retorna_texto(
     service = VoiceService(
         FakeSTTAdapter(),
         FakeTTSAdapter(),
-        settings=Settings(nvidia_api_key="test-key"),
+        settings=Settings(external_ai_enabled=True, nvidia_api_key="test-key"),
     )
 
     result = await service.transcribe(b"audio", content_type="audio/webm")
@@ -145,7 +145,9 @@ async def test_service_transcribe_publica_evento_e_retorna_texto(
 
 @pytest.mark.asyncio
 async def test_service_synthesize_retorna_audio() -> None:
-    service = VoiceService(FakeSTTAdapter(), FakeTTSAdapter())
+    service = VoiceService(
+        FakeSTTAdapter(), FakeTTSAdapter(), settings=Settings(external_ai_enabled=True)
+    )
 
     result = await service.synthesize("oi")
 
