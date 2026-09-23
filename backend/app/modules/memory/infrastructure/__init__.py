@@ -1,7 +1,7 @@
-"""Implementação da memória de curto prazo (v0) sobre Redis.
+"""Memória de curto prazo segura sobre Redis.
 
-Chaves `stm:{session_id}:{key}` com TTL; o valor armazena um documento
-JSON com `value`, `ttl_seconds`, `created_at` e `expires_at`.
+Chaves: `stm:{user_id}:{session_id}:{key}`. O namespace por usuário evita
+colisão e leitura cruzada mesmo que um session_id seja conhecido por terceiros.
 """
 
 from __future__ import annotations
@@ -16,6 +16,7 @@ from app.modules.memory.domain import ShortTermMemoryEntry
 
 DEFAULT_TTL_SECONDS = 86_400
 KEY_PREFIX = "stm"
+MAX_KEY_LENGTH = 128
 
 
 def _parse_iso(value: str | None) -> datetime:
@@ -27,19 +28,41 @@ def _parse_iso(value: str | None) -> datetime:
     return datetime.now(UTC)
 
 
+def _validate_component(value: str, name: str) -> str:
+    normalized = value.strip()
+    if not normalized or len(normalized) > MAX_KEY_LENGTH or ":" in normalized:
+        raise ValueError(f"invalid memory {name}")
+    return normalized
+
+
 class RedisShortTermMemory:
-    """Adaptador STM sobre Redis (memória de trabalho por sessão)."""
+    """Adaptador STM isolado por usuário e sessão."""
 
     def __init__(self, redis_client: aioredis.Redis[str], *, key_prefix: str = KEY_PREFIX) -> None:
         self._redis = redis_client
         self._key_prefix = key_prefix
 
-    def _key(self, session_id: str, key: str) -> str:
-        return f"{self._key_prefix}:{session_id}:{key}"
+    def _prefix(self, user_id: str, session_id: str) -> str:
+        return (
+            f"{self._key_prefix}:"
+            f"{_validate_component(user_id, 'user_id')}:"
+            f"{_validate_component(session_id, 'session_id')}:"
+        )
+
+    def _key(self, user_id: str, session_id: str, key: str) -> str:
+        return f"{self._prefix(user_id, session_id)}{_validate_component(key, 'key')}"
 
     async def set(
-        self, session_id: str, key: str, value: Any, *, ttl: int = DEFAULT_TTL_SECONDS
+        self,
+        user_id: str,
+        session_id: str,
+        key: str,
+        value: Any,
+        *,
+        ttl: int = DEFAULT_TTL_SECONDS,
     ) -> ShortTermMemoryEntry:
+        if ttl <= 0 or ttl > DEFAULT_TTL_SECONDS:
+            raise ValueError("memory ttl must be between 1 and 86400 seconds")
         now = datetime.now(UTC)
         doc = {
             "value": value,
@@ -48,9 +71,12 @@ class RedisShortTermMemory:
             "expires_at": (now + timedelta(seconds=ttl)).isoformat(),
         }
         await self._redis.set(
-            self._key(session_id, key), json.dumps(doc, ensure_ascii=False, default=str), ex=ttl
+            self._key(user_id, session_id, key),
+            json.dumps(doc, ensure_ascii=False, default=str),
+            ex=ttl,
         )
         return ShortTermMemoryEntry(
+            user_id=user_id,
             session_id=session_id,
             key=key,
             value=value,
@@ -59,12 +85,15 @@ class RedisShortTermMemory:
             expires_at=now + timedelta(seconds=ttl),
         )
 
-    async def get(self, session_id: str, key: str) -> ShortTermMemoryEntry | None:
-        raw = await self._redis.get(self._key(session_id, key))
+    async def get(
+        self, user_id: str, session_id: str, key: str
+    ) -> ShortTermMemoryEntry | None:
+        raw = await self._redis.get(self._key(user_id, session_id, key))
         if raw is None:
             return None
         doc = json.loads(raw)
         return ShortTermMemoryEntry(
+            user_id=user_id,
             session_id=session_id,
             key=key,
             value=doc.get("value"),
@@ -73,26 +102,26 @@ class RedisShortTermMemory:
             expires_at=_parse_iso(doc.get("expires_at")),
         )
 
-    async def delete(self, session_id: str, key: str) -> bool:
-        removed = await self._redis.delete(self._key(session_id, key))
+    async def delete(self, user_id: str, session_id: str, key: str) -> bool:
+        removed = await self._redis.delete(self._key(user_id, session_id, key))
         return removed > 0
 
-    async def list_keys(self, session_id: str) -> list[str]:
-        prefix = f"{self._key_prefix}:{session_id}:"
+    async def list_keys(self, user_id: str, session_id: str) -> list[str]:
+        prefix = self._prefix(user_id, session_id)
         keys: list[str] = []
         async for raw_key in self._redis.scan_iter(match=f"{prefix}*", count=100):
-            key = raw_key.decode("utf-8") if isinstance(raw_key, bytes) else raw_key
-            if key.startswith(prefix):
-                keys.append(key[len(prefix) :])
+            redis_key = raw_key.decode("utf-8") if isinstance(raw_key, bytes) else raw_key
+            if redis_key.startswith(prefix):
+                keys.append(redis_key[len(prefix) :])
         return keys
 
-    async def flush_session(self, session_id: str) -> int:
-        prefix = f"{self._key_prefix}:{session_id}:"
+    async def flush_session(self, user_id: str, session_id: str) -> int:
+        prefix = self._prefix(user_id, session_id)
         keys: list[str] = []
         async for raw_key in self._redis.scan_iter(match=f"{prefix}*", count=100):
-            key = raw_key.decode("utf-8") if isinstance(raw_key, bytes) else raw_key
-            if key.startswith(prefix):
-                keys.append(key)
+            redis_key = raw_key.decode("utf-8") if isinstance(raw_key, bytes) else raw_key
+            if redis_key.startswith(prefix):
+                keys.append(redis_key)
         if not keys:
             return 0
         return await self._redis.delete(*keys)
