@@ -26,7 +26,11 @@ export default function LoginPage() {
         return;
       }
       const next = new URLSearchParams(window.location.search).get("next") || "/";
-      router.replace(next.startsWith("/") ? next : "/");
+      const safeNext =
+        next.startsWith("/") && !next.startsWith("//") && !next.includes("\\")
+          ? next
+          : "/";
+      router.replace(safeNext);
     } catch {
       setError("Não foi possível conectar ao serviço de identidade.");
     } finally {
@@ -35,7 +39,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-[var(--bg)] p-6">
+    <main className="flex min-h-dvh items-center justify-center bg-[var(--bg-primary)] p-6">
       <form onSubmit={submit} className="glass w-full max-w-md space-y-5 rounded-2xl p-6">
         <div>
           <p className="font-mono-data text-[10px] uppercase tracking-[0.3em] text-[var(--accent)]">
@@ -68,11 +72,15 @@ export default function LoginPage() {
             autoComplete="current-password"
           />
         </label>
-        {error ? <p className="text-sm text-[var(--color-danger)]">{error}</p> : null}
+        {error ? (
+          <p role="alert" aria-live="polite" className="text-sm text-[var(--color-danger)]">
+            {error}
+          </p>
+        ) : null}
         <button
           type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-[var(--accent)] px-4 py-2.5 font-semibold text-black disabled:opacity-50"
+          className="interactive-control w-full rounded-xl bg-[var(--accent)] px-4 py-2.5 font-semibold text-black shadow-[0_10px_30px_-16px_var(--accent-glow)] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {submitting ? "Validando…" : "Entrar"}
         </button>
