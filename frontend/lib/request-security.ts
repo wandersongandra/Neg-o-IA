@@ -34,12 +34,18 @@ export function resolvePublicWsBase(request: NextRequest, configured: string): s
 
 const IP_LITERAL = /^[0-9A-Fa-f:.]{3,64}$/;
 
-export function trustedClientIpHeaders(request: NextRequest): Record<string, string> {
+export function trustedClientIpHeadersFromHeaders(
+  headers: Headers,
+): Record<string, string> {
   if (process.env.NODE_ENV !== "production") return {};
-  const realIp = request.headers.get("x-real-ip")?.trim() ?? "";
+  const realIp = headers.get("x-real-ip")?.trim() ?? "";
   if (!IP_LITERAL.test(realIp)) return {};
   return {
     "X-Real-IP": realIp,
     "X-Forwarded-For": realIp,
   };
+}
+
+export function trustedClientIpHeaders(request: NextRequest): Record<string, string> {
+  return trustedClientIpHeadersFromHeaders(request.headers);
 }
