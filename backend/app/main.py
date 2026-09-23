@@ -20,6 +20,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from app import __version__
 from app.core.context import get_request_context, request_context_middleware
 from app.core.di import build_services
+from app.infrastructure.db import ensure_audit_partitions
 from app.modules.api.rate_limit import RateLimiter
 from app.modules.api.router import router as api_router
 from app.modules.api.websocket import connection_manager
@@ -101,6 +102,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     _setup_telemetry(settings, app)
     services = build_services()
     app.state.services = services
+    if not await ensure_audit_partitions():
+        logger.warning("audit_partition_maintenance_skipped")
     logger.info(
         "application_started",
         name=settings.app_name,
