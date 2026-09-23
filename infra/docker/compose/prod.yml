@@ -26,11 +26,16 @@ services:
 
   redis:
     image: redis:7.4-alpine
-    command: ["redis-server", "--appendonly", "yes"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?defina REDIS_PASSWORD}
+    command:
+      - sh
+      - -ec
+      - exec redis-server --appendonly yes --requirepass "$REDIS_PASSWORD"
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a \"$REDIS_PASSWORD\" ping | grep -q PONG"]
       interval: 10s
       timeout: 3s
       retries: 10
@@ -48,6 +53,7 @@ services:
       - ../../../.env
     environment:
       NEGAO_ENV: production
+      NEGAO_REDIS_URL: redis://:${REDIS_PASSWORD:?defina REDIS_PASSWORD}@redis:6379/0
     depends_on:
       db:
         condition: service_healthy
