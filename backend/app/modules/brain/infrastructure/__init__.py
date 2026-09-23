@@ -235,8 +235,8 @@ class MockLLMAdapter:
         return ModelResponse(
             text=(
                 f"Opa, chefe! Meu cérebro está em modo local — configure "
-                f"SOPHIE_NVIDIA_API_KEY (ou NEGAO_NVIDIA_API_KEY) para ativar o "
-                f"GPT-OSS-120B. (eco: {user_text[:80]})"
+                f"EXTERNAL_AI_ENABLED=true e uma NVIDIA_API_KEY para ativar o "
+                f"provedor externo. (eco: {user_text[:80]})"
             ),
             model="local-mock",
             latency_ms=1,
@@ -279,7 +279,7 @@ class ModelRouter:
 
     async def complete(self, request: ModelRequest) -> ModelResponse:
         settings = self._settings
-        if not settings.nvidia_api_key:
+        if not settings.external_ai_enabled or not settings.nvidia_api_key:
             return await _get_mock_adapter().complete(request)
 
         key = _cache_key(request)
