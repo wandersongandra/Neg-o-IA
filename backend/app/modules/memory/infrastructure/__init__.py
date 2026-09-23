@@ -85,9 +85,7 @@ class RedisShortTermMemory:
             expires_at=now + timedelta(seconds=ttl),
         )
 
-    async def get(
-        self, user_id: str, session_id: str, key: str
-    ) -> ShortTermMemoryEntry | None:
+    async def get(self, user_id: str, session_id: str, key: str) -> ShortTermMemoryEntry | None:
         raw = await self._redis.get(self._key(user_id, session_id, key))
         if raw is None:
             return None
