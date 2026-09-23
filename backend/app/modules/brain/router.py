@@ -23,6 +23,7 @@ from app.modules.security.router import require_authenticated_user
 logger = structlog.get_logger("negao.brain")
 router = APIRouter(prefix="/brain", tags=["brain"])
 
+
 class BrainMessageRequest(BaseModel):
     role: Literal["user", "assistant"]
     content: str = Field(min_length=1, max_length=4000)
