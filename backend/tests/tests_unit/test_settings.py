@@ -86,35 +86,35 @@ def test_producao_rejeita_placeholder_de_secret() -> None:
     kwargs = _strong_production_kwargs()
     kwargs["secret_key"] = "substitua-por-chave-aleatoria-de-32-bytes"
     with pytest.raises(ValidationError, match="NEGAO_SECRET_KEY"):
-        Settings(**kwargs)
+        Settings.model_validate(kwargs)
 
 
 def test_producao_rejeita_senha_curta_do_banco() -> None:
     kwargs = _strong_production_kwargs()
     kwargs["database_url"] = "postgresql+asyncpg://sophie:curta@db:5432/sophie"
     with pytest.raises(ValidationError, match="NEGAO_DATABASE_URL"):
-        Settings(**kwargs)
+        Settings.model_validate(kwargs)
 
 
 def test_producao_rejeita_senha_curta_do_redis() -> None:
     kwargs = _strong_production_kwargs()
     kwargs["redis_url"] = "redis://:curta@redis:6379/0"
     with pytest.raises(ValidationError, match="NEGAO_REDIS_URL"):
-        Settings(**kwargs)
+        Settings.model_validate(kwargs)
 
 
 def test_producao_rejeita_cors_http() -> None:
     kwargs = _strong_production_kwargs()
     kwargs["cors_origins"] = ["http://sophie.example.com"]
     with pytest.raises(ValidationError, match="HTTPS"):
-        Settings(**kwargs)
+        Settings.model_validate(kwargs)
 
 
 def test_producao_rejeita_reuso_de_credencial() -> None:
     kwargs = _strong_production_kwargs()
     kwargs["secret_key"] = kwargs["service_api_key"]
     with pytest.raises(ValidationError, match="valores distintos"):
-        Settings(**kwargs)
+        Settings.model_validate(kwargs)
 
 
 def test_ia_externa_exige_chave_do_provedor() -> None:
@@ -122,7 +122,7 @@ def test_ia_externa_exige_chave_do_provedor() -> None:
     kwargs["external_ai_enabled"] = True
     kwargs["nvidia_api_key"] = ""
     with pytest.raises(ValidationError, match="NEGAO_NVIDIA_API_KEY"):
-        Settings(**kwargs)
+        Settings.model_validate(kwargs)
 
 
 def test_producao_aceita_configuracao_forte() -> None:
