@@ -296,7 +296,6 @@ def _add_root_healthcheck(app: FastAPI, settings: Settings) -> None:
             "name": settings.app_name,
             "version": __version__,
             "status": "running",
-            "environment": settings.env,
         }
 
 
