@@ -52,6 +52,17 @@ def test_producao_rejeita_cors_wildcard() -> None:
         )
 
 
+
+def test_producao_rejeita_debug_ativo() -> None:
+    with pytest.raises(ValidationError, match="NEGAO_DEBUG"):
+        Settings(
+            env="production",
+            debug=True,
+            service_api_key="k" * 32,
+            secret_key="s" * 32,
+            cors_origins=["https://sophie.example.com"],
+        )
+
 def test_producao_aceita_configuracao_forte() -> None:
     settings = Settings(
         env="production",
