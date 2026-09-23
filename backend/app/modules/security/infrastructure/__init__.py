@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import hmac
 import json
 import secrets
@@ -18,6 +19,11 @@ if TYPE_CHECKING:
 _WS_TICKET_PREFIX = "ws_ticket:"
 _WS_TICKET_TTL_SECONDS = 60
 _WS_TICKET_PURPOSES = frozenset({"conversation", "voice"})
+
+
+def _ws_ticket_key(token: str) -> str:
+    digest = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    return f"{_WS_TICKET_PREFIX}{digest}"
 
 
 class InMemorySecurityService(SecurityService):
@@ -90,7 +96,7 @@ async def issue_ws_ticket(
             "session_id": session_id,
         }
     )
-    await get_redis().set(f"{_WS_TICKET_PREFIX}{token}", payload, ex=_WS_TICKET_TTL_SECONDS)
+    await get_redis().set(_ws_ticket_key(token), payload, ex=_WS_TICKET_TTL_SECONDS)
     return token
 
 
@@ -134,7 +140,7 @@ async def redeem_ws_ticket(
         return AuthResult(authenticated=False, reason="missing_ticket")
     from app.infrastructure.redis import get_redis
 
-    raw = await get_redis().getdel(f"{_WS_TICKET_PREFIX}{token}")
+    raw = await get_redis().getdel(_ws_ticket_key(token))
     if raw is None:
         return AuthResult(authenticated=False, reason="invalid_or_expired_ticket")
     try:
