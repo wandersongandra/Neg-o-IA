@@ -72,7 +72,6 @@ services:
     restart: unless-stopped
     environment:
       NEGAO_API_URL: http://backend:8000
-      NEGAO_SERVICE_API_KEY: ${NEGAO_SERVICE_API_KEY:?defina NEGAO_SERVICE_API_KEY}
     depends_on:
       - backend
     deploy:
