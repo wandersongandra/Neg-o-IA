@@ -6,6 +6,7 @@ import { useState, type FormEvent } from "react";
 
 export default function CadastroPage() {
   const router = useRouter();
+  const registrationAvailable = process.env.NODE_ENV !== "production";
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
@@ -45,6 +46,30 @@ export default function CadastroPage() {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (!registrationAvailable) {
+    return (
+      <main className="flex min-h-dvh items-center justify-center bg-[var(--bg-primary)] p-6">
+        <section className="glass w-full max-w-md rounded-2xl p-6 text-center">
+          <p className="font-mono-data text-[10px] uppercase tracking-[0.3em] text-[var(--accent)]">
+            SOPHIE CORE — IDENTITY
+          </p>
+          <h1 className="mt-3 text-2xl font-semibold text-[var(--text-primary)]">
+            Cadastro público desativado
+          </h1>
+          <p className="mt-3 text-sm leading-relaxed text-[var(--text-secondary)]">
+            Em produção, novos usuários são provisionados pelo administrador da instância.
+          </p>
+          <Link
+            href="/login"
+            className="interactive-control mt-6 inline-flex rounded-xl border border-[var(--accent)]/30 bg-[var(--accent-muted)] px-4 py-2.5 text-sm font-medium text-[var(--accent)] hover:bg-[var(--accent)]/15"
+          >
+            Voltar para o login
+          </Link>
+        </section>
+      </main>
+    );
   }
 
   return (
