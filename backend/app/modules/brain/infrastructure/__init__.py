@@ -152,7 +152,7 @@ async def _cache_set(cache_key: str, response: ModelResponse, ttl: int) -> None:
     try:
         from app.infrastructure.redis import get_redis
 
-        client = await get_redis()
+        client = get_redis()
         payload = json.dumps(
             {
                 "text": response.text,
@@ -206,9 +206,9 @@ class NvidiaChatAdapter:
 
         latency_ms = int((time.perf_counter() - started) * 1000)
         if response.status_code in {429, 500, 502, 503, 504, 529}:
-            raise RetryableProviderError(f"NVIDIA {response.status_code}: {response.text[:200]}")
+            raise RetryableProviderError(f"NVIDIA HTTP {response.status_code}")
         if response.status_code != 200:
-            raise ProviderError(f"NVIDIA {response.status_code}: {response.text[:200]}")
+            raise ProviderError(f"NVIDIA HTTP {response.status_code}")
         try:
             data = response.json()
             text = data["choices"][0]["message"]["content"]
@@ -351,9 +351,9 @@ class ModelRouter:
 
         latency_ms = int((time.perf_counter() - started) * 1000)
         if response.status_code in {429, 500, 502, 503, 504, 529}:
-            raise RetryableProviderError(f"fallback {response.status_code}: {response.text[:200]}")
+            raise RetryableProviderError(f"fallback HTTP {response.status_code}")
         if response.status_code != 200:
-            raise ProviderError(f"fallback {response.status_code}: {response.text[:200]}")
+            raise ProviderError(f"fallback HTTP {response.status_code}")
         try:
             data = response.json()
             text = data["choices"][0]["message"]["content"]
