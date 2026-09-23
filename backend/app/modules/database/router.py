@@ -10,7 +10,7 @@ import json
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.db import get_db_session
@@ -29,6 +29,7 @@ from app.modules.database.domain import DatabaseStatus
 router = APIRouter(prefix="/database", tags=["database"])
 
 _SENSITIVE_CONFIG_FRAGMENTS = ("secret", "password", "token", "api_key", "credential")
+_ALLOWED_API_KEY_SCOPES = frozenset({"database:admin", "metrics:read"})
 
 
 def _validate_config_payload(key: str, value: dict[str, Any]) -> None:
@@ -46,7 +47,16 @@ SessionDep = Annotated[AsyncSession, Depends(get_db_session)]
 
 class ApiKeyCreateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=128)
-    scopes: list[str] = Field(default_factory=list)
+    scopes: list[str] = Field(default_factory=list, max_length=16)
+
+    @field_validator("scopes")
+    @classmethod
+    def validate_scopes(cls, scopes: list[str]) -> list[str]:
+        normalized = list(dict.fromkeys(scope.strip() for scope in scopes if scope.strip()))
+        unknown = sorted(set(normalized) - _ALLOWED_API_KEY_SCOPES)
+        if unknown:
+            raise ValueError(f"unknown service scopes: {', '.join(unknown)}")
+        return normalized
 
 
 class ApiKeyCreateResponse(BaseModel):
