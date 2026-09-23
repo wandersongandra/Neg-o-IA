@@ -20,7 +20,6 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from app import __version__
 from app.core.context import get_request_context, request_context_middleware
 from app.core.di import build_services
-from app.infrastructure.db import ensure_audit_partitions
 from app.modules.api.rate_limit import RateLimiter
 from app.modules.api.router import router as api_router
 from app.modules.api.websocket import connection_manager
@@ -102,8 +101,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     _setup_telemetry(settings, app)
     services = build_services()
     app.state.services = services
-    if not await ensure_audit_partitions():
-        logger.warning("audit_partition_maintenance_skipped")
     logger.info(
         "application_started",
         name=settings.app_name,
@@ -147,7 +144,7 @@ async def access_log_middleware(request: Request, call_next: RequestResponseEndp
 
 _rate_limiter: RateLimiter | None = None
 _RATE_LIMIT_WHITELIST = frozenset(
-    {"/healthz", "/health/live", "/readyz", "/health/ready", "/metrics"}
+    {"/healthz", "/health/live", "/readyz", "/health/ready"}
 )
 
 
@@ -157,11 +154,9 @@ def _rate_limit_key(request: Request) -> str:
     principal = getattr(auth, "effective_user_id", None)
     if isinstance(principal, str) and principal:
         return f"principal:{principal}"
-    authorization = request.headers.get("authorization", "")
-    if authorization.startswith("Bearer "):
-        import hashlib
-
-        return f"token:{hashlib.sha256(authorization[7:].encode()).hexdigest()[:16]}"
+    # O middleware roda antes das dependencies de autenticação. Nunca use um
+    # Bearer ainda não validado como bucket: um atacante poderia rotacionar
+    # tokens aleatórios e criar limites infinitos.
     return request.client.host if request.client else "unknown"
 
 
@@ -220,7 +215,7 @@ def _register_exception_handlers(app: FastAPI) -> None:
         code = error_code(exc.status_code)
         error_logger.warning(
             "http_error",
-            path=request.url.path,
+            path=(getattr(request.scope.get("route"), "path", None) or request.url.path),
             method=request.method,
             status_code=exc.status_code,
             error_code=code,
@@ -246,7 +241,7 @@ def _register_exception_handlers(app: FastAPI) -> None:
         request_id = request_context.request_id if request_context else None
         error_logger.warning(
             "validation_error",
-            path=request.url.path,
+            path=(getattr(request.scope.get("route"), "path", None) or request.url.path),
             method=request.method,
             error_code="VALIDATION_ERROR",
             request_id=request_id,
@@ -275,7 +270,7 @@ def _register_exception_handlers(app: FastAPI) -> None:
         request_id = request_context.request_id if request_context else None
         error_logger.exception(
             "unhandled_error",
-            path=request.url.path,
+            path=(getattr(request.scope.get("route"), "path", None) or request.url.path),
             method=request.method,
             error_code="INTERNAL_ERROR",
             request_id=request_id,
