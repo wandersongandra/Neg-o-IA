@@ -20,8 +20,7 @@ def upgrade() -> None:
     # may also represent service identities, so both columns must be textual.
     op.execute("ALTER TABLE events.audit_events ALTER COLUMN user_id TYPE text USING user_id::text")
     op.execute(
-        "ALTER TABLE events.audit_events "
-        "ALTER COLUMN session_id TYPE text USING session_id::text"
+        "ALTER TABLE events.audit_events ALTER COLUMN session_id TYPE text USING session_id::text"
     )
 
     # A BEFORE INSERT trigger on the partitioned parent cannot be relied on to
