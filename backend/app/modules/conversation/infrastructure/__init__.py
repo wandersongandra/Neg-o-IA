@@ -61,7 +61,7 @@ class ConversationStore:
         self._redis = redis_client
 
     async def start_session(self, user_id: str | None) -> ConversationSession:
-        session_id = uuid.uuid4().hex[:16]
+        session_id = uuid.uuid4().hex
         now = _now()
         session = ConversationSession(
             session_id=session_id,
@@ -76,6 +76,7 @@ class ConversationStore:
             async with self._redis.pipeline(transaction=True) as pipe:
                 pipe.sadd(INDEX_KEY, session_id)
                 pipe.sadd(_user_index_key(user_id), session_id)
+                pipe.expire(_user_index_key(user_id), MESSAGES_TTL_SECONDS)
                 pipe.set(
                     _meta_key(session_id),
                     json.dumps(
@@ -252,6 +253,8 @@ class ConversationStore:
             session = await self.get_session(session_id)
             if session is not None:
                 sessions.append(session)
+            else:
+                await self._redis.srem(INDEX_KEY, session_id)
         return sessions
 
     async def list_sessions_for_user(self, user_id: str) -> list[ConversationSession]:
@@ -265,6 +268,8 @@ class ConversationStore:
             session = await self.get_owned_session(session_id, user_id)
             if session is not None:
                 sessions.append(session)
+            else:
+                await self._redis.srem(_user_index_key(user_id), session_id)
         return sessions
 
 
