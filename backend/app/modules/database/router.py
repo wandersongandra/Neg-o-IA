@@ -6,6 +6,8 @@ Nota: em produção, estes endpoints serão protegidos pelo módulo Security
 
 from __future__ import annotations
 
+import json
+
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -26,6 +28,19 @@ from app.modules.database.application import (
 from app.modules.database.domain import DatabaseStatus
 
 router = APIRouter(prefix="/database", tags=["database"])
+
+_SENSITIVE_CONFIG_FRAGMENTS = ("secret", "password", "token", "api_key", "credential")
+
+
+def _validate_config_payload(key: str, value: dict[str, Any]) -> None:
+    normalized = key.lower().replace("-", "_")
+    if not key or len(key) > 128:
+        raise HTTPException(status_code=422, detail="invalid config key")
+    if any(fragment in normalized for fragment in _SENSITIVE_CONFIG_FRAGMENTS):
+        raise HTTPException(status_code=422, detail="secrets are not allowed in app_config")
+    if len(json.dumps(value, ensure_ascii=False, default=str).encode("utf-8")) > 65_536:
+        raise HTTPException(status_code=413, detail="config payload too large")
+
 
 SessionDep = Annotated[AsyncSession, Depends(get_db_session)]
 
@@ -104,6 +119,7 @@ async def config_put(
     value: dict[str, Any],
     session: SessionDep,
 ) -> ConfigItemResponse:
+    _validate_config_payload(key, value)
     record = await set_config(session, key, value)
     return ConfigItemResponse(
         key=record.key, value=record.value, updated_at=record.updated_at.isoformat()
