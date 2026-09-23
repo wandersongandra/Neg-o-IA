@@ -24,10 +24,12 @@ class InMemorySecurityService(SecurityService):
     def __init__(
         self,
         expected_api_key: str,
-        authorization_level: AuthorizationLevel = AuthorizationLevel.READ_ONLY,
+        authorization_level: AuthorizationLevel = AuthorizationLevel.AUTO_EXECUTE,
+        scopes: frozenset[str] = frozenset(),
     ) -> None:
         self._expected_api_key = expected_api_key
         self._authorization_level = authorization_level
+        self._scopes = scopes
 
     def authenticate_api_key(self, key: str) -> AuthResult:
         if not key or not self._expected_api_key:
@@ -38,6 +40,7 @@ class InMemorySecurityService(SecurityService):
                 principal="service:api-key",
                 authorization_level=self._authorization_level,
                 auth_method="service_api_key",
+                scopes=self._scopes,
             )
         return AuthResult(authenticated=False, reason="invalid_service_api_key")
 
@@ -47,7 +50,10 @@ def create_security_service(settings: Settings) -> InMemorySecurityService:
     # fallback anterior permitia que uma credencial histórica continuasse
     # autenticando em desenvolvimento/teste quando a chave de serviço não
     # estava configurada.
-    return InMemorySecurityService(expected_api_key=settings.service_api_key)
+    return InMemorySecurityService(
+        expected_api_key=settings.service_api_key,
+        scopes=frozenset(settings.service_api_scopes),
+    )
 
 
 @lru_cache
