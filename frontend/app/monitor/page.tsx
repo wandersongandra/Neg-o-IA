@@ -28,7 +28,7 @@ import type {
   BrainStatus,
   ConversationSession,
   ConversationStatus,
-  DatabaseStatus,
+  InfrastructureHealth,
   EventsStatus,
   Healthz,
   MemoryStatus,
@@ -46,7 +46,7 @@ type SnapshotKey =
   | "sessions"
   | "voice"
   | "memory"
-  | "database"
+  | "infrastructure"
   | "events"
   | "security"
   | "healthz"
@@ -60,7 +60,7 @@ interface Snapshot {
   sessions: ConversationSession[] | null;
   voice: VoiceStatus | null;
   memory: MemoryStatus | null;
-  database: DatabaseStatus | null;
+  infrastructure: InfrastructureHealth | null;
   events: EventsStatus | null;
   security: SecurityStatus | null;
   healthz: Healthz | null;
@@ -77,7 +77,7 @@ const EMPTY_SNAPSHOT: Snapshot = {
   sessions: null,
   voice: null,
   memory: null,
-  database: null,
+  infrastructure: null,
   events: null,
   security: null,
   healthz: null,
@@ -152,13 +152,11 @@ function isMemoryStatus(value: unknown): value is MemoryStatus {
   return isRecord(value) && typeof value.redis_connected === "boolean";
 }
 
-function isDatabaseStatus(value: unknown): value is DatabaseStatus {
+function isInfrastructureHealth(value: unknown): value is InfrastructureHealth {
   return (
     isRecord(value) &&
-    typeof value.connected === "boolean" &&
-    typeof value.engine_url === "string" &&
-    typeof value.active_connections === "number" &&
-    typeof value.detail === "string"
+    typeof value.database === "string" &&
+    typeof value.redis === "string"
   );
 }
 
@@ -178,12 +176,7 @@ function isHealthz(value: unknown): value is Healthz {
 }
 
 function isReadyz(value: unknown): value is Readyz {
-  return (
-    isRecord(value) &&
-    typeof value.status === "string" &&
-    isRecord(value.checks) &&
-    Object.values(value.checks).every((check) => typeof check === "string")
-  );
+  return isRecord(value) && typeof value.status === "string";
 }
 
 async function fetchJson<T>(url: string, guard?: Guard<T>): Promise<FetchResult<T>> {
@@ -576,7 +569,7 @@ function VoiceSection({ snapshot }: { snapshot: Snapshot }) {
 }
 
 function InfraSection({ snapshot }: { snapshot: Snapshot }) {
-  const { database, memory, events, security, healthz, readyz, logs } = snapshot;
+  const { infrastructure, memory, events, security, healthz, readyz, logs } = snapshot;
   const streams = events?.streams ? Object.keys(events.streams).length : null;
   const handlers = events?.handlers ? events.handlers.length : null;
   const deliveries = events?.deliveries ? Object.keys(events.deliveries).length : null;
@@ -588,20 +581,15 @@ function InfraSection({ snapshot }: { snapshot: Snapshot }) {
         title="DATABASE"
         icon={Database}
         className="col-span-12 md:col-span-6 lg:col-span-4"
-        badge={<StatusBadge ok={database?.connected === true} />}
-        error={snapshot.errors.database}
+        badge={<StatusBadge ok={infrastructure?.database === "ok"} />}
+        error={snapshot.errors.infrastructure}
       >
-        {database ? (
-          <div className="space-y-1.5">
-            <InfoRow
-              label="CONEXÃO"
-              value={database.connected ? "CONECTADO" : "DESCONECTADO"}
-              tone={database.connected ? "ok" : "danger"}
-            />
-            <InfoRow label="ENGINE" value={database.engine_url} />
-            <InfoRow label="CONEXÕES ATIVAS" value={String(database.active_connections)} />
-            <InfoRow label="DETALHE" value={database.detail} />
-          </div>
+        {infrastructure ? (
+          <InfoRow
+            label="POSTGRESQL"
+            value={infrastructure.database === "ok" ? "OPERACIONAL" : "DEGRADADO"}
+            tone={infrastructure.database === "ok" ? "ok" : "danger"}
+          />
         ) : (
           <EmptyData />
         )}
@@ -698,15 +686,7 @@ function InfraSection({ snapshot }: { snapshot: Snapshot }) {
               value={String(readyz.status)}
               tone={readyz.status === "ready" ? "ok" : "warn"}
             />
-            {Object.keys(readyz.checks).length > 0 ? (
-              <div className="space-y-1.5 border-t border-white/[0.05] pt-2">
-                {Object.entries(readyz.checks).map(([name, value]) => {
-                  const v = value.toLowerCase();
-                  const tone = v === "ok" || v === "pass" ? "ok" : v === "fail" ? "danger" : "warn";
-                  return <InfoRow key={name} label={name.toUpperCase()} value={value} tone={tone} />;
-                })}
-              </div>
-            ) : null}
+
           </div>
         ) : (
           <EmptyData />
@@ -745,7 +725,7 @@ export default function MonitorPage() {
       sessionsRes,
       voice,
       memory,
-      database,
+      infrastructure,
       events,
       security,
       healthz,
@@ -758,7 +738,10 @@ export default function MonitorPage() {
       fetchJson<{ sessions: ConversationSession[] }>("/api/proxy/conversation/sessions", isSessionsPayload),
       fetchJson<VoiceStatus>("/api/proxy/voice/status", isVoiceStatus),
       fetchJson<MemoryStatus>("/api/proxy/memory/status", isMemoryStatus),
-      fetchJson<DatabaseStatus>("/api/proxy/database/status", isDatabaseStatus),
+      fetchJson<InfrastructureHealth>(
+        "/api/proxy/monitoring/health",
+        isInfrastructureHealth,
+      ),
       fetchJson<EventsStatus>("/api/proxy/events/status"),
       fetchJson<SecurityStatus>("/api/proxy/security/status", isSecurityStatus),
       fetchJson<Healthz>("/api/proxy/healthz", isHealthz),
@@ -773,7 +756,7 @@ export default function MonitorPage() {
       sessions: sessionsRes.value?.sessions ?? null,
       voice: voice.value,
       memory: memory.value,
-      database: database.value,
+      infrastructure: infrastructure.value,
       events: events.value,
       security: security.value,
       healthz: healthz.value,
@@ -786,7 +769,7 @@ export default function MonitorPage() {
         sessions: sessionsRes.error ?? undefined,
         voice: voice.error ?? undefined,
         memory: memory.error ?? undefined,
-        database: database.error ?? undefined,
+        infrastructure: infrastructure.error ?? undefined,
         events: events.error ?? undefined,
         security: security.error ?? undefined,
         healthz: healthz.error ?? undefined,
