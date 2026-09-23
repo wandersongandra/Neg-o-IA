@@ -116,7 +116,7 @@ export default function TopBar({ data, onOpenPalette }: TopBarProps) {
 
   return (
     <header
-      className="glass command-deck sticky top-0 z-40 flex h-16 items-center gap-3 overflow-x-hidden px-4 pt-[env(safe-area-inset-top)] sm:gap-4 sm:px-5"
+      className="glass command-deck sticky top-0 z-40 flex h-16 items-center gap-3 overflow-visible px-3 sm:px-5 pt-[env(safe-area-inset-top)] sm:gap-4"
       data-system-status={online ? "SYSTEM // LIVE" : "SYSTEM // OFFLINE"}
     >
       <div className="flex items-center gap-3">
@@ -179,7 +179,7 @@ export default function TopBar({ data, onOpenPalette }: TopBarProps) {
           </span>
         </div>
 
-      <div ref={themeMenuRef} className="relative">
+        <div ref={themeMenuRef} className="relative">
           <button
             className="glass glass-hover interactive-control flex size-9 items-center justify-center rounded-xl text-[var(--text-secondary)] sm:size-10"
             aria-label="Tema"
