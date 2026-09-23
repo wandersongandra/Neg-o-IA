@@ -35,6 +35,7 @@ const ALLOWLIST: AllowEntry[] = [
   { path: "memory/status", methods: ["GET"] },
   { path: "events/status", methods: ["GET"] },
   { path: "security/status", methods: ["GET"] },
+  { path: "monitoring/health", methods: ["GET"] },
   { path: "monitoring/logs", methods: ["GET"] },
   { path: "healthz", methods: ["GET"] },
   { path: "readyz", methods: ["GET"] },
