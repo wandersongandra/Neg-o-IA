@@ -15,8 +15,6 @@ _PUBLIC_ALLOWLIST = {
     ("GET", "/health/live"),
     ("GET", "/readyz"),
     ("GET", "/health/ready"),
-    ("GET", "/metrics"),
-    ("GET", "/monitoring/metrics"),
     ("GET", "/events/health"),
     ("POST", "/security/login"),
     ("POST", "/security/register"),
