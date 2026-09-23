@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { cookies, headers as requestHeaders } from "next/headers";
 import { resolveApiConfig } from "@/lib/env";
+import { trustedClientIpHeadersFromHeaders } from "@/lib/request-security";
 import type {
   DashboardData,
   InfrastructureHealth,
@@ -16,14 +17,22 @@ const { apiUrl: API_URL, serviceApiKey: SERVICE_API_KEY } = resolveApiConfig();
 const FETCH_TIMEOUT_MS = 3500;
 const LOGS_URLS = ["/monitoring/logs"];
 
-async function getJson<T>(path: string): Promise<T | null> {
+async function getJson<T>(
+  path: string,
+  sessionToken: string,
+  clientHeaders: Record<string, string>,
+): Promise<T | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    const headers: Record<string, string> = { Accept: "application/json" };
-    const sessionToken = (await cookies()).get("sophie_session")?.value;
-    if (sessionToken) headers.Authorization = `Bearer ${sessionToken}`;
-    else if (SERVICE_API_KEY && process.env.NODE_ENV !== "production") headers["X-API-Key"] = SERVICE_API_KEY;
+    const headers: Record<string, string> = {
+      Accept: "application/json",
+      Authorization: `Bearer ${sessionToken}`,
+      ...clientHeaders,
+    };
+    if (SERVICE_API_KEY && process.env.NODE_ENV !== "production" && !sessionToken) {
+      headers["X-API-Key"] = SERVICE_API_KEY;
+    }
     const res = await fetch(`${API_URL}${path}`, {
       headers,
       signal: controller.signal,
@@ -38,14 +47,21 @@ async function getJson<T>(path: string): Promise<T | null> {
   }
 }
 
-async function getLogs(): Promise<string[] | null> {
+async function getLogs(
+  sessionToken: string,
+  clientHeaders: Record<string, string>,
+): Promise<string[] | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 2000);
   try {
-    const headers: Record<string, string> = { Accept: "application/json" };
-    const sessionToken = (await cookies()).get("sophie_session")?.value;
-    if (sessionToken) headers.Authorization = `Bearer ${sessionToken}`;
-    else if (SERVICE_API_KEY && process.env.NODE_ENV !== "production") headers["X-API-Key"] = SERVICE_API_KEY;
+    const headers: Record<string, string> = {
+      Accept: "application/json",
+      Authorization: `Bearer ${sessionToken}`,
+      ...clientHeaders,
+    };
+    if (SERVICE_API_KEY && process.env.NODE_ENV !== "production" && !sessionToken) {
+      headers["X-API-Key"] = SERVICE_API_KEY;
+    }
     const res = await fetch(`${API_URL}${LOGS_URLS[0]}`, {
       headers,
       signal: controller.signal,
@@ -71,6 +87,8 @@ export async function GET() {
       { status: 401, headers: { "Cache-Control": "no-store, max-age=0" } },
     );
   }
+  const incomingHeaders = await requestHeaders();
+  const clientHeaders = trustedClientIpHeadersFromHeaders(incomingHeaders);
   const started = performance.now();
   const results: [
     RootInfo | null,
@@ -82,14 +100,14 @@ export async function GET() {
     SecurityStatus | null,
     string[] | null,
   ] = await Promise.all([
-    getJson<RootInfo>("/"),
-    getJson<Healthz>("/healthz"),
-    getJson<Readyz>("/readyz"),
-    getJson<InfrastructureHealth>("/monitoring/health"),
-    getJson<MemoryStatus>("/memory/status"),
-    getJson<EventsStatus>("/events/status"),
-    getJson<SecurityStatus>("/security/status"),
-    getLogs(),
+    getJson<RootInfo>("/", sessionToken, clientHeaders),
+    getJson<Healthz>("/healthz", sessionToken, clientHeaders),
+    getJson<Readyz>("/readyz", sessionToken, clientHeaders),
+    getJson<InfrastructureHealth>("/monitoring/health", sessionToken, clientHeaders),
+    getJson<MemoryStatus>("/memory/status", sessionToken, clientHeaders),
+    getJson<EventsStatus>("/events/status", sessionToken, clientHeaders),
+    getJson<SecurityStatus>("/security/status", sessionToken, clientHeaders),
+    getLogs(sessionToken, clientHeaders),
   ]);
   const [root, healthz, readyz, infrastructure, memory, events, security, logs] =
     results;
