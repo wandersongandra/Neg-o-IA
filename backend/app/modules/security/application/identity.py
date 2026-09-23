@@ -87,6 +87,7 @@ def password_needs_rehash(encoded: str) -> bool:
     except InvalidHashError:
         return True
 
+
 def hash_session_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
