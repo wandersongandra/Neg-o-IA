@@ -166,7 +166,7 @@ async def test_cache_hit_skips_second_call(monkeypatch: Any) -> None:
     monkeypatch.setattr(get_settings(), "nvidia_api_key", "test-key")
     fake_redis = FakeAsyncRedis()
 
-    async def _get_redis() -> FakeAsyncRedis:
+    def _get_redis() -> FakeAsyncRedis:
         return fake_redis
 
     monkeypatch.setattr("app.infrastructure.redis.get_redis", _get_redis)
