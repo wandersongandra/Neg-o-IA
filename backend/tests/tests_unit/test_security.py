@@ -17,9 +17,10 @@ def test_authenticate_api_key_valida() -> None:
     service = InMemorySecurityService(expected_api_key="test-key")
     result = service.authenticate_api_key("test-key")
     assert result.authenticated is True
-    assert result.authorization_level is AuthorizationLevel.READ_ONLY
+    assert result.authorization_level is AuthorizationLevel.AUTO_EXECUTE
     assert result.principal == "service:api-key"
     assert result.auth_method == "service_api_key"
+    assert result.scopes == frozenset()
 
 
 def test_authenticate_api_key_errada() -> None:
@@ -38,7 +39,10 @@ def test_authenticate_api_key_vazia() -> None:
 
 def test_create_security_service_funcional() -> None:
     service = create_security_service(Settings(service_api_key="test-key"))
-    assert service.authenticate_api_key("test-key").authenticated is True
+    authenticated = service.authenticate_api_key("test-key")
+    assert authenticated.authenticated is True
+    assert "database:admin" in authenticated.scopes
+    assert "metrics:read" in authenticated.scopes
     assert service.authenticate_api_key("outra").authenticated is False
 
 
