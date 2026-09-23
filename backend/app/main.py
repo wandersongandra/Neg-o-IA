@@ -36,7 +36,7 @@ from app.modules.database.router import router as database_router
 from app.modules.events.router import router as events_router
 from app.modules.memory.router import router as memory_router
 from app.modules.monitoring.router import router as monitoring_router
-from app.modules.security.router import require_authenticated_user, require_service_auth
+from app.modules.security.router import require_authenticated_user, require_service_scope
 from app.modules.security.router import router as security_router
 from app.modules.voice.router import (
     router as voice_router,
@@ -122,9 +122,11 @@ async def access_log_middleware(request: Request, call_next: RequestResponseEndp
     try:
         from app.modules.monitoring.infrastructure import http_request_observed
 
+        route = request.scope.get("route")
+        metric_path = getattr(route, "path", None) or request.url.path
         http_request_observed(
             request.method,
-            request.url.path,
+            metric_path,
             response.status_code,
             elapsed_ms / 1000,
         )
@@ -133,7 +135,7 @@ async def access_log_middleware(request: Request, call_next: RequestResponseEndp
     structlog.get_logger("sophie.access").info(
         "http_request",
         method=request.method,
-        path=request.url.path,
+        path=(getattr(request.scope.get("route"), "path", None) or request.url.path),
         status_code=response.status_code,
         duration_ms=round(elapsed_ms, 2),
     )
@@ -141,9 +143,7 @@ async def access_log_middleware(request: Request, call_next: RequestResponseEndp
 
 
 _rate_limiter: RateLimiter | None = None
-_RATE_LIMIT_WHITELIST = frozenset(
-    {"/healthz", "/health/live", "/readyz", "/health/ready", "/metrics"}
-)
+_RATE_LIMIT_WHITELIST = frozenset({"/healthz", "/health/live", "/readyz", "/health/ready"})
 
 
 def _rate_limit_key(request: Request) -> str:
@@ -152,11 +152,9 @@ def _rate_limit_key(request: Request) -> str:
     principal = getattr(auth, "effective_user_id", None)
     if isinstance(principal, str) and principal:
         return f"principal:{principal}"
-    authorization = request.headers.get("authorization", "")
-    if authorization.startswith("Bearer "):
-        import hashlib
-
-        return f"token:{hashlib.sha256(authorization[7:].encode()).hexdigest()[:16]}"
+    # O middleware roda antes das dependencies de autenticação. Nunca use um
+    # Bearer ainda não validado como bucket: um atacante poderia rotacionar
+    # tokens aleatórios e criar limites infinitos.
     return request.client.host if request.client else "unknown"
 
 
@@ -215,7 +213,7 @@ def _register_exception_handlers(app: FastAPI) -> None:
         code = error_code(exc.status_code)
         error_logger.warning(
             "http_error",
-            path=request.url.path,
+            path=(getattr(request.scope.get("route"), "path", None) or request.url.path),
             method=request.method,
             status_code=exc.status_code,
             error_code=code,
@@ -241,7 +239,7 @@ def _register_exception_handlers(app: FastAPI) -> None:
         request_id = request_context.request_id if request_context else None
         error_logger.warning(
             "validation_error",
-            path=request.url.path,
+            path=(getattr(request.scope.get("route"), "path", None) or request.url.path),
             method=request.method,
             error_code="VALIDATION_ERROR",
             request_id=request_id,
@@ -270,7 +268,7 @@ def _register_exception_handlers(app: FastAPI) -> None:
         request_id = request_context.request_id if request_context else None
         error_logger.exception(
             "unhandled_error",
-            path=request.url.path,
+            path=(getattr(request.scope.get("route"), "path", None) or request.url.path),
             method=request.method,
             error_code="INTERNAL_ERROR",
             request_id=request_id,
@@ -294,7 +292,6 @@ def _add_root_healthcheck(app: FastAPI, settings: Settings) -> None:
             "name": settings.app_name,
             "version": __version__,
             "status": "running",
-            "environment": settings.env,
         }
 
 
@@ -313,7 +310,7 @@ def create_app() -> FastAPI:
     _add_middlewares(application, settings)
     _register_exception_handlers(application)
     auth_required = [Depends(require_authenticated_user)]
-    service_required = [Depends(require_service_auth)]
+    service_required = [Depends(require_service_scope("database:admin"))]
     # Público: meta, liveness/readiness e scrapes. Rotas de produto exigem
     # sessão de usuário; banco administrativo exige credencial de serviço.
     application.include_router(api_router)

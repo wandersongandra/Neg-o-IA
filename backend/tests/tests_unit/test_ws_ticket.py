@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from typing import Any
 
 import pytest
@@ -67,10 +68,20 @@ async def test_unknown_ticket_fails(fake_redis: FakeAsyncRedis) -> None:
 
 
 async def test_malformed_ticket_fails_closed(fake_redis: FakeAsyncRedis) -> None:
-    await fake_redis.set("ws_ticket:malformed", "not-json")
+    digest = hashlib.sha256(b"malformed").hexdigest()
+    await fake_redis.set(f"ws_ticket:{digest}", "not-json")
     result = await redeem_ws_ticket("malformed")
     assert result.authenticated is False
     assert result.reason == "invalid_ticket_payload"
+
+
+async def test_ticket_secret_is_not_stored_in_redis_key(
+    fake_redis: FakeAsyncRedis,
+) -> None:
+    token = await issue_ws_ticket("user-test", AuthorizationLevel.READ_ONLY)
+    keys = await fake_redis.keys("ws_ticket:*")
+    assert keys
+    assert all(token not in key for key in keys)
 
 
 async def test_missing_ticket_fails() -> None:

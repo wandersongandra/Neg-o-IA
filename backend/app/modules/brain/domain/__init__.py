@@ -45,6 +45,7 @@ class ModelRequest:
     task_type: TaskType = TaskType.CHAT
     temperature: float | None = None
     max_tokens: int | None = None
+    cache_namespace: str | None = None
 
 
 @dataclass(frozen=True)

@@ -39,7 +39,7 @@ export default function AuthGuard({ children }: { children: ReactNode }) {
 
   if (state !== "authenticated") {
     return (
-      <main className="flex min-h-dvh items-center justify-center bg-[var(--bg)] p-6">
+      <main className="flex min-h-dvh items-center justify-center bg-[var(--bg-primary)] p-6">
         <p className="font-mono-data text-xs uppercase tracking-[0.25em] text-[var(--text-secondary)]">
           Validando identidade…
         </p>

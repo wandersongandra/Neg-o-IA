@@ -3,12 +3,23 @@ from __future__ import annotations
 import logging
 import os
 from functools import lru_cache
+from urllib.parse import urlparse
 
 from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 _INSECURE_DEFAULT_SECRETS = {"", "negao-dev-api-key", "negao-dev-secret-key"}
 _MIN_PRODUCTION_SECRET_LENGTH = 32
+_ALLOWED_SERVICE_SCOPES = frozenset({"database:admin", "metrics:read"})
+_PLACEHOLDER_MARKERS = ("change_me", "changeme", "troque", "substitua", "example", "exemplo")
+
+
+def _looks_like_placeholder(value: str | None) -> bool:
+    if not value:
+        return True
+    normalized = value.strip().lower().replace("-", "_").replace(" ", "_")
+    return any(marker in normalized for marker in _PLACEHOLDER_MARKERS)
+
 
 _LEGACY_ENV_PREFIX = "NEGAO_"
 _NEW_ENV_PREFIX = "SOPHIE_"
@@ -30,6 +41,7 @@ class Settings(BaseSettings):
     # API keys legadas (`NEGAO_API_KEY`) não fazem parte da autoridade de
     # autenticação. Credenciais de serviço precisam ser explícitas.
     service_api_key: str = ""
+    service_api_scopes: list[str] = ["database:admin", "metrics:read"]
     database_url: str = "postgresql+asyncpg://negao:negao@localhost:5432/negao"
     redis_url: str = "redis://localhost:6379/0"
     secret_key: str = "negao-dev-secret-key"
@@ -42,6 +54,7 @@ class Settings(BaseSettings):
     auth_session_ttl_seconds: int = 8 * 60 * 60
     registration_enabled: bool = False
 
+    external_ai_enabled: bool = False
     nvidia_api_key: str = ""
     nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
     brain_chat_model: str = "deepseek-ai/deepseek-v4-flash"
@@ -68,9 +81,9 @@ class Settings(BaseSettings):
 
     conversation_max_context_messages: int = 20
 
-    @field_validator("cors_origins", mode="before")
+    @field_validator("cors_origins", "service_api_scopes", mode="before")
     @classmethod
-    def _split_cors_origins(cls, value: object) -> object:
+    def _split_csv_list(cls, value: object) -> object:
         if isinstance(value, str):
             return [origin.strip() for origin in value.split(",") if origin.strip()]
         return value
@@ -83,6 +96,7 @@ class Settings(BaseSettings):
         if (
             self.service_api_key in _INSECURE_DEFAULT_SECRETS
             or len(self.service_api_key) < _MIN_PRODUCTION_SECRET_LENGTH
+            or _looks_like_placeholder(self.service_api_key)
         ):
             problems.append(
                 "NEGAO_SERVICE_API_KEY deve ser definida com um valor forte "
@@ -91,6 +105,7 @@ class Settings(BaseSettings):
         if (
             self.secret_key in _INSECURE_DEFAULT_SECRETS
             or len(self.secret_key) < _MIN_PRODUCTION_SECRET_LENGTH
+            or _looks_like_placeholder(self.secret_key)
         ):
             problems.append(
                 "NEGAO_SECRET_KEY deve ser definida com um valor forte "
@@ -98,8 +113,61 @@ class Settings(BaseSettings):
             )
         if self.cors_origins == ["*"]:
             problems.append("NEGAO_CORS_ORIGINS não pode ser '*' em produção")
+        invalid_origins = [
+            origin
+            for origin in self.cors_origins
+            if urlparse(origin).scheme != "https" or not urlparse(origin).netloc
+        ]
+        if invalid_origins:
+            problems.append("NEGAO_CORS_ORIGINS deve conter apenas origens HTTPS válidas")
         if self.registration_enabled:
             problems.append("NEGAO_REGISTRATION_ENABLED deve ser false em produção")
+        if self.debug:
+            problems.append("NEGAO_DEBUG deve ser false em produção")
+        if not self.service_api_scopes:
+            problems.append("NEGAO_SERVICE_API_SCOPES deve conter ao menos um escopo em produção")
+        unknown_scopes = sorted(set(self.service_api_scopes) - _ALLOWED_SERVICE_SCOPES)
+        if unknown_scopes:
+            problems.append(
+                "NEGAO_SERVICE_API_SCOPES contém escopos desconhecidos: "
+                + ", ".join(unknown_scopes)
+            )
+        database = urlparse(self.database_url)
+        if (
+            not database.username
+            or not database.password
+            or database.password == "negao"
+            or len(database.password) < 16
+            or _looks_like_placeholder(database.password)
+        ):
+            problems.append("NEGAO_DATABASE_URL deve usar credenciais fortes em produção")
+        redis = urlparse(self.redis_url)
+        if (
+            not redis.password
+            or len(redis.password) < 16
+            or _looks_like_placeholder(redis.password)
+        ):
+            problems.append("NEGAO_REDIS_URL deve exigir autenticação forte em produção")
+        if self.external_ai_enabled:
+            if not self.nvidia_api_key or _looks_like_placeholder(self.nvidia_api_key):
+                problems.append(
+                    "NEGAO_NVIDIA_API_KEY deve ser definida quando IA externa estiver ativa"
+                )
+            provider = urlparse(self.nvidia_base_url)
+            if provider.scheme != "https":
+                problems.append(
+                    "NEGAO_NVIDIA_BASE_URL deve usar HTTPS quando IA externa estiver ativa"
+                )
+        credential_values = {
+            self.service_api_key,
+            self.secret_key,
+            database.password or "",
+            redis.password or "",
+        }
+        nonempty_credentials = [value for value in credential_values if value]
+        expected_credentials = 4
+        if len(nonempty_credentials) != expected_credentials:
+            problems.append("credenciais críticas de produção devem usar valores distintos")
         if problems:
             raise ValueError("; ".join(problems))
         return self

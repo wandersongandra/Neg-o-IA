@@ -59,7 +59,7 @@ cd /d "%~dp0frontend"
 
 if not exist "node_modules" (
     echo Instalando pacotes...
-    call npm install --silent
+    call npm ci --silent
     if errorlevel 1 (
         echo [ERROR] Erro ao instalar pacotes.
         pause
@@ -80,7 +80,7 @@ echo  Python 3.13+
 echo  Node.js 18+
 echo  PostgreSQL rodando em localhost:5432
 echo  Redis rodando em localhost:6379
-echo  NVIDIA API Key configurada em .env
+echo  IA externa opcional; desativada por padrão
 echo.
 echo Instruções de inicialização:
 echo.
@@ -97,9 +97,9 @@ echo 3. Abra no navegador:
 echo    http://localhost:3000
 echo.
 echo Verificações:
-echo  API Status:  http://localhost:8000/health
-echo  API Docs:    http://localhost:8000/docs
-echo  Brain:       http://localhost:8000/api/v1/brain/status
+echo  API Status:  http://localhost:8000/healthz
+echo  API Docs:    http://localhost:8000/api/v1/docs
+echo  Brain:       http://localhost:8000/brain/status
 echo.
 echo Setup concluído. Pressione qualquer tecla para fechar.
 echo.

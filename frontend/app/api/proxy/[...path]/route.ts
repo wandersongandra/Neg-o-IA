@@ -1,11 +1,18 @@
 import type { NextRequest } from "next/server";
 import { resolveApiConfig } from "@/lib/env";
+import {
+  enforceSameOriginMutation,
+  isSafeDynamicSegment,
+  trustedClientIpHeaders,
+} from "@/lib/request-security";
 
 export const dynamic = "force-dynamic";
 
 const { apiUrl: API_URL, serviceApiKey: SERVICE_API_KEY } = resolveApiConfig();
 const VOICE_TIMEOUT_MS = 35_000;
 const DEFAULT_TIMEOUT_MS = 60_000;
+const DEFAULT_MAX_BODY_BYTES = 128 * 1024;
+const VOICE_MAX_BODY_BYTES = 12 * 1024 * 1024;
 
 type Method = "GET" | "POST" | "PATCH" | "DELETE";
 
@@ -27,9 +34,9 @@ const ALLOWLIST: AllowEntry[] = [
   { path: "voice/transcribe", methods: ["POST"] },
   { path: "voice/synthesize", methods: ["POST"] },
   { path: "memory/status", methods: ["GET"] },
-  { path: "database/status", methods: ["GET"] },
   { path: "events/status", methods: ["GET"] },
   { path: "security/status", methods: ["GET"] },
+  { path: "monitoring/health", methods: ["GET"] },
   { path: "monitoring/logs", methods: ["GET"] },
   { path: "healthz", methods: ["GET"] },
   { path: "readyz", methods: ["GET"] },
@@ -43,16 +50,16 @@ function matchAllowlist(path: string, method: string): boolean {
     if (entrySegments.length !== pathSegments.length) continue;
     let ok = true;
     for (let i = 0; i < entrySegments.length; i++) {
-      const es = entrySegments[i];
-      const ps = pathSegments[i];
-      if (es.startsWith(":")) {
-        if (!ps) {
+      const expected = entrySegments[i];
+      const actual = pathSegments[i];
+      if (expected.startsWith(":")) {
+        if (!actual || !isSafeDynamicSegment(actual)) {
           ok = false;
           break;
         }
         continue;
       }
-      if (es !== ps) {
+      if (expected !== actual) {
         ok = false;
         break;
       }
@@ -62,7 +69,20 @@ function matchAllowlist(path: string, method: string): boolean {
   return false;
 }
 
+function buildTarget(path: string[], search: string): string {
+  const target = new URL(API_URL);
+  const prefix = target.pathname.replace(/\/$/, "");
+  target.pathname = `${prefix}/${path.map((segment) => encodeURIComponent(segment)).join("/")}`;
+  target.search = search;
+  target.hash = "";
+  return target.toString();
+}
+
 async function proxy(req: NextRequest, path: string[]): Promise<Response> {
+  const mutationBlock =
+    req.method === "GET" ? null : enforceSameOriginMutation(req);
+  if (mutationBlock) return mutationBlock;
+
   const joined = path.join("/");
   if (!matchAllowlist(joined, req.method)) {
     return Response.json(
@@ -71,41 +91,54 @@ async function proxy(req: NextRequest, path: string[]): Promise<Response> {
     );
   }
 
-  const target = `${API_URL}/${joined}${req.nextUrl.search}`;
-  const timeoutMs = path.includes("voice")
-    ? VOICE_TIMEOUT_MS
-    : DEFAULT_TIMEOUT_MS;
+  const isVoice = path.includes("voice");
+  const timeoutMs = isVoice ? VOICE_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
+  const maxBodyBytes = isVoice ? VOICE_MAX_BODY_BYTES : DEFAULT_MAX_BODY_BYTES;
+  const declaredLength = Number(req.headers.get("content-length") ?? "0");
+  if (Number.isFinite(declaredLength) && declaredLength > maxBodyBytes) {
+    return Response.json({ error: "payload_too_large" }, { status: 413 });
+  }
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = {
+      Accept: "*/*",
+      ...trustedClientIpHeaders(req),
+    };
     const sessionToken = req.cookies.get("sophie_session")?.value;
     if (sessionToken) {
       headers.Authorization = `Bearer ${sessionToken}`;
     } else if (SERVICE_API_KEY && process.env.NODE_ENV !== "production") {
       headers["X-API-Key"] = SERVICE_API_KEY;
     }
-    let body: string | FormData | undefined;
+
+    let body: BodyInit | undefined;
     if (req.method === "POST" || req.method === "PATCH") {
       const contentType = req.headers.get("content-type") ?? "";
-      if (contentType.includes("multipart/form-data")) {
-        body = await req.formData();
-      } else {
-        if (contentType) headers["Content-Type"] = contentType;
-        body = await req.text();
+      if (contentType) headers["Content-Type"] = contentType;
+      const raw = new Uint8Array(await req.arrayBuffer());
+      if (raw.byteLength > maxBodyBytes) {
+        return Response.json({ error: "payload_too_large" }, { status: 413 });
       }
+      body = raw.byteLength > 0 ? raw : undefined;
     }
-    const res = await fetch(target, {
+
+    const res = await fetch(buildTarget(path, req.nextUrl.search), {
       method: req.method,
       headers,
       body,
       signal: controller.signal,
       cache: "no-store",
     });
+
     const resContentType = res.headers.get("content-type") ?? "";
-    const resHeaders = new Headers();
+    const resHeaders = new Headers({
+      "Cache-Control": "no-store, max-age=0",
+      "X-Content-Type-Options": "nosniff",
+    });
     if (resContentType) resHeaders.set("Content-Type", resContentType);
-    resHeaders.set("Cache-Control", "no-store");
+
     if (
       resContentType.startsWith("text/") ||
       resContentType.includes("json") ||
@@ -121,8 +154,7 @@ async function proxy(req: NextRequest, path: string[]): Promise<Response> {
       headers: resHeaders,
     });
   } catch (err) {
-    const isTimeout =
-      err instanceof Error && err.name === "AbortError";
+    const isTimeout = err instanceof Error && err.name === "AbortError";
     return Response.json(
       {
         error: "proxy_error",

@@ -2,7 +2,6 @@ export interface RootInfo {
   name: string;
   version: string;
   status: "ready" | "not_ready" | string;
-  environment: string;
 }
 
 export interface Healthz {
@@ -11,14 +10,11 @@ export interface Healthz {
 
 export interface Readyz {
   status: string;
-  checks: Record<string, string>;
 }
 
-export interface DatabaseStatus {
-  connected: boolean;
-  engine_url: string;
-  active_connections: number;
-  detail: string;
+export interface InfrastructureHealth {
+  database: "ok" | "degraded" | string;
+  redis: "ok" | "degraded" | string;
 }
 
 export interface MemoryStatus {
@@ -47,7 +43,7 @@ export interface DashboardData {
   root: RootInfo | null;
   healthz: Healthz | null;
   readyz: Readyz | null;
-  database: DatabaseStatus | null;
+  infrastructure: InfrastructureHealth | null;
   memory: MemoryStatus | null;
   events: EventsStatus | null;
   security: SecurityStatus | null;

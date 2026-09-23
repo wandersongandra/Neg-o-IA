@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveApiConfig } from "@/lib/env";
+import {
+  enforceSameOriginMutation,
+  trustedClientIpHeaders,
+} from "@/lib/request-security";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
+  const originBlock = enforceSameOriginMutation(request);
+  if (originBlock) return originBlock;
   const { apiUrl } = resolveApiConfig();
   let body: unknown;
   try {
@@ -14,7 +20,10 @@ export async function POST(request: NextRequest) {
   try {
     const upstream = await fetch(`${apiUrl}/security/register`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...trustedClientIpHeaders(request),
+      },
       body: JSON.stringify(body),
       cache: "no-store",
     });

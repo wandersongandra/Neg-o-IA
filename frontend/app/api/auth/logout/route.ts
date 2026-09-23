@@ -1,16 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveApiConfig } from "@/lib/env";
+import {
+  enforceSameOriginMutation,
+  trustedClientIpHeaders,
+} from "@/lib/request-security";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
+  const originBlock = enforceSameOriginMutation(request);
+  if (originBlock) return originBlock;
   const { apiUrl } = resolveApiConfig();
   const token = request.cookies.get("sophie_session")?.value;
   if (token) {
     try {
       await fetch(`${apiUrl}/security/logout`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...trustedClientIpHeaders(request),
+        },
         cache: "no-store",
       });
     } catch {

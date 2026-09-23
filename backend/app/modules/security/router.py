@@ -8,6 +8,8 @@ nenhum `user_id` recebido do cliente é autoridade.
 from __future__ import annotations
 
 import asyncio
+import hashlib
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from typing import Annotated, Literal
 
@@ -18,7 +20,9 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.core.context import get_request_context
 from app.infrastructure.db import create_engine, create_session_factory
+from app.modules.api.rate_limit import RateLimiter
 from app.modules.configuration.settings import get_settings
+from app.modules.database.application import PERSISTED_API_KEY_PREFIX, verify_api_key
 from app.modules.security.application.identity import (
     authenticate_password,
     create_user,
@@ -26,7 +30,7 @@ from app.modules.security.application.identity import (
     issue_session_token,
     persist_session,
 )
-from app.modules.security.domain import AuthResult
+from app.modules.security.domain import AuthorizationLevel, AuthResult
 from app.modules.security.infrastructure import (
     authenticate_bearer_token,
     get_security_service,
@@ -38,6 +42,34 @@ router = APIRouter(prefix="/security", tags=["security"])
 
 _logger = structlog.get_logger("sophie.security")
 _AUTH_EVENT_PUBLISH_TIMEOUT = 2.0
+_login_limiter: RateLimiter | None = None
+
+
+def _get_login_limiter() -> RateLimiter:
+    global _login_limiter
+    if _login_limiter is None:
+        _login_limiter = RateLimiter(limit=get_settings().rate_limit_burst)
+    return _login_limiter
+
+
+async def _enforce_login_rate_limit(request: Request, username: str) -> None:
+    """Aplica buckets independentes por IP e por conta para reduzir brute force."""
+    limiter = _get_login_limiter()
+    client_ip = request.client.host if request.client else "unknown"
+    normalized = username.strip().lower()
+    user_bucket = hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:20]
+    retry_after = 0
+    allowed = True
+    for bucket in (f"login:ip:{client_ip}", f"login:user:{user_bucket}"):
+        bucket_allowed, _, _, bucket_retry = await limiter.allow(bucket)
+        allowed = allowed and bucket_allowed
+        retry_after = max(retry_after, bucket_retry)
+    if not allowed:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="too many login attempts",
+            headers={"Retry-After": str(max(1, retry_after))},
+        )
 
 
 class CredentialRequest(BaseModel):
@@ -163,7 +195,7 @@ async def require_service_auth(
     request: Request,
     x_api_key: Annotated[str | None, Header(alias="X-API-Key")] = None,
 ) -> AuthResult:
-    """Autenticação explícita de serviço; nunca representa usuário final."""
+    """Autentica chave bootstrap ou chave rotacionável persistida no banco."""
     if not x_api_key:
         raise HTTPException(
             status_code=401,
@@ -171,6 +203,25 @@ async def require_service_auth(
             headers={"WWW-Authenticate": "ApiKey"},
         )
     result = get_security_service().authenticate_api_key(x_api_key)
+    if not result.authenticated and x_api_key.startswith(PERSISTED_API_KEY_PREFIX):
+        factory = create_session_factory(create_engine(get_settings().database_url))
+        try:
+            async with factory() as session:
+                record = await verify_api_key(session, x_api_key)
+                if record is not None:
+                    await session.commit()
+                    result = AuthResult(
+                        authenticated=True,
+                        principal=f"service:db-key:{record.id}",
+                        authorization_level=AuthorizationLevel.AUTO_EXECUTE,
+                        auth_method="database_api_key",
+                        scopes=frozenset(record.scopes),
+                    )
+        except SQLAlchemyError as exc:
+            _logger.exception("service_auth_database_unavailable")
+            raise HTTPException(
+                status_code=503, detail="service authentication dependency unavailable"
+            ) from exc
     if not result.authenticated:
         raise HTTPException(
             status_code=401,
@@ -179,6 +230,17 @@ async def require_service_auth(
         )
     _set_auth_context(request, result)
     return result
+
+
+def require_service_scope(scope: str) -> Callable[..., Awaitable[AuthResult]]:
+    async def dependency(
+        auth: Annotated[AuthResult, Depends(require_service_auth)],
+    ) -> AuthResult:
+        if scope not in auth.scopes:
+            raise HTTPException(status_code=403, detail="service scope required")
+        return auth
+
+    return dependency
 
 
 async def require_api_key(
@@ -212,7 +274,8 @@ async def register(body: CredentialRequest) -> dict[str, str]:
 
 
 @router.post("/login", response_model=SessionResponse)
-async def login(body: LoginRequest, response: Response) -> SessionResponse:
+async def login(body: LoginRequest, response: Response, request: Request) -> SessionResponse:
+    await _enforce_login_rate_limit(request, body.username)
     factory = create_session_factory(create_engine(get_settings().database_url))
     try:
         async with factory() as session:
@@ -298,6 +361,18 @@ async def create_ws_ticket(
         raise HTTPException(status_code=400, detail="voice ticket requires a session_id")
     if auth.effective_user_id is None:
         raise HTTPException(status_code=403, detail="user identity required")
+    if request.purpose == "voice" and request.session_id:
+        from app.modules.conversation.application import get_conversation_service
+        from app.modules.conversation.infrastructure import ConversationPersistenceError
+
+        try:
+            owns_session = await get_conversation_service().owns_session(
+                request.session_id, auth.effective_user_id
+            )
+        except ConversationPersistenceError as exc:
+            raise HTTPException(status_code=503, detail="conversation storage unavailable") from exc
+        if not owns_session:
+            raise HTTPException(status_code=404, detail="session not found")
     try:
         ticket = await issue_ws_ticket(
             auth.effective_user_id,

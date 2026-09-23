@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: pgvector/pgvector:pg17
+        image: pgvector/pgvector:0.8.6-pg17
         env:
           POSTGRES_USER: negao
           POSTGRES_PASSWORD: negao-ci-password
@@ -32,7 +32,7 @@ jobs:
           --health-timeout 5s
           --health-retries 20
       redis:
-        image: redis:7.4-alpine
+        image: redis:7.4.11-alpine
         ports:
           - 6379:6379
         options: >-
@@ -68,6 +68,9 @@ jobs:
         run: mypy backend
 
       - name: Testes (pytest)
+        env:
+          NEGAO_ENV: test
+          NEGAO_REDIS_URL: redis://127.0.0.1:6379/0
         run: pytest backend/tests -q
 
       - name: Migrations (PostgreSQL limpo)
@@ -119,6 +122,34 @@ jobs:
 
       - name: Dependency audit (produção)
         run: npm audit --omit=dev --audit-level=high
+
+
+  infrastructure:
+    name: Infra (Nginx config)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Build Nginx image
+        run: docker build -t sophie-nginx-ci infra/nginx
+
+      - name: Generate ephemeral TLS certificate
+        run: |
+          mkdir -p /tmp/sophie-tls
+          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
+            -subj "/CN=localhost" \
+            -keyout /tmp/sophie-tls/privkey.pem \
+            -out /tmp/sophie-tls/fullchain.pem
+
+      - name: Validate Nginx configuration
+        run: |
+          docker run --rm \
+            --add-host backend:127.0.0.1 \
+            --add-host frontend:127.0.0.1 \
+            -v /tmp/sophie-tls/fullchain.pem:/etc/nginx/tls/fullchain.pem:ro \
+            -v /tmp/sophie-tls/privkey.pem:/etc/nginx/tls/privkey.pem:ro \
+            sophie-nginx-ci nginx -t
 
   secret_scan:
     name: Gitleaks Secret Scan

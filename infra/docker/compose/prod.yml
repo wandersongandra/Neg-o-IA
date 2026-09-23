@@ -2,7 +2,7 @@ name: negao-prod
 
 services:
   db:
-    image: pgvector/pgvector:pg17
+    image: pgvector/pgvector:0.8.6-pg17
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-negao}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}
@@ -25,12 +25,17 @@ services:
           cpus: "1.0"
 
   redis:
-    image: redis:7.4-alpine
-    command: ["redis-server", "--appendonly", "yes"]
+    image: redis:7.4.11-alpine
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?defina REDIS_PASSWORD}
+    command:
+      - sh
+      - -ec
+      - exec redis-server --appendonly yes --requirepass "$REDIS_PASSWORD"
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a \"$REDIS_PASSWORD\" ping | grep -q PONG"]
       interval: 10s
       timeout: 3s
       retries: 10
@@ -48,12 +53,17 @@ services:
       - ../../../.env
     environment:
       NEGAO_ENV: production
+      NEGAO_REDIS_URL: redis://:${REDIS_PASSWORD:?defina REDIS_PASSWORD}@redis:6379/0
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     deploy:
       resources:
         limits:
@@ -66,9 +76,12 @@ services:
     restart: unless-stopped
     environment:
       NEGAO_API_URL: http://backend:8000
-      NEGAO_SERVICE_API_KEY: ${NEGAO_SERVICE_API_KEY:?defina NEGAO_SERVICE_API_KEY}
     depends_on:
       - backend
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     deploy:
       resources:
         limits:
@@ -78,6 +91,9 @@ services:
   nginx:
     build:
       context: ../../nginx
+    volumes:
+      - ${TLS_CERT_PATH:?defina TLS_CERT_PATH}:/etc/nginx/tls/fullchain.pem:ro
+      - ${TLS_KEY_PATH:?defina TLS_KEY_PATH}:/etc/nginx/tls/privkey.pem:ro
     ports:
       - "80:80"
       - "443:443"

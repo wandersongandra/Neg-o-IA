@@ -8,6 +8,7 @@ protegido por lock (perde o estado se o processo reiniciar).
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import time
 from collections.abc import Awaitable, Callable
 
@@ -43,7 +44,8 @@ class RateLimiter:
         self._memory_lock = asyncio.Lock()
 
     def _key(self, key: str, window: int) -> str:
-        return f"rl:{key}:{window}"
+        digest = hashlib.sha256(key.encode("utf-8")).hexdigest()[:32]
+        return f"rl:{digest}:{window}"
 
     def _retry_after(self, window: int) -> int:
         window_end = (window + 1) * self._window_seconds

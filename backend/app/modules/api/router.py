@@ -1,14 +1,16 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.responses import JSONResponse
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 from app.infrastructure.db import check_database_health
 from app.infrastructure.redis import check_redis_health
 from app.modules.configuration.settings import get_settings
+from app.modules.security.domain import AuthResult
+from app.modules.security.router import require_service_scope
 
 router = APIRouter(tags=["infra"])
 
@@ -28,7 +30,6 @@ async def readyz() -> Response:
     ready = all(check_status == "ok" for check_status in checks.values())
     payload: dict[str, Any] = {
         "status": "ready" if ready else "not_ready",
-        "checks": checks,
     }
     return JSONResponse(
         status_code=status.HTTP_200_OK if ready else status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -37,7 +38,9 @@ async def readyz() -> Response:
 
 
 @router.get("/metrics")
-async def metrics() -> Response:
+async def metrics(
+    _auth: Annotated[AuthResult, Depends(require_service_scope("metrics:read"))],
+) -> Response:
     if not get_settings().metrics_enabled:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -53,5 +56,4 @@ async def events_health() -> dict[str, Any]:
         redis_available = await check_redis_health()
     except Exception:
         redis_available = False
-    payload = {"status": "ok" if redis_available else "degraded", "bus_available": redis_available}
-    return payload
+    return {"status": "ok" if redis_available else "degraded"}

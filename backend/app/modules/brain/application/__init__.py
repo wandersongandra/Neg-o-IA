@@ -22,6 +22,7 @@ from app.modules.brain.events import (
     EVENT_BRAIN_REQUEST_STARTED,
 )
 from app.modules.brain.infrastructure import get_model_router
+from app.modules.brain.user_config import load_user_config
 from app.modules.events.envelope import build_envelope
 
 _LOGGER = logging.getLogger("app.modules.brain.application")
@@ -53,12 +54,18 @@ class BrainService:
             },
         )
         try:
+            user_config = await load_user_config(user_id)
+            effective_messages = [
+                ChatMessage(role="system", content=user_config.system_prompt),
+                *[message for message in messages if message.role != "system"],
+            ]
             response = await get_model_router().complete(
                 ModelRequest(
-                    messages=messages,
+                    messages=effective_messages,
                     task_type=task_type,
-                    temperature=None,
-                    max_tokens=None,
+                    temperature=user_config.temperature,
+                    max_tokens=user_config.max_tokens,
+                    cache_namespace=user_id,
                 )
             )
         except Exception as exc:
@@ -68,6 +75,7 @@ class BrainService:
             EVENT_BRAIN_REQUEST_COMPLETED,
             {
                 "session_id": session_id,
+                "user_id": user_id,
                 "model": response.model,
                 "latency_ms": response.latency_ms,
                 "cached": response.cached,
@@ -105,7 +113,15 @@ class BrainService:
             from app.modules.events.application import get_event_bus_service
 
             service = get_event_bus_service()
-            await service.publish_event(build_envelope(event_type, PRODUCER, payload))
+            await service.publish_event(
+                build_envelope(
+                    event_type,
+                    PRODUCER,
+                    payload,
+                    user_id=payload.get("user_id"),
+                    session_id=payload.get("session_id"),
+                )
+            )
         except Exception as exc:
             _LOGGER.warning(
                 "falha ao publicar evento do brain",

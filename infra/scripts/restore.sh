@@ -1,11 +1,23 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
 
 BACKUP_FILE="${1:-}"
+KEY_FILE="${BACKUP_ENCRYPTION_KEY_FILE:-}"
 if [ -z "$BACKUP_FILE" ] || [ ! -f "$BACKUP_FILE" ]; then
-    echo "Uso: restore.sh <arquivo.sql.gz>" >&2
+    echo "Uso: restore.sh <arquivo.sql.gz.enc>" >&2
     exit 1
 fi
+if [ -z "$KEY_FILE" ] || [ ! -r "$KEY_FILE" ]; then
+    echo "ERRO: defina BACKUP_ENCRYPTION_KEY_FILE apontando para a chave do backup." >&2
+    exit 1
+fi
+if [ ! -f "$BACKUP_FILE.sha256" ]; then
+    echo "ERRO: checksum ausente: $BACKUP_FILE.sha256" >&2
+    exit 1
+fi
+
+sha256sum -c "$BACKUP_FILE.sha256"
 
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
 
@@ -25,6 +37,6 @@ if [ "${CONFIRM:-n}" != "s" ]; then
     exit 1
 fi
 
-gunzip -c "$BACKUP_FILE" | docker exec -i "$DB_CONTAINER" psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" --set ON_ERROR_STOP=1
+openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000     -pass "file:$KEY_FILE" -in "$BACKUP_FILE"     | gunzip     | docker exec -i "$DB_CONTAINER" psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" --set ON_ERROR_STOP=1
 
 echo "Restauração concluída: $BACKUP_FILE"

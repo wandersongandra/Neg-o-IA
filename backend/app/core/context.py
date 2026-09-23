@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import uuid
 from contextvars import ContextVar
 from dataclasses import dataclass, field
@@ -12,6 +13,14 @@ from starlette.requests import Request
 from starlette.responses import Response
 
 current_request: ContextVar[RequestContext | None] = ContextVar("current_request", default=None)
+_SAFE_CORRELATION_ID = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
+
+
+def _safe_correlation_id(value: str | None) -> str | None:
+    if value is None:
+        return None
+    candidate = value.strip()
+    return candidate if _SAFE_CORRELATION_ID.fullmatch(candidate) else None
 
 
 @dataclass(slots=True)
@@ -41,7 +50,9 @@ def get_request_context() -> RequestContext | None:
 async def request_context_middleware(
     request: Request, call_next: RequestResponseEndpoint
 ) -> Response:
-    context = RequestContext(correlation_id=request.headers.get("x-correlation-id"))
+    context = RequestContext(
+        correlation_id=_safe_correlation_id(request.headers.get("x-correlation-id"))
+    )
     if context.correlation_id is None:
         context.correlation_id = context.request_id
     token = current_request.set(context)

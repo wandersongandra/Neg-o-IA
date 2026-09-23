@@ -21,6 +21,11 @@ from app.modules.brain.infrastructure import (
     get_model_router,
     reset_router,
 )
+from app.modules.brain.user_config import (
+    UserBrainConfig,
+    load_user_config,
+    save_user_config,
+)
 from app.modules.configuration.settings import get_settings
 from app.modules.events.envelope import EventEnvelope
 
@@ -104,6 +109,7 @@ async def test_circuit_breaker_half_open_allows_trial_and_closes_on_success() ->
 
 
 async def test_router_falls_back_when_primary_fails(monkeypatch: Any) -> None:
+    monkeypatch.setattr(get_settings(), "external_ai_enabled", True)
     monkeypatch.setattr(get_settings(), "nvidia_api_key", "test-key")
 
     class FailingPrimary:
@@ -133,6 +139,7 @@ async def test_router_falls_back_when_primary_fails(monkeypatch: Any) -> None:
 
 
 async def test_router_raises_when_all_providers_fail(monkeypatch: Any) -> None:
+    monkeypatch.setattr(get_settings(), "external_ai_enabled", True)
     monkeypatch.setattr(get_settings(), "nvidia_api_key", "test-key")
 
     async def failing(self: Any, _request: ModelRequest) -> ModelResponse:
@@ -159,14 +166,15 @@ async def test_mock_adapter_used_without_key(monkeypatch: Any) -> None:
     finally:
         reset_router()
     assert response.model == "local-mock"
-    assert "NEGAO_NVIDIA_API_KEY" in response.text
+    assert "EXTERNAL_AI_ENABLED=true" in response.text
 
 
 async def test_cache_hit_skips_second_call(monkeypatch: Any) -> None:
+    monkeypatch.setattr(get_settings(), "external_ai_enabled", True)
     monkeypatch.setattr(get_settings(), "nvidia_api_key", "test-key")
     fake_redis = FakeAsyncRedis()
 
-    async def _get_redis() -> FakeAsyncRedis:
+    def _get_redis() -> FakeAsyncRedis:
         return fake_redis
 
     monkeypatch.setattr("app.infrastructure.redis.get_redis", _get_redis)
@@ -188,6 +196,46 @@ async def test_cache_hit_skips_second_call(monkeypatch: Any) -> None:
     assert first.cached is False
     assert second.cached is True
     assert CountingAdapter.calls == 1
+
+
+async def test_model_cache_is_isolated_by_user(monkeypatch: Any) -> None:
+    monkeypatch.setattr(get_settings(), "external_ai_enabled", True)
+    monkeypatch.setattr(get_settings(), "nvidia_api_key", "test-key")
+    fake_redis = FakeAsyncRedis()
+
+    def _get_redis() -> FakeAsyncRedis:
+        return fake_redis
+
+    monkeypatch.setattr("app.infrastructure.redis.get_redis", _get_redis)
+
+    class CountingAdapter:
+        calls = 0
+
+        async def complete(self, request: ModelRequest) -> ModelResponse:
+            CountingAdapter.calls += 1
+            return ModelResponse(text="isolado", model="test", latency_ms=1)
+
+    router = ModelRouter(get_settings())
+    monkeypatch.setattr(router, "_complete_with_resilience", CountingAdapter().complete)
+    request_a = ModelRequest(
+        messages=[ChatMessage(role="user", content="mesmo conteúdo")],
+        cache_namespace="user-a",
+    )
+    request_b = ModelRequest(
+        messages=[ChatMessage(role="user", content="mesmo conteúdo")],
+        cache_namespace="user-b",
+    )
+    try:
+        first_a = await router.complete(request_a)
+        first_b = await router.complete(request_b)
+        second_a = await router.complete(request_a)
+    finally:
+        reset_router()
+
+    assert first_a.cached is False
+    assert first_b.cached is False
+    assert second_a.cached is True
+    assert CountingAdapter.calls == 2
 
 
 async def test_brain_service_publishes_events(monkeypatch: Any) -> None:
@@ -229,3 +277,79 @@ async def test_process_input_returns_dict(monkeypatch: Any) -> None:
     assert isinstance(result, dict)
     assert "text" in result
     assert "model" in result
+
+
+async def test_user_brain_config_is_isolated_by_user(monkeypatch: Any) -> None:
+    fake_redis = FakeAsyncRedis(decode_responses=True)
+
+    def _get_redis() -> FakeAsyncRedis:
+        return fake_redis
+
+    monkeypatch.setattr("app.infrastructure.redis.get_redis", _get_redis)
+
+    config = UserBrainConfig(
+        system_prompt="Você é a Sophie personalizada para o usuário A.",
+        temperature=0.7,
+        max_tokens=777,
+    )
+    await save_user_config("user-a", config)
+
+    loaded_a = await load_user_config("user-a")
+    loaded_b = await load_user_config("user-b")
+
+    assert loaded_a == config
+    assert loaded_b != config
+    assert loaded_b.system_prompt
+
+
+async def test_brain_service_applies_user_config(monkeypatch: Any) -> None:
+    captured: list[ModelRequest] = []
+
+    async def fake_load(_user_id: str | None) -> UserBrainConfig:
+        return UserBrainConfig(
+            system_prompt="Prompt efetivo isolado do usuário.",
+            temperature=0.9,
+            max_tokens=321,
+        )
+
+    class FakeRouter:
+        async def complete(self, request: ModelRequest) -> ModelResponse:
+            captured.append(request)
+            return ModelResponse(text="ok", model="test", latency_ms=1)
+
+    class FakeBus:
+        async def publish_event(self, _envelope: EventEnvelope) -> None:
+            return None
+
+    monkeypatch.setattr(
+        "app.modules.brain.application.load_user_config",
+        fake_load,
+    )
+    monkeypatch.setattr(
+        "app.modules.brain.application.get_model_router",
+        lambda: FakeRouter(),
+    )
+    monkeypatch.setattr(
+        "app.modules.events.application.get_event_bus_service",
+        lambda: FakeBus(),
+    )
+    reset_brain_service()
+    try:
+        response = await get_brain_service().complete(
+            [
+                ChatMessage(role="system", content="Prompt legado."),
+                ChatMessage(role="user", content="Teste"),
+            ],
+            user_id="user-a",
+        )
+    finally:
+        reset_brain_service()
+
+    assert response.text == "ok"
+    assert len(captured) == 1
+    request = captured[0]
+    assert request.temperature == 0.9
+    assert request.max_tokens == 321
+    assert request.messages[0].role == "system"
+    assert request.messages[0].content == "Prompt efetivo isolado do usuário."
+    assert all(message.content != "Prompt legado." for message in request.messages)

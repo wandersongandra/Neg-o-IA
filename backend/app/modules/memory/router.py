@@ -1,4 +1,4 @@
-"""Rotas HTTP do módulo memory — status do Redis e inspeção de sessão."""
+"""Rotas HTTP do módulo memory — status e inspeção segura de sessão."""
 
 from __future__ import annotations
 
@@ -7,6 +7,9 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
+from app.interfaces.deps import CurrentAuth
+from app.modules.conversation.application import get_conversation_service
+from app.modules.conversation.infrastructure import ConversationPersistenceError
 from app.modules.memory.application import get_memory_service
 
 router = APIRouter(prefix="/memory", tags=["memory"])
@@ -23,7 +26,6 @@ def _is_debug() -> bool:
 
 @router.get("/status")
 async def memory_status() -> dict[str, Any]:
-    """Verifica conectividade com o Redis (memória de curto prazo)."""
     connected = False
     try:
         from app.infrastructure.redis import get_redis
@@ -36,12 +38,20 @@ async def memory_status() -> dict[str, Any]:
 
 
 @router.get("/session/{session_id}")
-async def memory_session(session_id: str) -> dict[str, Any]:
-    """Lista as entradas STM da sessão — apenas em ambiente debug."""
+async def memory_session(session_id: str, auth: CurrentAuth) -> dict[str, Any]:
+    """Inspeção de STM em debug, limitada à própria sessão do usuário."""
     if not _is_debug():
         raise HTTPException(
             status_code=403, detail="inspeção de memória disponível apenas em debug"
         )
-    service = get_memory_service()
-    entries = await service.recall_session(session_id)
+    user_id = auth.effective_user_id
+    if not user_id:
+        raise HTTPException(status_code=403, detail="user identity required")
+    try:
+        owns_session = await get_conversation_service().owns_session(session_id, user_id)
+    except ConversationPersistenceError as exc:
+        raise HTTPException(status_code=503, detail="conversation storage unavailable") from exc
+    if not owns_session:
+        raise HTTPException(status_code=404, detail="session not found")
+    entries = await get_memory_service().recall_session(user_id, session_id)
     return {"session_id": session_id, "entries": entries}

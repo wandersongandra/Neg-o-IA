@@ -15,8 +15,6 @@ _PUBLIC_ALLOWLIST = {
     ("GET", "/health/live"),
     ("GET", "/readyz"),
     ("GET", "/health/ready"),
-    ("GET", "/metrics"),
-    ("GET", "/monitoring/metrics"),
     ("GET", "/events/health"),
     ("POST", "/security/login"),
     ("POST", "/security/register"),
@@ -24,10 +22,16 @@ _PUBLIC_ALLOWLIST = {
 
 
 def _requires_auth(route: APIRoute) -> bool:
-    return any(
-        dep.call in {require_authenticated_user, require_service_auth}
-        for dep in route.dependant.dependencies
-    )
+    def has_auth_dependency(dependant: object) -> bool:
+        dependencies = getattr(dependant, "dependencies", ())
+        for dep in dependencies:
+            if dep.call in {require_authenticated_user, require_service_auth}:
+                return True
+            if has_auth_dependency(dep):
+                return True
+        return False
+
+    return has_auth_dependency(route.dependant)
 
 
 def test_toda_rota_http_e_publica_ou_exige_api_key() -> None:

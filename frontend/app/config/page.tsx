@@ -50,7 +50,7 @@ const DEFAULT_CONFIG = {
   fallback_model: "meta/llama-3.1-8b-instruct",
   temperature: 0.3,
   max_tokens: 1024,
-  tools_enabled: ["web_search", "code_exec", "file_ops", "memory", "calendar"],
+  tools_enabled: [],
   voice: {
     tts_enabled: true,
     stt_enabled: true,
@@ -102,13 +102,26 @@ function Slider({ label, value, min, max, step, onChange, unit = "" }: { label: 
   );
 }
 
-function Toggle({ label, desc, checked, onChange }: { label: string; desc: string; checked: boolean; onChange: (v: boolean) => void }) {
+function Toggle({
+  label,
+  desc,
+  checked,
+  onChange,
+  disabled = false,
+}: {
+  label: string;
+  desc: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  disabled?: boolean;
+}) {
   return (
-    <label className="flex items-start gap-4 cursor-pointer group">
+    <label className="flex items-start gap-4 cursor-pointer group has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-60">
       <div className="relative mt-1">
         <input
           type="checkbox"
           checked={checked}
+          disabled={disabled}
           onChange={(e) => onChange(e.target.checked)}
           className="peer size-5 appearance-none rounded-lg border-2 border-[var(--border)] bg-[var(--bg-secondary)] checked:bg-[var(--accent)] checked:border-[var(--accent)] transition-colors"
         />
@@ -165,7 +178,11 @@ export default function ConfigPage() {
       const res = await fetch("/api/proxy/brain/config", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(config),
+        body: JSON.stringify({
+          system_prompt: config.system_prompt,
+          temperature: config.temperature,
+          max_tokens: config.max_tokens,
+        }),
       });
       if (res.ok) {
         toast({ title: "Configuração salva", description: "As alterações foram aplicadas", variant: "success" });
@@ -200,7 +217,7 @@ export default function ConfigPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-[var(--text-primary)]">Configuração da Sophie</h1>
-          <p className="text-[var(--text-secondary)] mt-1">Personalize personalidade, modelo, ferramentas e voz</p>
+          <p className="text-[var(--text-secondary)] mt-1">Personalize o comportamento da Sophie; infraestrutura e integrações são somente leitura</p>
         </div>
         <button
           onClick={handleSave}
@@ -262,7 +279,7 @@ export default function ConfigPage() {
                 <select
                   aria-label="Modelo Principal"
                   value={config.primary_model}
-                  onChange={(e) => setConfig(prev => ({ ...prev, primary_model: e.target.value }))}
+                  disabled
                   className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
                 >
                   {MODEL_OPTIONS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
@@ -273,19 +290,25 @@ export default function ConfigPage() {
                 <select
                   aria-label="Modelo Fallback"
                   value={config.fallback_model}
-                  onChange={(e) => setConfig(prev => ({ ...prev, fallback_model: e.target.value }))}
+                  disabled
                   className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
                 >
                   {MODEL_OPTIONS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                 </select>
               </div>
             </div>
+            <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
+              Modelos são definidos pelo ambiente do servidor e não podem ser alterados nesta tela.
+            </p>
             <Slider label="Temperatura" value={config.temperature} min={0} max={2} step={0.1} onChange={v => setConfig(prev => ({ ...prev, temperature: v }))} />
             <Slider label="Max Tokens" value={config.max_tokens} min={1} max={8192} step={1} onChange={v => setConfig(prev => ({ ...prev, max_tokens: v }))} unit=" tokens" />
           </div>
         </SectionCard>
 
         <SectionCard title="Ferramentas" icon={Wrench}>
+          <p className="mb-4 text-xs leading-relaxed text-[var(--text-secondary)]">
+            Integrações ainda não habilitadas no Tool Manager aparecem somente como referência.
+          </p>
           <div className="space-y-3">
             {TOOL_OPTIONS.map(tool => (
               <label key={tool.id} className="glass glass-hover flex items-center gap-3 p-3 rounded-xl cursor-pointer group">
@@ -299,12 +322,8 @@ export default function ConfigPage() {
                 <input
                   type="checkbox"
                   checked={config.tools_enabled.includes(tool.id)}
-                  onChange={(e) => setConfig(prev => ({
-                    ...prev,
-                    tools_enabled: e.target.checked
-                      ? [...prev.tools_enabled, tool.id]
-                      : prev.tools_enabled.filter(id => id !== tool.id)
-                  }))}
+                  disabled
+                  readOnly
                   className="peer size-5 appearance-none rounded-lg border-2 border-[var(--border)] bg-[var(--bg-secondary)] checked:bg-[var(--accent)] checked:border-[var(--accent)] transition-colors"
                 />
               </label>
@@ -313,19 +332,24 @@ export default function ConfigPage() {
         </SectionCard>
 
         <SectionCard title="Voz" icon={Mic}>
+          <p className="mb-4 text-xs leading-relaxed text-[var(--text-secondary)]">
+            Voz e STT são gerenciados por variáveis do servidor para evitar alterações inseguras em runtime.
+          </p>
           <div className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <Toggle
                 label="TTS (Fala da Sophie)"
                 desc="Respostas em áudio automáticas"
                 checked={config.voice.tts_enabled}
-                onChange={v => setConfig(prev => ({ ...prev, voice: { ...prev.voice, tts_enabled: v } }))}
+                onChange={() => undefined}
+                disabled
               />
               <Toggle
                 label="STT (Reconhecimento de Voz)"
                 desc="Microfone para falar com a Sophie"
                 checked={config.voice.stt_enabled}
-                onChange={v => setConfig(prev => ({ ...prev, voice: { ...prev.voice, stt_enabled: v } }))}
+                onChange={() => undefined}
+                disabled
               />
             </div>
             <div>
@@ -333,7 +357,7 @@ export default function ConfigPage() {
               <select
                 aria-label="Voz do edge-tts"
                 value={config.voice.voice}
-                onChange={(e) => setConfig(prev => ({ ...prev, voice: { ...prev.voice, voice: e.target.value } }))}
+                disabled
                 className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
               >
                 {VOICE_OPTIONS.map(v => <option key={v.value} value={v.value}>{v.label}</option>)}
@@ -344,7 +368,7 @@ export default function ConfigPage() {
               <select
                 aria-label="Velocidade da fala"
                 value={config.voice.rate}
-                onChange={(e) => setConfig(prev => ({ ...prev, voice: { ...prev.voice, rate: e.target.value } }))}
+                disabled
                 className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
               >
                 {RATE_OPTIONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}

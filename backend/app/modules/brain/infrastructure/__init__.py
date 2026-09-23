@@ -121,6 +121,7 @@ def _cache_key(request: ModelRequest) -> str:
             "task_type": request.task_type.value,
             "temperature": request.temperature,
             "max_tokens": request.max_tokens,
+            "cache_namespace": request.cache_namespace,
         },
         sort_keys=True,
     )
@@ -131,7 +132,7 @@ async def _cache_get(cache_key: str) -> ModelResponse | None:
     try:
         from app.infrastructure.redis import get_redis
 
-        client = await get_redis()
+        client = get_redis()
         raw = await client.get(f"brain:cache:{cache_key}")
         if not raw:
             return None
@@ -152,7 +153,7 @@ async def _cache_set(cache_key: str, response: ModelResponse, ttl: int) -> None:
     try:
         from app.infrastructure.redis import get_redis
 
-        client = await get_redis()
+        client = get_redis()
         payload = json.dumps(
             {
                 "text": response.text,
@@ -206,9 +207,9 @@ class NvidiaChatAdapter:
 
         latency_ms = int((time.perf_counter() - started) * 1000)
         if response.status_code in {429, 500, 502, 503, 504, 529}:
-            raise RetryableProviderError(f"NVIDIA {response.status_code}: {response.text[:200]}")
+            raise RetryableProviderError(f"NVIDIA HTTP {response.status_code}")
         if response.status_code != 200:
-            raise ProviderError(f"NVIDIA {response.status_code}: {response.text[:200]}")
+            raise ProviderError(f"NVIDIA HTTP {response.status_code}")
         try:
             data = response.json()
             text = data["choices"][0]["message"]["content"]
@@ -235,8 +236,8 @@ class MockLLMAdapter:
         return ModelResponse(
             text=(
                 f"Opa, chefe! Meu cérebro está em modo local — configure "
-                f"SOPHIE_NVIDIA_API_KEY (ou NEGAO_NVIDIA_API_KEY) para ativar o "
-                f"GPT-OSS-120B. (eco: {user_text[:80]})"
+                f"EXTERNAL_AI_ENABLED=true e uma NVIDIA_API_KEY para ativar o "
+                f"provedor externo. (eco: {user_text[:80]})"
             ),
             model="local-mock",
             latency_ms=1,
@@ -279,7 +280,7 @@ class ModelRouter:
 
     async def complete(self, request: ModelRequest) -> ModelResponse:
         settings = self._settings
-        if not settings.nvidia_api_key:
+        if not settings.external_ai_enabled or not settings.nvidia_api_key:
             return await _get_mock_adapter().complete(request)
 
         key = _cache_key(request)
@@ -308,6 +309,7 @@ class ModelRouter:
             task_type=request.task_type,
             temperature=request.temperature,
             max_tokens=request.max_tokens,
+            cache_namespace=request.cache_namespace,
         )
         if await self._fallback_breaker.can_execute():
             try:
@@ -351,9 +353,9 @@ class ModelRouter:
 
         latency_ms = int((time.perf_counter() - started) * 1000)
         if response.status_code in {429, 500, 502, 503, 504, 529}:
-            raise RetryableProviderError(f"fallback {response.status_code}: {response.text[:200]}")
+            raise RetryableProviderError(f"fallback HTTP {response.status_code}")
         if response.status_code != 200:
-            raise ProviderError(f"fallback {response.status_code}: {response.text[:200]}")
+            raise ProviderError(f"fallback HTTP {response.status_code}")
         try:
             data = response.json()
             text = data["choices"][0]["message"]["content"]

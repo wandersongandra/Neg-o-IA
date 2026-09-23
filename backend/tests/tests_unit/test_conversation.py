@@ -25,10 +25,7 @@ SESSION_ID = "abcdef1234567890"
 def fake_redis(monkeypatch: Any) -> FakeAsyncRedis:
     client = FakeAsyncRedis()
 
-    async def _get_redis() -> FakeAsyncRedis:
-        return client
-
-    monkeypatch.setattr("app.infrastructure.redis.get_redis", _get_redis)
+    monkeypatch.setattr("app.infrastructure.redis.get_redis", lambda: client)
     return client
 
 

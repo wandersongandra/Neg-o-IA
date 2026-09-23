@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import hmac
 import json
 import secrets
@@ -20,14 +21,21 @@ _WS_TICKET_TTL_SECONDS = 60
 _WS_TICKET_PURPOSES = frozenset({"conversation", "voice"})
 
 
+def _ws_ticket_key(token: str) -> str:
+    digest = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    return f"{_WS_TICKET_PREFIX}{digest}"
+
+
 class InMemorySecurityService(SecurityService):
     def __init__(
         self,
         expected_api_key: str,
-        authorization_level: AuthorizationLevel = AuthorizationLevel.READ_ONLY,
+        authorization_level: AuthorizationLevel = AuthorizationLevel.AUTO_EXECUTE,
+        scopes: frozenset[str] = frozenset(),
     ) -> None:
         self._expected_api_key = expected_api_key
         self._authorization_level = authorization_level
+        self._scopes = scopes
 
     def authenticate_api_key(self, key: str) -> AuthResult:
         if not key or not self._expected_api_key:
@@ -38,6 +46,7 @@ class InMemorySecurityService(SecurityService):
                 principal="service:api-key",
                 authorization_level=self._authorization_level,
                 auth_method="service_api_key",
+                scopes=self._scopes,
             )
         return AuthResult(authenticated=False, reason="invalid_service_api_key")
 
@@ -47,7 +56,10 @@ def create_security_service(settings: Settings) -> InMemorySecurityService:
     # fallback anterior permitia que uma credencial histórica continuasse
     # autenticando em desenvolvimento/teste quando a chave de serviço não
     # estava configurada.
-    return InMemorySecurityService(expected_api_key=settings.service_api_key)
+    return InMemorySecurityService(
+        expected_api_key=settings.service_api_key,
+        scopes=frozenset(settings.service_api_scopes),
+    )
 
 
 @lru_cache
@@ -84,7 +96,7 @@ async def issue_ws_ticket(
             "session_id": session_id,
         }
     )
-    await get_redis().set(f"{_WS_TICKET_PREFIX}{token}", payload, ex=_WS_TICKET_TTL_SECONDS)
+    await get_redis().set(_ws_ticket_key(token), payload, ex=_WS_TICKET_TTL_SECONDS)
     return token
 
 
@@ -128,7 +140,7 @@ async def redeem_ws_ticket(
         return AuthResult(authenticated=False, reason="missing_ticket")
     from app.infrastructure.redis import get_redis
 
-    raw = await get_redis().getdel(f"{_WS_TICKET_PREFIX}{token}")
+    raw = await get_redis().getdel(_ws_ticket_key(token))
     if raw is None:
         return AuthResult(authenticated=False, reason="invalid_or_expired_ticket")
     try:
@@ -173,9 +185,12 @@ async def authenticate_ws(
     com fallback para `?api_key=` (scripts/testes que já possuem a chave)."""
     settings = get_settings()
     origin = ws.headers.get("origin")
-    if origin and settings.env == "production" and origin not in set(settings.cors_origins):
-        return AuthResult(authenticated=False, reason="origin_not_allowed")
     ticket = ws.query_params.get("ticket", "")
+    if settings.env == "production" and ticket:
+        if not origin or origin not in set(settings.cors_origins):
+            return AuthResult(authenticated=False, reason="origin_not_allowed")
+    elif origin and settings.env == "production" and origin not in set(settings.cors_origins):
+        return AuthResult(authenticated=False, reason="origin_not_allowed")
     if ticket:
         try:
             return await redeem_ws_ticket(ticket, expected_purpose=expected_purpose)

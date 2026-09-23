@@ -99,3 +99,19 @@ async def test_dedup_entrega_mesmo_envelope_apenas_uma_vez(
     await bus._consume_once(EVENT_TYPE, stream, ">")
     await bus._consume_once(EVENT_TYPE, stream, "0")
     assert calls == 1
+
+
+@pytest.mark.asyncio
+async def test_service_persists_each_publish_once(redis_client: FakeAsyncRedis) -> None:
+    persisted: list[str] = []
+
+    async def persist(envelope: EventEnvelope) -> None:
+        persisted.append(envelope.id)
+
+    service = EventBusService(EventBus(redis_client=redis_client), audit_persister=persist)
+    envelope = build_envelope(EVENT_TYPE, "tests", {"audit": True})
+
+    await service.publish_event(envelope)
+
+    assert persisted == [envelope.id]
+    assert await redis_client.xlen(f"events:{EVENT_TYPE}") == 1

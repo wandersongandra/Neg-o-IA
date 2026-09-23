@@ -109,7 +109,6 @@ export function FooterBar({ data }: { data: DashboardData | null }) {
     return () => clearInterval(id);
   }, []);
 
-  const env = data?.root?.environment ?? "--";
   const version = data?.root?.version ?? "--";
   const server = data?.root?.name ?? "--";
   const lastSync = data
@@ -125,8 +124,8 @@ export function FooterBar({ data }: { data: DashboardData | null }) {
     { label: "SERVIDOR", value: server },
     { label: "VERSÃO", value: `v${version}` },
     {
-      label: "AMBIENTE",
-      value: env === "production" ? "PRODUÇÃO" : env.toUpperCase() || "DEV",
+      label: "RUNTIME",
+      value: data?.backend_reachable ? "CONECTADO" : "OFFLINE",
     },
     { label: "ÚLTIMA SINCRONIZAÇÃO", value: lastSync },
     {

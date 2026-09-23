@@ -27,6 +27,7 @@ dependencies = [
     "opentelemetry-exporter-otlp-proto-grpc",
     "prometheus-client",
     "edge-tts",
+    "argon2-cffi>=23.1",
 ]
 
 [project.optional-dependencies]

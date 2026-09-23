@@ -15,6 +15,8 @@ from app.domain.models import ApiKeyRecord, AppConfigRecord, AuditEventRecord
 from app.modules.database.infrastructure import ApiKeyORM, AppConfigORM, AuditEventORM
 from app.modules.events.envelope import EventEnvelope
 
+PERSISTED_API_KEY_PREFIX = "sophie_sk_"
+
 
 def hash_api_key(key: str) -> str:
     """Hash SHA-256 da chave em texto puro (nunca armazenar a chave)."""
@@ -23,7 +25,7 @@ def hash_api_key(key: str) -> str:
 
 def generate_api_key() -> str:
     """Gera uma chave de API aleatória (URL-safe, 43 chars)."""
-    return secrets.token_urlsafe(32)
+    return PERSISTED_API_KEY_PREFIX + secrets.token_urlsafe(32)
 
 
 async def create_api_key(
@@ -48,6 +50,20 @@ async def create_api_key(
         revoked_at=record.revoked_at,
     )
     return plain_key, domain
+
+
+async def revoke_api_key(session: AsyncSession, key_id: str) -> bool:
+    """Revoga uma chave persistida; nunca exige ou retorna o segredo original."""
+    try:
+        parsed_id = uuid.UUID(key_id)
+    except ValueError:
+        return False
+    record = await session.get(ApiKeyORM, parsed_id)
+    if record is None or record.revoked_at is not None:
+        return False
+    record.revoked_at = datetime.now(UTC)
+    await session.flush()
+    return True
 
 
 async def verify_api_key(session: AsyncSession, key: str) -> ApiKeyRecord | None:
@@ -76,11 +92,11 @@ async def register_audit_event(session: AsyncSession, envelope: EventEnvelope) -
         event_type=envelope.type,
         version=envelope.version,
         producer=envelope.producer,
-        trace_id=uuid.UUID(envelope.trace_id) if envelope.trace_id else None,
-        correlation_id=(uuid.UUID(envelope.correlation_id) if envelope.correlation_id else None),
-        parent_id=uuid.UUID(envelope.parent_id) if envelope.parent_id else None,
-        user_id=uuid.UUID(envelope.user_id) if envelope.user_id else None,
-        session_id=uuid.UUID(envelope.session_id) if envelope.session_id else None,
+        trace_id=envelope.trace_id,
+        correlation_id=envelope.correlation_id,
+        parent_id=envelope.parent_id,
+        user_id=envelope.user_id,
+        session_id=envelope.session_id,
         occurred_at=datetime.fromisoformat(envelope.occurred_at),
         payload=envelope.payload,
     )

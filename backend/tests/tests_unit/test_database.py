@@ -35,7 +35,9 @@ def test_generate_api_key_is_unique_and_safe() -> None:
     k1 = generate_api_key()
     k2 = generate_api_key()
     assert k1 != k2
-    assert len(k1) == 43
+    assert k1.startswith("sophie_sk_")
+    assert k2.startswith("sophie_sk_")
+    assert len(k1) > 43
 
 
 @pytest.mark.asyncio

@@ -22,6 +22,8 @@ _LOGGER = logging.getLogger("app.modules.events")
 
 DLQ_STREAM = "events:dlq"
 DEFAULT_GROUP = "negao-consumers"
+STREAM_MAXLEN = 10_000
+DLQ_MAXLEN = 2_000
 META_EVENT_TYPES = frozenset({EVENT_PUBLISHED, EVENT_DLQ_RECEIVED})
 
 
@@ -65,7 +67,12 @@ class EventBus:
 
     async def publish(self, envelope: EventEnvelope) -> None:
         stream = self._stream_name(envelope.type)
-        await self._redis.xadd(stream, {"data": envelope.model_dump_json()})
+        await self._redis.xadd(
+            stream,
+            {"data": envelope.model_dump_json()},
+            maxlen=STREAM_MAXLEN,
+            approximate=True,
+        )
         if envelope.type not in META_EVENT_TYPES:
             await self._publish_meta(envelope)
         self._count_delivery("published")
@@ -93,7 +100,10 @@ class EventBus:
 
     async def _xadd(self, envelope: EventEnvelope) -> None:
         await self._redis.xadd(
-            self._stream_name(envelope.type), {"data": envelope.model_dump_json()}
+            self._stream_name(envelope.type),
+            {"data": envelope.model_dump_json()},
+            maxlen=STREAM_MAXLEN,
+            approximate=True,
         )
 
     def start_consumer_loop(self) -> None:
@@ -246,7 +256,12 @@ class EventBus:
                     "producer": envelope.producer,
                 }
             )
-        await self._redis.xadd(DLQ_STREAM, {"data": json.dumps(payload, ensure_ascii=False)})
+        await self._redis.xadd(
+            DLQ_STREAM,
+            {"data": json.dumps(payload, ensure_ascii=False)},
+            maxlen=DLQ_MAXLEN,
+            approximate=True,
+        )
         notice = build_envelope(
             EVENT_DLQ_RECEIVED,
             producer="events",

@@ -6,10 +6,11 @@ Nota: em produção, estes endpoints serão protegidos pelo módulo Security
 
 from __future__ import annotations
 
+import json
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.db import get_db_session
@@ -20,18 +21,42 @@ from app.modules.database.application import (
     create_api_key,
     get_config,
     list_audit_events,
+    revoke_api_key,
     set_config,
 )
 from app.modules.database.domain import DatabaseStatus
 
 router = APIRouter(prefix="/database", tags=["database"])
 
+_SENSITIVE_CONFIG_FRAGMENTS = ("secret", "password", "token", "api_key", "credential")
+_ALLOWED_API_KEY_SCOPES = frozenset({"database:admin", "metrics:read"})
+
+
+def _validate_config_payload(key: str, value: dict[str, Any]) -> None:
+    normalized = key.lower().replace("-", "_")
+    if not key or len(key) > 128:
+        raise HTTPException(status_code=422, detail="invalid config key")
+    if any(fragment in normalized for fragment in _SENSITIVE_CONFIG_FRAGMENTS):
+        raise HTTPException(status_code=422, detail="secrets are not allowed in app_config")
+    if len(json.dumps(value, ensure_ascii=False, default=str).encode("utf-8")) > 65_536:
+        raise HTTPException(status_code=413, detail="config payload too large")
+
+
 SessionDep = Annotated[AsyncSession, Depends(get_db_session)]
 
 
 class ApiKeyCreateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=128)
-    scopes: list[str] = Field(default_factory=list)
+    scopes: list[str] = Field(default_factory=list, max_length=16)
+
+    @field_validator("scopes")
+    @classmethod
+    def validate_scopes(cls, scopes: list[str]) -> list[str]:
+        normalized = list(dict.fromkeys(scope.strip() for scope in scopes if scope.strip()))
+        unknown = sorted(set(normalized) - _ALLOWED_API_KEY_SCOPES)
+        if unknown:
+            raise ValueError(f"unknown service scopes: {', '.join(unknown)}")
+        return normalized
 
 
 class ApiKeyCreateResponse(BaseModel):
@@ -71,6 +96,13 @@ async def create_api_key_endpoint(
     return ApiKeyCreateResponse(api_key=plain_key, name=request.name, scopes=request.scopes)
 
 
+@router.delete("/api-keys/{key_id}", status_code=204, response_model=None)
+async def revoke_api_key_endpoint(key_id: str, session: SessionDep) -> None:
+    revoked = await revoke_api_key(session, key_id)
+    if not revoked:
+        raise HTTPException(status_code=404, detail="api key not found")
+
+
 @router.get("/audit", tags=["internal"])
 async def audit_events(
     session: SessionDep,
@@ -96,6 +128,7 @@ async def config_put(
     value: dict[str, Any],
     session: SessionDep,
 ) -> ConfigItemResponse:
+    _validate_config_payload(key, value)
     record = await set_config(session, key, value)
     return ConfigItemResponse(
         key=record.key, value=record.value, updated_at=record.updated_at.isoformat()

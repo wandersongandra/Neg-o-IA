@@ -136,7 +136,7 @@ def _setup_tracing(settings: Any, fastapi_app: Any | None) -> None:
         return
     try:
         from opentelemetry import trace as otel_trace
-        from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+        from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
             OTLPSpanExporter,
         )
         from opentelemetry.sdk.resources import Resource
@@ -149,7 +149,7 @@ def _setup_tracing(settings: Any, fastapi_app: Any | None) -> None:
         )
         return
     try:
-        resource = Resource.create({"service.name": "negao-ai"})
+        resource = Resource.create({"service.name": "sophie-ai"})
         provider = TracerProvider(resource=resource)
         span_exporter = OTLPSpanExporter(endpoint=endpoint)
         provider.add_span_processor(BatchSpanProcessor(span_exporter))
