@@ -370,9 +370,7 @@ async def create_ws_ticket(
                 request.session_id, auth.effective_user_id
             )
         except ConversationPersistenceError as exc:
-            raise HTTPException(
-                status_code=503, detail="conversation storage unavailable"
-            ) from exc
+            raise HTTPException(status_code=503, detail="conversation storage unavailable") from exc
         if not owns_session:
             raise HTTPException(status_code=404, detail="session not found")
     try:
