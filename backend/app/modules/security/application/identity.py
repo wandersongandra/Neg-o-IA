@@ -34,6 +34,7 @@ _ARGON2 = PasswordHasher(
     hash_len=32,
     salt_len=16,
 )
+_DUMMY_PASSWORD_HASH = _ARGON2.hash(secrets.token_urlsafe(32))
 
 
 @dataclass(frozen=True, slots=True)
@@ -123,11 +124,13 @@ async def authenticate_password(
     normalized = username.strip().lower()
     result = await session.execute(select(UserORM).where(UserORM.username == normalized))
     user = result.scalar_one_or_none()
+    encoded = user.password_hash if user is not None and user.password_hash else _DUMMY_PASSWORD_HASH
+    password_valid = verify_password(password, encoded)
     if (
         user is None
         or user.status != "active"
         or user.password_hash is None
-        or not verify_password(password, user.password_hash)
+        or not password_valid
     ):
         return None
     if password_needs_rehash(user.password_hash):
