@@ -20,6 +20,8 @@ def test_producao_rejeita_service_key_ausente() -> None:
             env="production",
             secret_key="s" * 32,
             cors_origins=["https://sophie.example.com"],
+            database_url="postgresql+asyncpg://sophie:strong-db-password@db:5432/sophie",
+            redis_url="redis://:strong-redis-password@redis:6379/0",
         )
 
 
@@ -29,6 +31,8 @@ def test_producao_rejeita_secret_key_padrao() -> None:
             env="production",
             service_api_key="k" * 32,
             cors_origins=["https://sophie.example.com"],
+            database_url="postgresql+asyncpg://sophie:strong-db-password@db:5432/sophie",
+            redis_url="redis://:strong-redis-password@redis:6379/0",
         )
 
 
@@ -39,6 +43,8 @@ def test_producao_rejeita_service_key_curta() -> None:
             service_api_key="curta",
             secret_key="s" * 32,
             cors_origins=["https://sophie.example.com"],
+            database_url="postgresql+asyncpg://sophie:strong-db-password@db:5432/sophie",
+            redis_url="redis://:strong-redis-password@redis:6379/0",
         )
 
 
@@ -61,6 +67,8 @@ def test_producao_rejeita_debug_ativo() -> None:
             service_api_key="k" * 32,
             secret_key="s" * 32,
             cors_origins=["https://sophie.example.com"],
+            database_url="postgresql+asyncpg://sophie:strong-db-password@db:5432/sophie",
+            redis_url="redis://:strong-redis-password@redis:6379/0",
         )
 
 def test_producao_aceita_configuracao_forte() -> None:
