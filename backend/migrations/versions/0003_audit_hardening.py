@@ -18,10 +18,7 @@ _UUID_REGEX = (
 def upgrade() -> None:
     # Conversation session IDs are opaque strings, not UUIDs. Audit principals
     # may also represent service identities, so both columns must be textual.
-    op.execute(
-        "ALTER TABLE events.audit_events "
-        "ALTER COLUMN user_id TYPE text USING user_id::text"
-    )
+    op.execute("ALTER TABLE events.audit_events ALTER COLUMN user_id TYPE text USING user_id::text")
     op.execute(
         "ALTER TABLE events.audit_events "
         "ALTER COLUMN session_id TYPE text USING session_id::text"
@@ -49,9 +46,7 @@ def upgrade() -> None:
         ON events.audit_events_default (occurred_at DESC)
         """
     )
-    op.execute(
-        "DROP TRIGGER IF EXISTS audit_events_partition_trg ON events.audit_events"
-    )
+    op.execute("DROP TRIGGER IF EXISTS audit_events_partition_trg ON events.audit_events")
     op.execute("DROP FUNCTION IF EXISTS events.create_partition_if_missing()")
 
 
