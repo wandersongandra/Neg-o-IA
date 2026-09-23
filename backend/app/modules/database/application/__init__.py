@@ -15,6 +15,8 @@ from app.domain.models import ApiKeyRecord, AppConfigRecord, AuditEventRecord
 from app.modules.database.infrastructure import ApiKeyORM, AppConfigORM, AuditEventORM
 from app.modules.events.envelope import EventEnvelope
 
+PERSISTED_API_KEY_PREFIX = "sophie_sk_"
+
 
 def hash_api_key(key: str) -> str:
     """Hash SHA-256 da chave em texto puro (nunca armazenar a chave)."""
@@ -23,7 +25,7 @@ def hash_api_key(key: str) -> str:
 
 def generate_api_key() -> str:
     """Gera uma chave de API aleatória (URL-safe, 43 chars)."""
-    return secrets.token_urlsafe(32)
+    return PERSISTED_API_KEY_PREFIX + secrets.token_urlsafe(32)
 
 
 async def create_api_key(
