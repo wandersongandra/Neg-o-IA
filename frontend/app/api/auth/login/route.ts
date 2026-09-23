@@ -5,6 +5,8 @@ import { enforceSameOriginMutation } from "@/lib/request-security";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
+  const originBlock = enforceSameOriginMutation(request);
+  if (originBlock) return originBlock;
   const { apiUrl } = resolveApiConfig();
   let body: unknown;
   try {
