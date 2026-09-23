@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     auth_session_ttl_seconds: int = 8 * 60 * 60
     registration_enabled: bool = False
 
+    external_ai_enabled: bool = False
     nvidia_api_key: str = ""
     nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
     brain_chat_model: str = "deepseek-ai/deepseek-v4-flash"
@@ -112,6 +113,10 @@ class Settings(BaseSettings):
         redis = urlparse(self.redis_url)
         if not redis.password:
             problems.append("NEGAO_REDIS_URL deve exigir autenticação em produção")
+        if self.external_ai_enabled:
+            provider = urlparse(self.nvidia_base_url)
+            if provider.scheme != "https":
+                problems.append("NEGAO_NVIDIA_BASE_URL deve usar HTTPS quando IA externa estiver ativa")
         if problems:
             raise ValueError("; ".join(problems))
         return self
