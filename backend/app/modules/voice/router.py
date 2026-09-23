@@ -598,8 +598,8 @@ async def voice_status(
 ) -> dict[str, object]:
     settings = get_settings()
     return {
-        "stt_available": bool(settings.nvidia_api_key),
-        "tts_available": True,
+        "stt_available": bool(settings.external_ai_enabled and settings.nvidia_api_key),
+        "tts_available": settings.external_ai_enabled,
         "stt_model": settings.brain_stt_model,
         "tts_voice": settings.tts_voice,
         "protocol_version": VOICE_PROTOCOL_VERSION,
