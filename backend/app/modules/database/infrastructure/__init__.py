@@ -141,9 +141,9 @@ class AuditEventORM(Base):
     event_type: Mapped[str] = mapped_column(String(128), nullable=False)
     version: Mapped[int] = mapped_column(nullable=False, server_default=text("1"))
     producer: Mapped[str] = mapped_column(String(64), nullable=False)
-    trace_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
-    correlation_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
-    parent_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    trace_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    correlation_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    parent_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     user_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     session_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     occurred_at: Mapped[datetime] = mapped_column(
