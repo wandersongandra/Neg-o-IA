@@ -123,6 +123,10 @@ class ConversationStore:
             async with self._redis.pipeline(transaction=True) as pipe:
                 pipe.set(_messages_key(session_id), payload, ex=MESSAGES_TTL_SECONDS)
                 pipe.sadd(INDEX_KEY, session_id)
+                owner_id = meta.get("user_id")
+                if isinstance(owner_id, str) and owner_id:
+                    pipe.sadd(_user_index_key(owner_id), session_id)
+                    pipe.expire(_user_index_key(owner_id), MESSAGES_TTL_SECONDS)
                 pipe.set(
                     _meta_key(session_id),
                     json.dumps(meta),
