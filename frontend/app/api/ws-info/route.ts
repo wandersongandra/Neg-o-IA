@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveApiConfig, resolveWsUrl } from "@/lib/env";
+import {
+  isSafeDynamicSegment,
+  resolvePublicWsBase,
+} from "@/lib/request-security";
 
 export const dynamic = "force-dynamic";
 
@@ -13,18 +17,23 @@ export async function GET(request: NextRequest) {
   if (purpose === "voice" && !sessionId) {
     return NextResponse.json({ error: "voice_session_required" }, { status: 400 });
   }
-  const configuredWs = resolveWsUrl();
-  const wsBase =
-    configuredWs && /^wss?:\/\//.test(configuredWs)
-      ? configuredWs
-      : apiUrl.replace(/^http/, "ws");
+  if (sessionId && !isSafeDynamicSegment(sessionId)) {
+    return NextResponse.json({ error: "invalid_session_id" }, { status: 400 });
+  }
+  const sessionToken = request.cookies.get("sophie_session")?.value;
+  if (!sessionToken) {
+    return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+  }
+  const wsBase = resolvePublicWsBase(request, resolveWsUrl());
+  if (!wsBase) {
+    return NextResponse.json({ error: "invalid_websocket_configuration" }, { status: 503 });
+  }
 
   try {
-    const sessionToken = request.cookies.get("sophie_session")?.value;
     const res = await fetch(`${apiUrl}/security/ws-ticket`, {
       method: "POST",
       headers: {
-        ...(sessionToken ? { Authorization: `Bearer ${sessionToken}` } : {}),
+        Authorization: `Bearer ${sessionToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ purpose, session_id: sessionId }),
