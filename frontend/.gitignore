@@ -1,1 +1,3 @@
-.vercelpublic/sw.js public/workbox-*.js
+.vercel
+public/sw.js
+public/workbox-*.js
