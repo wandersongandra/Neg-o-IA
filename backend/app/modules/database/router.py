@@ -7,7 +7,6 @@ Nota: em produção, estes endpoints serão protegidos pelo módulo Security
 from __future__ import annotations
 
 import json
-
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
