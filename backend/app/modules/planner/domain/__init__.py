@@ -46,6 +46,12 @@ class ExecutionPlan:
     updated_at: datetime
 
 
+class PlanStore(Protocol):
+    async def save(self, plan: ExecutionPlan) -> None: ...
+
+    async def get(self, user_id: str, plan_id: str) -> ExecutionPlan | None: ...
+
+
 class PlannerPort(Protocol):
     async def create_plan(self, user_id: str, text: str) -> ExecutionPlan: ...
 
