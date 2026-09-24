@@ -39,9 +39,8 @@ class VisionService:
             raise ValueError("image exceeds configured size limit")
 
         effective_prompt = (
-            (prompt or "").strip()
-            or "Descreva objetivamente a imagem e destaque os elementos relevantes."
-        )
+            prompt or ""
+        ).strip() or "Descreva objetivamente a imagem e destaque os elementos relevantes."
         if len(effective_prompt) > settings.vision_max_prompt_chars:
             raise ValueError("vision prompt exceeds configured size limit")
 
