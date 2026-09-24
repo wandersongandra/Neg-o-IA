@@ -221,15 +221,12 @@ export function ToolsCard({
   const brainKnown = typeof brain?.mode === "string" && typeof brain?.primary_model === "string";
   const tools: { label: string; icon: LucideIcon; status: ToolStatus }[] = [
     { label: "LLM", icon: Brain, status: statusFor(brainKnown, brainKnown) },
-    { label: "GitHub", icon: GitBranch, status: "warn" },
-    { label: "Docker", icon: Boxes, status: "warn" },
-    { label: "VS Code", icon: FileText, status: "warn" },
     { label: "PostgreSQL", icon: Database, status: statusFor(infrastructureKnown, data?.infrastructure?.database === "ok") },
     { label: "Redis", icon: MemoryStick, status: statusFor(infrastructureKnown || memoryKnown, data?.infrastructure?.redis === "ok" || data?.memory?.redis_connected === true) },
-    { label: "SSH", icon: Wrench, status: "warn" },
-    { label: "Cloudflare", icon: Cloud, status: "warn" },
-    { label: "Coolify", icon: Server, status: "warn" },
-    { label: "Google Drive", icon: FolderGit2, status: "warn" },
+    { label: "Memory", icon: Brain, status: statusFor(memoryKnown, data?.memory?.redis_connected === true) },
+    { label: "Knowledge", icon: GitBranch, status: "warn" },
+    { label: "Agent Core", icon: Wrench, status: brainKnown ? "ok" : "warn" },
+    { label: "Automation", icon: Sparkles, status: "warn" },
   ];
   return (
     <Card title="FERRAMENTAS" icon={Wrench}>
