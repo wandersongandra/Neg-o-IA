@@ -1,7 +1,4 @@
-"""Módulo learning — aprendizado contínuo da Sophie.
-
-v0: esqueleto de contrato. Implementação efetiva em v2+ (Cérebro que Aprende).
-"""
+"""Learning V1 — aprendizado controlado por feedback explícito do usuário."""
 
 from __future__ import annotations
 
