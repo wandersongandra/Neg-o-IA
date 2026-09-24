@@ -162,4 +162,9 @@ def test_producao_rejeita_trusted_hosts_wildcard() -> None:
 
 def test_trusted_hosts_derivados_de_cors_em_producao() -> None:
     settings = Settings.model_validate(_strong_production_kwargs())
-    assert settings.effective_trusted_hosts() == ["sophie.example.com"]
+    assert settings.effective_trusted_hosts() == [
+        "localhost",
+        "127.0.0.1",
+        "backend",
+        "sophie.example.com",
+    ]
