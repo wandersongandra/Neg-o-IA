@@ -1,7 +1,4 @@
-"""Módulo planner — transforma intenção em plano executável.
-
-v0: esqueleto de contrato. Implementação efetiva em v1+ (Núcleo Vivo).
-"""
+"""Planner V1 — planos limitados, auditáveis e replanejáveis."""
 
 from __future__ import annotations
 
