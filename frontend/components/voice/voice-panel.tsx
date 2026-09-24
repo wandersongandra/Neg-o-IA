@@ -91,11 +91,11 @@ function SectionHeader({
   return (
     <div className="mb-4 flex items-center gap-3">
       <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#3B82F6]/30 to-[#00D4FF]/20 ring-1 ring-[#00D4FF]/30">
-        <Icon className="size-4 text-[#00D4FF]" />
+        <Icon className="size-4 text-[var(--accent)]" />
       </div>
       <div className="leading-tight">
-        <h2 className="font-mono-data text-[10px] font-semibold tracking-[0.25em] text-[#94A3B8]">{title}</h2>
-        <p className="text-sm font-semibold text-[#F8FAFC]">{subtitle}</p>
+        <h2 className="font-mono-data text-[10px] font-semibold tracking-[0.25em] text-[var(--text-secondary)]">{title}</h2>
+        <p className="text-sm font-semibold text-[var(--text-primary)]">{subtitle}</p>
       </div>
     </div>
   );
@@ -103,7 +103,7 @@ function SectionHeader({
 
 function StateChip({ state }: { state: VoiceState }) {
   const active = state === "LISTENING";
-  const tone = state === "ERROR" ? "text-[#EF4444]" : "text-[#00D4FF]";
+  const tone = state === "ERROR" ? "text-[#EF4444]" : "text-[var(--accent)]";
   return (
     <span className={`flex items-center gap-2 font-mono-data text-[10px] tracking-widest ${tone}`}>
       <span className={`size-1.5 rounded-full ${active ? "animate-pulse bg-[#EF4444]" : state === "ERROR" ? "bg-[#EF4444]" : "bg-[#00D4FF]"}`} />
@@ -490,9 +490,9 @@ export default function VoicePanel() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-2.5">
-        <span className="glass flex items-center gap-2 rounded-full px-3 py-1.5 font-mono-data text-[10px] tracking-wider text-[#94A3B8]"><span className={sessionReady ? "dot-ok" : "dot-danger"} />VOICE V1 <span className="text-[#64748B]">· {connectionLabel}</span></span>
+        <span className="glass flex items-center gap-2 rounded-full px-3 py-1.5 font-mono-data text-[10px] tracking-wider text-[var(--text-secondary)]"><span className={sessionReady ? "dot-ok" : "dot-danger"} />VOICE V1 <span className="text-[var(--text-secondary)]">· {connectionLabel}</span></span>
         <StateChip state={voiceState} />
-        {status ? <span className="font-mono-data text-[10px] tracking-wider text-[#64748B]">STT {status.stt_available ? "OK" : "INDISPONÍVEL"} · TTS {status.tts_available ? "OK" : "INDISPONÍVEL"}</span> : <Loader2 className="size-3.5 animate-spin text-[#00D4FF]" />}
+        {status ? <span className="font-mono-data text-[10px] tracking-wider text-[var(--text-secondary)]">STT {status.stt_available ? "OK" : "INDISPONÍVEL"} · TTS {status.tts_available ? "OK" : "INDISPONÍVEL"}</span> : <Loader2 className="size-3.5 animate-spin text-[var(--accent)]" />}
       </div>
 
       {statusError || error ? <p className="flex items-center gap-2 rounded-xl border border-[#EF4444]/30 bg-[#EF4444]/10 p-3 text-sm text-[#FCA5A5]"><TriangleAlert className="size-4 shrink-0" />{error || statusError}</p> : null}
@@ -500,39 +500,38 @@ export default function VoicePanel() {
       <section className="glass glass-hover animate-fade-up rounded-2xl p-5">
         <SectionHeader icon={Bluetooth} title="SOPHIE VOICE V1" subtitle="O sistema operacional gerencia o pareamento Bluetooth" />
         <div className="grid gap-4 md:grid-cols-2">
-          <label className="space-y-2 text-sm text-[#CBD5E1]">
-            <span className="flex items-center gap-2 font-mono-data text-[10px] tracking-widest text-[#94A3B8]"><Mic className="size-3.5 text-[#00D4FF]" /> ENTRADA / MICROFONE</span>
-            <select value={selectedInputId} onChange={(event) => void selectInput(event.target.value)} className="w-full rounded-xl border border-white/[0.08] bg-black/20 p-3 text-sm text-[#F8FAFC] outline-none focus:border-[#00D4FF]/50"><option value="">Padrão do sistema</option>{inputDevices.map((device) => <option key={device.deviceId} value={device.deviceId}>{device.label}</option>)}</select>
-            <span className="block text-xs text-[#64748B]">Atual: {inputLabel}</span>
+          <label className="space-y-2 text-sm text-[var(--text-primary)]">
+            <span className="flex items-center gap-2 font-mono-data text-[10px] tracking-widest text-[var(--text-secondary)]"><Mic className="size-3.5 text-[var(--accent)]" /> ENTRADA / MICROFONE</span>
+            <select value={selectedInputId} onChange={(event) => void selectInput(event.target.value)} className="w-full rounded-xl border border-white/[0.08] bg-black/20 p-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent)]/50"><option value="">Padrão do sistema</option>{inputDevices.map((device) => <option key={device.deviceId} value={device.deviceId}>{device.label}</option>)}</select>
+            <span className="block text-xs text-[var(--text-secondary)]">Atual: {inputLabel}</span>
           </label>
-          <label className="space-y-2 text-sm text-[#CBD5E1]">
-            <span className="flex items-center gap-2 font-mono-data text-[10px] tracking-widest text-[#94A3B8]"><Volume2 className="size-3.5 text-[#00D4FF]" /> SAÍDA / FONE</span>
-            <select value={selectedOutputId} onChange={(event) => void selectOutput(event.target.value)} className="w-full rounded-xl border border-white/[0.08] bg-black/20 p-3 text-sm text-[#F8FAFC] outline-none focus:border-[#00D4FF]/50"><option value="">Padrão do sistema</option>{outputDevices.map((device) => <option key={device.deviceId} value={device.deviceId}>{device.label}</option>)}</select>
-            <span className="block text-xs text-[#64748B]">Atual: {outputLabel} · {outputSelectionSupported ? "seleção suportada" : "saída segue o padrão do navegador"}</span>
+          <label className="space-y-2 text-sm text-[var(--text-primary)]">
+            <span className="flex items-center gap-2 font-mono-data text-[10px] tracking-widest text-[var(--text-secondary)]"><Volume2 className="size-3.5 text-[var(--accent)]" /> SAÍDA / FONE</span>
+            <select value={selectedOutputId} onChange={(event) => void selectOutput(event.target.value)} className="w-full rounded-xl border border-white/[0.08] bg-black/20 p-3 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent)]/50"><option value="">Padrão do sistema</option>{outputDevices.map((device) => <option key={device.deviceId} value={device.deviceId}>{device.label}</option>)}</select>
+            <span className="block text-xs text-[var(--text-secondary)]">Atual: {outputLabel} · {outputSelectionSupported ? "seleção suportada" : "saída segue o padrão do navegador"}</span>
           </label>
         </div>
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <button type="button" onClick={() => (sessionReady ? stopSession() : void startSession())} disabled={voiceState === "CONNECTING" || voiceUnavailable} className="inline-flex items-center gap-2 rounded-xl border border-[#00D4FF]/40 bg-[#00D4FF]/10 px-4 py-2.5 text-sm font-medium text-[#00D4FF] transition-colors hover:bg-[#00D4FF]/20 disabled:cursor-not-allowed disabled:opacity-40">{voiceState === "CONNECTING" ? <Loader2 className="size-4 animate-spin" /> : sessionReady ? <Square className="size-4" /> : <Play className="size-4" />}{voiceState === "CONNECTING" ? "Conectando…" : sessionReady ? "Encerrar sessão" : voiceUnavailable ? "Voz indisponível" : "Iniciar sessão de voz"}</button>
-          <span className="text-xs text-[#64748B]">{voiceUnavailable ? "STT e TTS precisam estar disponíveis para iniciar uma sessão." : "O microfone só é solicitado depois deste clique."}</span>
+          <button type="button" onClick={() => (sessionReady ? stopSession() : void startSession())} disabled={voiceState === "CONNECTING" || voiceUnavailable} className="inline-flex items-center gap-2 rounded-xl border border-[var(--accent)]/40 bg-[var(--accent-muted)] px-4 py-2.5 text-sm font-medium text-[var(--accent)] transition-colors hover:bg-[var(--accent-muted)] disabled:cursor-not-allowed disabled:opacity-40">{voiceState === "CONNECTING" ? <Loader2 className="size-4 animate-spin" /> : sessionReady ? <Square className="size-4" /> : <Play className="size-4" />}{voiceState === "CONNECTING" ? "Conectando…" : sessionReady ? "Encerrar sessão" : voiceUnavailable ? "Voz indisponível" : "Iniciar sessão de voz"}</button>
+          <span className="text-xs text-[var(--text-secondary)]">{voiceUnavailable ? "STT e TTS precisam estar disponíveis para iniciar uma sessão." : "O microfone só é solicitado depois deste clique."}</span>
         </div>
       </section>
 
       <section className="glass glass-hover animate-fade-up rounded-2xl p-5">
         <SectionHeader icon={AudioLines} title="TURNO DE VOZ" subtitle="Push-to-talk: fale, pare e aguarde a resposta" />
         <div className="flex flex-col items-center gap-4 py-2">
-          <button type="button" onClick={() => (recording ? stopTurn() : void startTurn())} disabled={!sessionReady || busy} aria-label={recording ? "Parar turno de voz" : "Começar turno de voz"} className="relative flex size-20 items-center justify-center rounded-full border border-[#00D4FF]/35 bg-[#00D4FF]/10 text-[#00D4FF] shadow-[0_0_24px_-6px_rgba(0,212,255,0.55)] transition-all disabled:cursor-not-allowed disabled:opacity-40">{recording && <span className="absolute inset-0 animate-ping-soft rounded-full bg-[#EF4444]/40" />}<span className="relative">{recording ? <Square className="size-6 fill-current text-[#EF4444]" /> : <Mic className="size-7" />}</span></button>
+          <button type="button" onClick={() => (recording ? stopTurn() : void startTurn())} disabled={!sessionReady || busy} aria-label={recording ? "Parar turno de voz" : "Começar turno de voz"} className="relative flex size-20 items-center justify-center rounded-full border border-[var(--accent)]/35 bg-[var(--accent-muted)] text-[var(--accent)] shadow-[0_0_24px_-6px_rgba(0,212,255,0.55)] transition-all disabled:cursor-not-allowed disabled:opacity-40">{recording && <span className="absolute inset-0 animate-ping-soft rounded-full bg-[#EF4444]/40" />}<span className="relative">{recording ? <Square className="size-6 fill-current text-[#EF4444]" /> : <Mic className="size-7" />}</span></button>
           <StateChip state={voiceState} />
-          {!sessionReady ? <p className="text-center text-xs text-[#64748B]">Inicie a sessão para habilitar o microfone.</p> : recording ? <p className="text-center text-xs text-[#EF4444]">LISTENING · o áudio não é salvo em disco.</p> : <p className="text-center text-xs text-[#64748B]">Clique no microfone, fale e clique novamente para enviar.</p>}
+          {!sessionReady ? <p className="text-center text-xs text-[var(--text-secondary)]">Inicie a sessão para habilitar o microfone.</p> : recording ? <p className="text-center text-xs text-[#EF4444]">LISTENING · o áudio não é salvo em disco.</p> : <p className="text-center text-xs text-[var(--text-secondary)]">Clique no microfone, fale e clique novamente para enviar.</p>}
         </div>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2">
-        <div className="glass rounded-2xl p-5"><p className="font-mono-data text-[10px] tracking-[0.25em] text-[#00D4FF]">TRANSCRIÇÃO</p><p className="mt-3 min-h-16 text-sm leading-relaxed text-[#E2E8F0]">{transcript || "A fala reconhecida aparecerá aqui."}</p></div>
-        <div className="glass rounded-2xl p-5"><p className="font-mono-data text-[10px] tracking-[0.25em] text-[#00D4FF]">SOPHIE</p><p className="mt-3 min-h-16 text-sm leading-relaxed text-[#E2E8F0]">{responseText || "A resposta da Sophie aparecerá aqui."}</p>{audioUrl ? <audio ref={audioRef} controls src={audioUrl} className="mt-4 w-full" onEnded={() => { if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current); audioUrlRef.current = null; setAudioUrl(null); setVoiceState("IDLE"); setAvatarState("idle"); }} onError={() => { setError("Não foi possível reproduzir o áudio da Sophie."); setVoiceState("ERROR"); setAvatarState("error"); }} /> : <p className="mt-4 text-xs text-[#64748B]">O áudio da Sophie aparecerá aqui quando uma resposta estiver disponível.</p>}</div>
+        <div className="glass rounded-2xl p-5"><p className="font-mono-data text-[10px] tracking-[0.25em] text-[var(--accent)]">TRANSCRIÇÃO</p><p className="mt-3 min-h-16 text-sm leading-relaxed text-[var(--text-primary)]">{transcript || "A fala reconhecida aparecerá aqui."}</p></div>
+        <div className="glass rounded-2xl p-5"><p className="font-mono-data text-[10px] tracking-[0.25em] text-[var(--accent)]">SOPHIE</p><p className="mt-3 min-h-16 text-sm leading-relaxed text-[var(--text-primary)]">{responseText || "A resposta da Sophie aparecerá aqui."}</p>{audioUrl ? <audio ref={audioRef} controls src={audioUrl} className="mt-4 w-full" onEnded={() => { if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current); audioUrlRef.current = null; setAudioUrl(null); setVoiceState("IDLE"); setAvatarState("idle"); }} onError={() => { setError("Não foi possível reproduzir o áudio da Sophie."); setVoiceState("ERROR"); setAvatarState("error"); }} /> : <p className="mt-4 text-xs text-[var(--text-secondary)]">O áudio da Sophie aparecerá aqui quando uma resposta estiver disponível.</p>}</div>
       </section>
 
-      <p className="text-xs leading-relaxed text-[#64748B]">Bluetooth é tratado pelo sistema operacional como entrada e saída de áudio. A V1 usa WebSocket autenticado por ticket de curta duração, mantém o contexto da sessão e descarta o áudio bruto após o STT. <Link href="/conversa" className="text-[#93C5FD] hover:text-[#DBEAFE]">Abrir conversa textual</Link></p>
-      {sessionId ? <p className="font-mono-data text-[10px] text-[#475569]">session_id: {sessionId}</p> : null}
+      <p className="text-xs leading-relaxed text-[var(--text-secondary)]">Bluetooth é tratado pelo sistema operacional como entrada e saída de áudio. A V1 usa WebSocket autenticado por ticket de curta duração, mantém o contexto da sessão e descarta o áudio bruto após o STT. <Link href="/conversa" className="text-[#93C5FD] hover:text-[#DBEAFE]">Abrir conversa textual</Link></p>
     </div>
   );
 }
