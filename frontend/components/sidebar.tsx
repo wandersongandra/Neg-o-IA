@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef } from "react";
 import {
   Activity,
   Bot,
+  CalendarClock,
   Braces,
   Boxes,
   Brain,
@@ -20,6 +21,7 @@ import {
   Monitor,
   Server,
   Settings,
+  Sparkles,
   Wrench,
   X,
 } from "lucide-react";
@@ -45,6 +47,8 @@ const MAIN_NAV: MainNavItem[] = [
   { label: "Conhecimento", href: "/knowledge", icon: Braces },
   { label: "Agente", href: "/agent", icon: Wrench },
   { label: "Automações", href: "/automation", icon: Bot },
+  { label: "Agendamentos", href: "/scheduler", icon: CalendarClock },
+  { label: "Aprendizado", href: "/learning", icon: Sparkles },
   { label: "Visão", href: "/vision", icon: Eye },
   { label: "Monitor", href: "/monitor", icon: Monitor },
   { label: "Configuração", href: "/config", icon: Settings },
