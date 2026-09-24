@@ -18,6 +18,12 @@ services:
       retries: 10
       start_period: 15s
     restart: unless-stopped
+    init: true
+    pids_limit: 256
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - data
     deploy:
       resources:
         limits:
@@ -40,6 +46,12 @@ services:
       timeout: 3s
       retries: 10
     restart: unless-stopped
+    init: true
+    pids_limit: 128
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - data
     deploy:
       resources:
         limits:
@@ -64,6 +76,11 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    init: true
+    pids_limit: 256
+    networks:
+      - app
+      - data
     deploy:
       resources:
         limits:
@@ -82,6 +99,10 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    init: true
+    pids_limit: 128
+    networks:
+      - app
     deploy:
       resources:
         limits:
@@ -101,6 +122,12 @@ services:
       - backend
       - frontend
     restart: unless-stopped
+    init: true
+    pids_limit: 128
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - app
     deploy:
       resources:
         limits:
@@ -110,3 +137,8 @@ services:
 volumes:
   pgdata:
   redis-data:
+
+networks:
+  app:
+  data:
+    internal: true
