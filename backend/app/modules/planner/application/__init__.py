@@ -136,9 +136,7 @@ class PlannerService:
                     step.arguments,
                     user_id=user_id,
                     confirmed=is_confirmed or not step.requires_confirmation,
-                    idempotency_key=(
-                        f"plan:{plan.plan_id}:{plan.revision}:{step.step_id}"
-                    ),
+                    idempotency_key=(f"plan:{plan.plan_id}:{plan.revision}:{step.step_id}"),
                 )
             except ToolConfirmationRequiredError:
                 executions.append(
