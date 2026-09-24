@@ -68,6 +68,7 @@ def _audit_integrity_material(
 
 def _compute_audit_integrity_hash(
     *,
+    secret_key: str | None = None,
     event_id: str,
     event_type: str,
     version: int,
@@ -81,7 +82,9 @@ def _compute_audit_integrity_hash(
     payload: dict[str, Any],
 ) -> str:
     return hmac.new(
-        _audit_integrity_key(get_settings().secret_key),
+        _audit_integrity_key(
+            secret_key or get_settings().effective_audit_integrity_keys()[0]
+        ),
         _audit_integrity_material(
             event_id=event_id,
             event_type=event_type,
@@ -102,20 +105,24 @@ def _compute_audit_integrity_hash(
 def verify_audit_event_integrity(row: AuditEventORM) -> bool | None:
     if not row.integrity_hash:
         return None
-    expected = _compute_audit_integrity_hash(
-        event_id=str(row.id),
-        event_type=row.event_type,
-        version=row.version,
-        producer=row.producer,
-        trace_id=row.trace_id,
-        correlation_id=row.correlation_id,
-        parent_id=row.parent_id,
-        user_id=row.user_id,
-        session_id=row.session_id,
-        occurred_at=row.occurred_at,
-        payload=row.payload,
-    )
-    return hmac.compare_digest(row.integrity_hash, expected)
+    for secret_key in get_settings().effective_audit_integrity_keys():
+        expected = _compute_audit_integrity_hash(
+            secret_key=secret_key,
+            event_id=str(row.id),
+            event_type=row.event_type,
+            version=row.version,
+            producer=row.producer,
+            trace_id=row.trace_id,
+            correlation_id=row.correlation_id,
+            parent_id=row.parent_id,
+            user_id=row.user_id,
+            session_id=row.session_id,
+            occurred_at=row.occurred_at,
+            payload=row.payload,
+        )
+        if hmac.compare_digest(row.integrity_hash, expected):
+            return True
+    return False
 
 
 def hash_api_key(key: str) -> str:
