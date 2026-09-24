@@ -90,7 +90,7 @@ O CI inclui:
 - pip-audit com versão fixa;
 - npm audit;
 - Gitleaks em histórico completo;
-- Dependency Review para mudanças em dependências;
+- OSV dependency review em pull requests, independente do Dependency Graph do GitHub;
 - CodeQL para Python e JavaScript/TypeScript;
 - build/typecheck do frontend;
 - validação do Nginx;
