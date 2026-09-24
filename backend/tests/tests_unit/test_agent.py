@@ -26,7 +26,8 @@ class FakeReasoning:
 
 
 class FakePlanner:
-    async def create_plan(self, user_id: str, text: str) -> ExecutionPlan:
+    async def create_plan(self, user_id: str, text: str, **kwargs: Any) -> ExecutionPlan:
+        del kwargs
         from datetime import UTC, datetime
 
         now = datetime.now(UTC)
