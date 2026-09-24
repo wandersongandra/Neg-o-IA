@@ -10,7 +10,11 @@ from typing import TYPE_CHECKING
 from app.infrastructure.db import create_engine, create_session_factory
 from app.modules.configuration.settings import Settings, get_settings
 from app.modules.security.application import SecurityService
-from app.modules.security.application.identity import authenticate_session, revoke_session
+from app.modules.security.application.identity import (
+    authenticate_session,
+    revoke_session,
+    validate_active_session,
+)
 from app.modules.security.domain import AuthorizationLevel, AuthResult
 
 if TYPE_CHECKING:
@@ -73,6 +77,8 @@ async def issue_ws_ticket(
     *,
     purpose: str = "conversation",
     session_id: str | None = None,
+    auth_session_id: str | None = None,
+    device_id: str | None = None,
 ) -> str:
     """Emite um ticket de uso único para autenticar uma conexão WebSocket.
 
@@ -94,6 +100,8 @@ async def issue_ws_ticket(
             "authorization_level": authorization_level.value,
             "purpose": purpose,
             "session_id": session_id,
+            "auth_session_id": auth_session_id,
+            "device_id": device_id,
         }
     )
     await get_redis().set(_ws_ticket_key(token), payload, ex=_WS_TICKET_TTL_SECONDS)
@@ -106,7 +114,7 @@ async def authenticate_bearer_token(token: str) -> AuthResult:
         return AuthResult(authenticated=False, reason="invalid_session_token")
     factory = create_session_factory(create_engine(get_settings().database_url))
     async with factory() as session:
-        identity_result = await authenticate_session(session, token)
+        identity_result = await authenticate_session(session, token, get_settings())
         if identity_result is None:
             return AuthResult(authenticated=False, reason="invalid_or_expired_session")
         identity, auth_session = identity_result
@@ -151,12 +159,16 @@ async def redeem_ws_ticket(
         principal = data["principal"]
         authorization_level = AuthorizationLevel(data["authorization_level"])
         session_id = data.get("session_id")
+        auth_session_id = data.get("auth_session_id")
+        device_id = data.get("device_id")
         if (
             not isinstance(principal, str)
             or not principal
             or not isinstance(purpose, str)
             or purpose not in _WS_TICKET_PURPOSES
             or (session_id is not None and not isinstance(session_id, str))
+            or (auth_session_id is not None and not isinstance(auth_session_id, str))
+            or (device_id is not None and not isinstance(device_id, str))
             or (purpose == "voice" and not session_id)
         ):
             raise ValueError("invalid ticket claims")
@@ -164,6 +176,23 @@ async def redeem_ws_ticket(
         return AuthResult(authenticated=False, reason="invalid_ticket_payload")
     if expected_purpose and purpose != expected_purpose:
         return AuthResult(authenticated=False, reason="ticket_purpose_mismatch")
+
+    if not principal.startswith("service:"):
+        if get_settings().env == "production" and not auth_session_id:
+            return AuthResult(authenticated=False, reason="ticket_missing_session_binding")
+        if auth_session_id:
+            factory = create_session_factory(create_engine(get_settings().database_url))
+            async with factory() as session:
+                active = await validate_active_session(
+                    session,
+                    principal,
+                    auth_session_id,
+                    get_settings(),
+                )
+                if not active:
+                    return AuthResult(authenticated=False, reason="ticket_session_inactive")
+                await session.commit()
+
     return AuthResult(
         authenticated=True,
         principal=principal,
@@ -171,6 +200,7 @@ async def redeem_ws_ticket(
         authorization_level=authorization_level,
         purpose=purpose,
         session_id=session_id,
+        device_id=device_id,
         auth_method="ws_ticket",
     )
 
