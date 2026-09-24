@@ -1,7 +1,4 @@
-"""Módulo automation — rotinas automáticas se-então.
-
-v0: esqueleto de contrato. Implementação efetiva em v2+ (Cérebro que Aprende).
-"""
+"""Automation V1 — regras persistidas limitadas a ferramentas automation-safe."""
 
 from __future__ import annotations
 
