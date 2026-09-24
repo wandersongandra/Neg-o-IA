@@ -24,11 +24,7 @@ def detect_image_mime(image_bytes: bytes, declared: str | None = None) -> str:
         detected = "image/png"
     elif image_bytes[:3] == b"\xff\xd8\xff":
         detected = "image/jpeg"
-    elif (
-        len(image_bytes) >= 12
-        and image_bytes[:4] == b"RIFF"
-        and image_bytes[8:12] == b"WEBP"
-    ):
+    elif len(image_bytes) >= 12 and image_bytes[:4] == b"RIFF" and image_bytes[8:12] == b"WEBP":
         detected = "image/webp"
 
     if detected is None:
