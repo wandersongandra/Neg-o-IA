@@ -171,9 +171,7 @@ async def require_authenticated_user(
 ) -> AuthResult:
     """Resolve usuário exclusivamente por sessão server-side."""
     token = ""
-    cookie_token = (
-        host_session_cookie if get_settings().env == "production" else session_cookie
-    )
+    cookie_token = host_session_cookie if get_settings().env == "production" else session_cookie
     if authorization and authorization.startswith("Bearer "):
         token = authorization[7:].strip()
     elif cookie_token:
