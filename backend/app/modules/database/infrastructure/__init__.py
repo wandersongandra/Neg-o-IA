@@ -6,9 +6,22 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import DateTime, ForeignKey, Index, MetaData, String, UniqueConstraint, text
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    MetaData,
+    String,
+    Text,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from pgvector.sqlalchemy import Vector
 
 from app.modules.database.infrastructure.provider import DatabaseProvider, create_provider
 
@@ -157,6 +170,145 @@ class AuditEventORM(Base):
     )
 
 
+class MemoryPolicyORM(Base):
+    __tablename__ = "policies"
+    __table_args__ = {"schema": "memory"}
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("identity.users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    auto_capture_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
+    retention_days: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default=text("90")
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=text("now()")
+    )
+
+
+class MemoryEntryORM(Base):
+    __tablename__ = "entries"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "content_hash",
+            "source",
+            name="uq_memory_entry_content",
+        ),
+        Index("ix_memory_entries_user_created", "user_id", "created_at"),
+        {"schema": "memory"},
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("identity.users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    session_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    source: Mapped[str] = mapped_column(String(32), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    importance: Mapped[float] = mapped_column(
+        Float, nullable=False, server_default=text("0.5")
+    )
+    embedding: Mapped[list[float]] = mapped_column(Vector(384), nullable=False)
+    attributes: Mapped[dict[str, Any]] = mapped_column(
+        "metadata",
+        JSONB,
+        nullable=False,
+        server_default=text("'{}'::jsonb"),
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=text("now()")
+    )
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class KnowledgeDocumentORM(Base):
+    __tablename__ = "documents"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "content_hash",
+            name="uq_knowledge_document_content",
+        ),
+        {"schema": "knowledge"},
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("identity.users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    title: Mapped[str] = mapped_column(String(256), nullable=False)
+    source_type: Mapped[str] = mapped_column(
+        String(32), nullable=False, server_default=text("'manual'")
+    )
+    source_uri: Mapped[str | None] = mapped_column(Text, nullable=True)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=text("now()")
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=text("now()")
+    )
+
+
+class KnowledgeChunkORM(Base):
+    __tablename__ = "chunks"
+    __table_args__ = (
+        UniqueConstraint(
+            "document_id",
+            "chunk_index",
+            name="uq_knowledge_chunk_index",
+        ),
+        Index("ix_knowledge_chunks_user", "user_id"),
+        {"schema": "knowledge"},
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("knowledge.documents.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("identity.users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    embedding: Mapped[list[float]] = mapped_column(Vector(384), nullable=False)
+    attributes: Mapped[dict[str, Any]] = mapped_column(
+        "metadata",
+        JSONB,
+        nullable=False,
+        server_default=text("'{}'::jsonb"),
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=text("now()")
+    )
+
+
 class AppConfigORM(Base):
     __tablename__ = "app_config"
     __table_args__ = {"schema": "config"}
@@ -175,6 +327,10 @@ __all__ = [
     "AuditEventORM",
     "Base",
     "DeviceORM",
+    "KnowledgeChunkORM",
+    "KnowledgeDocumentORM",
+    "MemoryEntryORM",
+    "MemoryPolicyORM",
     "DatabaseProvider",
     "UserORM",
     "create_provider",
