@@ -266,7 +266,7 @@ export function Greeting({ data }: { data: DashboardData | null }) {
   return (
     <div className="animate-fade-up text-center">
       <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
-        {period}, <span className="text-gradient">Wanderson</span>.
+        {period}, <span className="text-gradient">chefe</span>.
       </h1>
       <p className="mt-2 text-sm text-[var(--text-secondary)]">
         <span className={online ? "text-[var(--color-ok)]" : "text-[var(--color-danger)]"}>
