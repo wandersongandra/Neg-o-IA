@@ -44,6 +44,8 @@ class AuditEventRecord:
     parent_id: str | None = None
     user_id: str | None = None
     session_id: str | None = None
+    integrity_hash: str | None = None
+    integrity_valid: bool | None = None
     occurred_at: datetime = field(default_factory=datetime.now)
 
 
