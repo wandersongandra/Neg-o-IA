@@ -5,7 +5,6 @@ import { useRouter, usePathname } from "next/navigation";
 import {
   Activity,
   Brain,
-  Database,
   GitBranch,
   Menu,
   MessageSquareText,
