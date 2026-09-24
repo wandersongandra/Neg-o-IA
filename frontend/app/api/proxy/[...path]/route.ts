@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { resolveApiConfig } from "@/lib/env";
+import { getSessionToken } from "@/lib/session-cookie";
 import {
   enforceSameOriginMutation,
   isSafeDynamicSegment,
@@ -136,7 +137,7 @@ async function proxy(req: NextRequest, path: string[]): Promise<Response> {
       Accept: "*/*",
       ...trustedClientIpHeaders(req),
     };
-    const sessionToken = req.cookies.get("sophie_session")?.value;
+    const sessionToken = getSessionToken(req.cookies);
     if (sessionToken) {
       headers.Authorization = `Bearer ${sessionToken}`;
     } else if (SERVICE_API_KEY && process.env.NODE_ENV !== "production") {
