@@ -43,6 +43,7 @@ from app.modules.reasoning.router import router as reasoning_router
 from app.modules.security.router import require_authenticated_user, require_service_scope
 from app.modules.security.router import router as security_router
 from app.modules.tool_manager.router import router as tool_manager_router
+from app.modules.vision.router import router as vision_router
 from app.modules.voice.router import (
     router as voice_router,
 )
@@ -348,6 +349,7 @@ def create_app() -> FastAPI:
     application.include_router(tool_manager_router, dependencies=auth_required)
     application.include_router(automation_router, dependencies=auth_required)
     application.include_router(brain_router, dependencies=auth_required)
+    application.include_router(vision_router, dependencies=auth_required)
     application.include_router(voice_router, dependencies=auth_required)
     application.include_router(voice_ws_router)
     application.include_router(conversation_router, dependencies=auth_required)
