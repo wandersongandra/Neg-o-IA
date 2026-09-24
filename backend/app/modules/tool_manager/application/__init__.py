@@ -307,9 +307,7 @@ class ToolManagerService:
         tool_name: str,
         idempotency_key: str,
     ) -> str:
-        digest = hashlib.sha256(
-            f"{user_id}:{tool_name}:{idempotency_key}".encode()
-        ).hexdigest()
+        digest = hashlib.sha256(f"{user_id}:{tool_name}:{idempotency_key}".encode()).hexdigest()
         return f"tool:idem:{digest}"
 
     async def _idempotency_get(
