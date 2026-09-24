@@ -183,17 +183,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  dependency_review:
-    name: Dependency Review
+  osv_review:
+    name: OSV dependency review
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
-    steps:
-      - name: Review dependency changes
-        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48
-        with:
-          fail-on-severity: high
+      security-events: write
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@c7c7bcb0773cc4678a674ada03a66cc5c4325476
+    with:
+      scan-args: |-
+        --include-git-root
+        -r
+        ./
 
   codeql:
     name: CodeQL (${{ matrix.language }})
