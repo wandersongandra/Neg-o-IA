@@ -52,6 +52,9 @@ class Settings(BaseSettings):
     rate_limit_burst: int = 5
     ws_max_connections: int = 100
     auth_session_ttl_seconds: int = 8 * 60 * 60
+    auth_session_idle_seconds: int = 30 * 60
+    auth_max_active_sessions: int = 5
+    trusted_hosts: list[str] = []
     registration_enabled: bool = False
 
     external_ai_enabled: bool = False
@@ -99,7 +102,7 @@ class Settings(BaseSettings):
     tool_circuit_failures: int = 3
     tool_circuit_cooldown_seconds: float = 30.0
 
-    @field_validator("cors_origins", "service_api_scopes", mode="before")
+    @field_validator("cors_origins", "service_api_scopes", "trusted_hosts", mode="before")
     @classmethod
     def _split_csv_list(cls, value: object) -> object:
         if isinstance(value, str):
@@ -140,6 +143,16 @@ class Settings(BaseSettings):
             problems.append("NEGAO_CORS_ORIGINS deve conter apenas origens HTTPS válidas")
         if self.registration_enabled:
             problems.append("NEGAO_REGISTRATION_ENABLED deve ser false em produção")
+        if self.auth_session_idle_seconds <= 0:
+            problems.append("NEGAO_AUTH_SESSION_IDLE_SECONDS deve ser maior que zero")
+        if self.auth_session_idle_seconds > self.auth_session_ttl_seconds:
+            problems.append(
+                "NEGAO_AUTH_SESSION_IDLE_SECONDS não pode exceder NEGAO_AUTH_SESSION_TTL_SECONDS"
+            )
+        if not 1 <= self.auth_max_active_sessions <= 20:
+            problems.append("NEGAO_AUTH_MAX_ACTIVE_SESSIONS deve estar entre 1 e 20")
+        if "*" in self.trusted_hosts:
+            problems.append("NEGAO_TRUSTED_HOSTS não pode conter '*' em produção")
         if self.debug:
             problems.append("NEGAO_DEBUG deve ser false em produção")
         if not self.service_api_scopes:
@@ -189,6 +202,19 @@ class Settings(BaseSettings):
         if problems:
             raise ValueError("; ".join(problems))
         return self
+
+
+    def effective_trusted_hosts(self) -> list[str]:
+        if self.env != "production":
+            return ["*"]
+        if self.trusted_hosts:
+            return self.trusted_hosts
+        hosts: list[str] = []
+        for origin in self.cors_origins:
+            hostname = urlparse(origin).hostname
+            if hostname and hostname not in hosts:
+                hosts.append(hostname)
+        return hosts
 
 
 def _apply_legacy_env_aliases() -> None:
