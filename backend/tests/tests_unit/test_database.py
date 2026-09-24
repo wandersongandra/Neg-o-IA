@@ -14,6 +14,7 @@ from app.modules.database.application import (
     hash_api_key,
     register_audit_event,
     verify_api_key,
+    verify_audit_event_integrity,
 )
 from app.modules.database.infrastructure import ApiKeyORM
 from app.modules.events.envelope import build_envelope
@@ -93,3 +94,9 @@ async def test_register_audit_event_maps_envelope(fake_session: AsyncMock) -> No
     assert record.payload == {"text": "oi"}
     added = fake_session.add.call_args.args[0]
     assert added.event_type == envelope.type
+    assert isinstance(added.integrity_hash, str)
+    assert len(added.integrity_hash) == 64
+    assert verify_audit_event_integrity(added) is True
+
+    added.payload = {"text": "conteúdo adulterado"}
+    assert verify_audit_event_integrity(added) is False
