@@ -174,6 +174,26 @@ class ConversationService:
             raise ConversationNotFoundError(session_id)
         await self.append_message(session_id, "user", text, user_id=user_id)
         context = await self.get_context(session_id, user_id=user_id, query=text)
+        if user_id:
+            try:
+                from app.modules.agent import get_agent_orchestrator
+
+                agent_context = await get_agent_orchestrator().prepare_turn(
+                    user_id=user_id,
+                    text=text,
+                )
+                if agent_context is not None:
+                    context.insert(
+                        1,
+                        ChatMessage(
+                            role="system",
+                            content=agent_context.as_prompt_context(
+                                max_chars=get_settings().retrieval_context_max_chars
+                            ),
+                        ),
+                    )
+            except Exception:
+                _LOGGER.warning("conversation_agent_context_skipped", exc_info=True)
         try:
             from app.modules.brain.application import get_brain_service
 
