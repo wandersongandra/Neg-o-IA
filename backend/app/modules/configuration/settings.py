@@ -85,6 +85,15 @@ class Settings(BaseSettings):
     retrieval_min_score: float = 0.12
     retrieval_context_max_chars: int = 6000
 
+    planner_plan_ttl_seconds: int = 3600
+    planner_max_steps: int = 5
+    planner_max_replans: int = 2
+
+    tool_max_concurrency: int = 8
+    tool_timeout_seconds: float = 10.0
+    tool_circuit_failures: int = 3
+    tool_circuit_cooldown_seconds: float = 30.0
+
     @field_validator("cors_origins", "service_api_scopes", mode="before")
     @classmethod
     def _split_csv_list(cls, value: object) -> object:
