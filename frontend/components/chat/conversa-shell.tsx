@@ -12,7 +12,7 @@ export default function ConversaShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <TopBar data={null} onOpenPalette={() => router.push("/")} />
+      <TopBar data={null} commandLabel="Voltar ao centro de comando" onOpenPalette={() => router.push("/")} />
       <div className="flex flex-1">
         <Sidebar
           data={null}
