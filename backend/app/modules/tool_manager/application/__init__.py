@@ -180,7 +180,8 @@ class ToolManagerService:
         if cached is not None:
             return ToolExecutionResult(tool_name=tool_name, output=cached, cached=True)
 
-        state = self._circuits.setdefault(tool_name, _CircuitState())
+        circuit_key = f"{user_id}:{tool_name}"
+        state = self._circuits.setdefault(circuit_key, _CircuitState())
         now = time.monotonic()
         if state.open_until > now:
             raise ToolCircuitOpenError(tool_name)
