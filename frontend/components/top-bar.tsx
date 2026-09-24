@@ -16,7 +16,8 @@ import { PushNotifications } from "@/components/pwa/push-notifications";
 
 interface TopBarProps {
   data: DashboardData | null;
-  onOpenPalette: () => void;
+  onOpenPalette?: () => void;
+  commandLabel?: string;
 }
 
 type Theme = "azul" | "esmeralda" | "magenta";
@@ -83,7 +84,7 @@ function useTheme(): { theme: Theme; setTheme: (t: Theme) => void } {
   return { theme, setTheme };
 }
 
-export default function TopBar({ data, onOpenPalette }: TopBarProps) {
+export default function TopBar({ data, onOpenPalette, commandLabel }: TopBarProps) {
   const router = useRouter();
   const model = useBrainModel();
   const online = data?.healthz?.status === "alive";
@@ -134,17 +135,21 @@ export default function TopBar({ data, onOpenPalette }: TopBarProps) {
       </div>
 
       <button
-        onClick={onOpenPalette}
+        onClick={() => onOpenPalette?.()}
         type="button"
-        className="glass glass-hover interactive-control group flex h-10 min-w-0 flex-1 max-w-xl items-center gap-3 rounded-xl px-4 text-left"
+        disabled={!onOpenPalette}
+        aria-label={commandLabel ?? "Abrir paleta de comandos"}
+        className="glass glass-hover interactive-control group flex h-10 min-w-0 flex-1 max-w-xl items-center gap-3 rounded-xl px-4 text-left disabled:cursor-default disabled:opacity-60 disabled:hover:transform-none"
       >
         <Search className="size-4 shrink-0 text-[var(--text-secondary)] transition-colors group-hover:text-[var(--accent)]" />
         <span className="flex-1 truncate text-sm text-[var(--text-secondary)]">
-          Pesquisar ou dar um comando à Sophie…
+          {commandLabel ?? "Pesquisar ou dar um comando à Sophie…"}
         </span>
-        <span className="glass hidden items-center gap-1 rounded-md px-2 py-0.5 font-mono-data text-[10px] text-[var(--text-secondary)] sm:flex">
-          <Command className="size-3" /> K
-        </span>
+        {!commandLabel && onOpenPalette ? (
+          <span className="glass hidden items-center gap-1 rounded-md px-2 py-0.5 font-mono-data text-[10px] text-[var(--text-secondary)] sm:flex">
+            <Command className="size-3" /> K
+          </span>
+        ) : null}
       </button>
 
       <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
