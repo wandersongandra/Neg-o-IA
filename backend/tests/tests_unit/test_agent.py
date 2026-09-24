@@ -67,7 +67,12 @@ class FakeTools:
             automation_safe=True,
         )
 
-    async def execute_tool(self, tool_name: str, arguments: dict[str, Any], **kwargs: Any) -> ToolExecutionResult:
+    async def execute_tool(
+        self,
+        tool_name: str,
+        arguments: dict[str, Any],
+        **kwargs: Any,
+    ) -> ToolExecutionResult:
         self.calls.append({"tool_name": tool_name, "arguments": arguments, **kwargs})
         return ToolExecutionResult(tool_name=tool_name, output={"hits": [{"content": "SGS"}]})
 
