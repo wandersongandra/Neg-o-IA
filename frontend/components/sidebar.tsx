@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
   Activity,
   Bot,
@@ -70,12 +70,33 @@ interface SidebarProps {
 
 export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const version = data?.root?.version ?? "--";
   const ready = data?.readyz?.status === "ready";
 
   const handleLinkClick = useCallback(() => {
     onClose?.();
   }, [onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const previouslyFocused =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose?.();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previouslyFocused?.focus();
+    };
+  }, [isOpen, onClose]);
 
   return (
     <>
@@ -95,10 +116,11 @@ export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: S
           ${isOpen ? "visible translate-x-0" : "invisible -translate-x-full"}
         `}
         style={{ top: "calc(4rem + env(safe-area-inset-top))" }}
-        role="navigation"
-        aria-label="Navegação principal"
+        aria-label="Painel lateral"
       >
         <button
+          ref={closeButtonRef}
+          type="button"
           onClick={onClose}
           className="absolute right-3 top-3 lg:hidden p-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
           aria-label="Fechar menu"
