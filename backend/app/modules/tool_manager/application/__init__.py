@@ -7,8 +7,9 @@ import hashlib
 import json
 import logging
 import time
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable
+from typing import Any
 
 from app.infrastructure.db import check_database_health
 from app.infrastructure.redis import check_redis_health, get_redis
@@ -306,7 +307,7 @@ class ToolManagerService:
         idempotency_key: str,
     ) -> str:
         digest = hashlib.sha256(
-            f"{user_id}:{tool_name}:{idempotency_key}".encode("utf-8")
+            f"{user_id}:{tool_name}:{idempotency_key}".encode()
         ).hexdigest()
         return f"tool:idem:{digest}"
 
