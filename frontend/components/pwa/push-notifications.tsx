@@ -9,7 +9,9 @@ type PushStatus = "unsupported" | "denied" | "default" | "granted" | "subscribed
 export function PushNotifications() {
   const [status, setStatus] = useState<PushStatus>("default");
   const [error, setError] = useState<string | null>(null);
-  const vapidConfigured = Boolean(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY);
+  const pushBackendEnabled = process.env.NEXT_PUBLIC_PUSH_ENABLED === "true";
+  const vapidConfigured =
+    pushBackendEnabled && Boolean(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY);
 
   const checkStatus = useCallback(async () => {
     if (!vapidConfigured || !isPushSupported()) {
