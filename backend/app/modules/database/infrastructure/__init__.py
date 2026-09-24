@@ -6,6 +6,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     Boolean,
     DateTime,
@@ -21,7 +22,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from pgvector.sqlalchemy import Vector
 
 from app.modules.database.infrastructure.provider import DatabaseProvider, create_provider
 
