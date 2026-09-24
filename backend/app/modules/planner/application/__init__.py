@@ -88,6 +88,7 @@ class PlannerService:
         entities: dict[str, Any],
     ) -> list[PlanStep]:
         if suggested_tool:
+            arguments: dict[str, Any]
             if suggested_tool == "memory.remember":
                 arguments = {"content": str(entities.get("content") or text)}
             elif suggested_tool in {"memory.search", "knowledge.search"}:
