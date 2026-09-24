@@ -67,6 +67,12 @@ class Settings(BaseSettings):
     brain_circuit_cooldown_seconds: int = 60
     brain_cache_ttl_seconds: int = 300
 
+    vision_enabled: bool = False
+    vision_model: str = ""
+    vision_max_image_bytes: int = 5 * 1024 * 1024
+    vision_timeout_seconds: float = 45.0
+    vision_max_prompt_chars: int = 2000
+
     tts_voice: str = "pt-BR-FranciscaNeural"
     tts_rate: str = "+0%"
     voice_max_chunk_bytes: int = 256 * 1024
@@ -171,6 +177,11 @@ class Settings(BaseSettings):
                 problems.append(
                     "NEGAO_NVIDIA_BASE_URL deve usar HTTPS quando IA externa estiver ativa"
                 )
+        if self.vision_enabled:
+            if not self.external_ai_enabled:
+                problems.append("NEGAO_VISION_ENABLED exige NEGAO_EXTERNAL_AI_ENABLED=true")
+            if not self.vision_model.strip():
+                problems.append("NEGAO_VISION_MODEL deve ser definido quando visão estiver ativa")
         credential_values = {
             self.service_api_key,
             self.secret_key,

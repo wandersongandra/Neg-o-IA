@@ -122,6 +122,26 @@ class PostgresLongTermMemory:
                 )
             return hits
 
+    async def list_recent(
+        self,
+        user_id: str,
+        *,
+        limit: int = 50,
+    ) -> list[LongTermMemoryEntry]:
+        parsed_user = _user_uuid(user_id)
+        now = datetime.now(UTC)
+        async with self._factory() as session:
+            result = await session.execute(
+                select(MemoryEntryORM)
+                .where(
+                    MemoryEntryORM.user_id == parsed_user,
+                    or_(MemoryEntryORM.expires_at.is_(None), MemoryEntryORM.expires_at > now),
+                )
+                .order_by(MemoryEntryORM.created_at.desc())
+                .limit(max(1, min(limit, 100)))
+            )
+            return [_domain(row) for row in result.scalars()]
+
     async def delete(self, user_id: str, memory_id: str) -> bool:
         parsed_user = _user_uuid(user_id)
         try:

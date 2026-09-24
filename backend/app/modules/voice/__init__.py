@@ -1,7 +1,4 @@
-"""Módulo voice — entrada de fala (ASR) e saída de voz (TTS).
-
-v0: esqueleto de contrato. Implementação efetiva em v4+ (Sentidos).
-"""
+"""Voice — sessões autenticadas de fala, STT e TTS."""
 
 from __future__ import annotations
 

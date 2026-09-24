@@ -5,7 +5,6 @@ import { useRouter, usePathname } from "next/navigation";
 import {
   Activity,
   Brain,
-  Database,
   GitBranch,
   Menu,
   MessageSquareText,
@@ -60,11 +59,10 @@ const COMMANDS: Command[] = [
   { label: "Abrir conversa com a Sophie", icon: MessageSquareText, href: "/conversa" },
   { label: "Voz", icon: Mic, href: "/voz" },
   { label: "Monitor", icon: Activity, href: "/monitor" },
-  { label: "Consultar memória", icon: Brain },
-  { label: "Buscar conhecimento", icon: GitBranch },
-  { label: "Acessar banco de dados", icon: Database },
-  { label: "Gerenciar ferramentas", icon: Wrench },
-  { label: "Iniciar automação", icon: Play },
+  { label: "Consultar memória", icon: Brain, href: "/memory" },
+  { label: "Buscar conhecimento", icon: GitBranch, href: "/knowledge" },
+  { label: "Inspecionar Agent Core", icon: Wrench, href: "/agent" },
+  { label: "Gerenciar automações", icon: Play, href: "/automation" },
 ];
 
 export default function Dashboard() {

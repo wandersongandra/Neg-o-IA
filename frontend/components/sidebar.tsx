@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef } from "react";
 import {
   Activity,
   Bot,
+  CalendarClock,
   Braces,
   Boxes,
   Brain,
@@ -20,6 +21,7 @@ import {
   Monitor,
   Server,
   Settings,
+  Sparkles,
   Wrench,
   X,
 } from "lucide-react";
@@ -41,23 +43,25 @@ const MAIN_NAV: MainNavItem[] = [
   { label: "Dashboard", href: "/", icon: Home },
   { label: "Conversa", href: "/conversa", icon: MessagesSquare },
   { label: "Voz", href: "/voz", icon: Mic },
+  { label: "Memória", href: "/memory", icon: Brain },
+  { label: "Conhecimento", href: "/knowledge", icon: Braces },
+  { label: "Agente", href: "/agent", icon: Wrench },
+  { label: "Automações", href: "/automation", icon: Bot },
+  { label: "Agendamentos", href: "/scheduler", icon: CalendarClock },
+  { label: "Aprendizado", href: "/learning", icon: Sparkles },
+  { label: "Visão", href: "/vision", icon: Eye },
   { label: "Monitor", href: "/monitor", icon: Monitor },
   { label: "Configuração", href: "/config", icon: Settings },
 ];
 
 const SOON_NAV: SoonNavItem[] = [
-  { label: "Memória", icon: Brain },
-  { label: "Conhecimento", icon: Braces },
   { label: "Projetos", icon: FolderKanban },
   { label: "Documentos", icon: FileText },
   { label: "Tarefas", icon: Activity },
-  { label: "Ferramentas", icon: Wrench },
   { label: "Docker", icon: Boxes },
   { label: "VPS", icon: Server },
   { label: "Cloudflare", icon: Cloud },
   { label: "Banco de Dados", icon: Database },
-  { label: "Observação", icon: Eye },
-  { label: "Automação", icon: Bot },
 ];
 
 interface SidebarProps {

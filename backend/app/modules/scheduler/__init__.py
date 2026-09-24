@@ -1,7 +1,4 @@
-"""Módulo scheduler — agendamento temporal cron-like.
-
-v0: esqueleto de contrato. Implementação efetiva em v2+ (Cérebro que Aprende).
-"""
+"""Scheduler V1 — jobs persistentes restritos a ferramentas automation-safe."""
 
 from __future__ import annotations
 

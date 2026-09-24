@@ -1,16 +1,26 @@
-"""Contratos do módulo learning — domain (framework-free).
-
-Responsabilidade única: extrair lições das execuções — registrar
-experiências, avaliar resultado × intenção, gerar resumos e propor
-consolidação na memória. NÃO altera a memória sozinho: sempre via Memory.
-"""
+"""Contratos do Learning V1."""
 
 from __future__ import annotations
 
-from typing import Any, Protocol
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Protocol
+
+
+@dataclass(frozen=True, slots=True)
+class LearningFeedback:
+    memory_id: str
+    user_id: str
+    content: str
+    rating: int
+    created_at: datetime
 
 
 class LearningPort(Protocol):
-    """Porta pública do Learning (pipeline de experiência assíncrono)."""
-
-    async def record_experience(self, experience: dict[str, Any]) -> None: ...
+    async def record_feedback(
+        self,
+        user_id: str,
+        content: str,
+        *,
+        rating: int,
+    ) -> LearningFeedback: ...

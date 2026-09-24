@@ -2,31 +2,15 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Save, RotateCcw, Mic, Wrench, Globe, Brain, Settings, Loader2 } from "lucide-react";
+import { Save, RotateCcw, Mic, Wrench, Brain, Settings, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 
-const DEFAULT_SYSTEM_PROMPT = `Você é a Sophie, assistente pessoal de inteligência artificial do Wanderson. Fala sempre em português brasileiro, com tom profissional, elegante e direto, inspirado no JARVIS: nunca invente fatos, admita quando não souber, e use humor sutil quando apropriado. Trate o usuário como 'chefe'. Seja conciso: prefira respostas curtas e úteis, em vez de longas explicações. Nunca repita o que o usuário acabou de dizer.`;
-
-const MODEL_OPTIONS = [
-  { value: "deepseek-ai/deepseek-v4-flash", label: "DeepSeek V4 Flash (rápido)" },
-  { value: "openai/gpt-oss-120b", label: "GPT-OSS-120B" },
-  { value: "meta/llama-3.1-8b-instruct", label: "Llama 3.1 8B Instruct" },
-];
+const DEFAULT_SYSTEM_PROMPT = `Você é a Sophie, assistente pessoal de inteligência artificial do usuário autenticado. Fala sempre em português brasileiro, com tom profissional, elegante e direto, inspirado no JARVIS: nunca invente fatos, admita quando não souber, e use humor sutil quando apropriado. Trate o usuário como 'chefe'. Seja conciso: prefira respostas curtas e úteis, em vez de longas explicações. Nunca repita o que o usuário acabou de dizer.`;
 
 const VOICE_OPTIONS = [
   { value: "pt-BR-FranciscaNeural", label: "Francisca (feminino, natural)" },
   { value: "pt-BR-AntonioNeural", label: "Antônio (masculino, natural)" },
   { value: "pt-BR-RaquelNeural", label: "Raquel (feminino, suave)" },
-];
-
-const TOOL_OPTIONS = [
-  { id: "web_search", label: "Busca Web", desc: "Pesquisa em tempo real", icon: Globe },
-  { id: "code_exec", label: "Execução de Código", desc: "Python/JS sandbox", icon: Brain },
-  { id: "file_ops", label: "Operações de Arquivo", desc: "Leitura/escrita local", icon: Wrench },
-  { id: "memory", label: "Memória de Longo Prazo", desc: "RAG + embeddings", icon: Settings },
-  { id: "calendar", label: "Calendário", desc: "Agendamento e lembretes", icon: Globe },
-  { id: "email", label: "E-mail", desc: "Envio e leitura", icon: Wrench },
-  { id: "weather", label: "Clima", desc: "Previsão atual", icon: Globe },
 ];
 
 interface Config {
@@ -276,25 +260,15 @@ export default function ConfigPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Modelo Principal</label>
-                <select
-                  aria-label="Modelo Principal"
-                  value={config.primary_model}
-                  disabled
-                  className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
-                >
-                  {MODEL_OPTIONS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                </select>
+                <div className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] px-4 py-3 font-mono-data text-sm text-[var(--text-primary)]">
+                  {config.primary_model}
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-[var(--text-secondary)] mb-1">Modelo Fallback</label>
-                <select
-                  aria-label="Modelo Fallback"
-                  value={config.fallback_model}
-                  disabled
-                  className="w-full bg-[var(--bg-secondary)] border border-[var(--border)] rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
-                >
-                  {MODEL_OPTIONS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-                </select>
+                <div className="w-full rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] px-4 py-3 font-mono-data text-sm text-[var(--text-primary)]">
+                  {config.fallback_model}
+                </div>
               </div>
             </div>
             <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
@@ -306,29 +280,10 @@ export default function ConfigPage() {
         </SectionCard>
 
         <SectionCard title="Ferramentas" icon={Wrench}>
-          <p className="mb-4 text-xs leading-relaxed text-[var(--text-secondary)]">
-            Integrações ainda não habilitadas no Tool Manager aparecem somente como referência.
+          <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
+            O catálogo ativo é administrado pelo Tool Manager no módulo Agente.
+            Ferramentas de escrita exigem confirmação e não são habilitadas por esta tela.
           </p>
-          <div className="space-y-3">
-            {TOOL_OPTIONS.map(tool => (
-              <label key={tool.id} className="glass flex items-center gap-3 rounded-xl p-3 opacity-70">
-                <div className="size-10 rounded-xl bg-[var(--accent-muted)] flex items-center justify-center">
-                  <tool.icon className="size-5 text-[var(--accent)]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-[var(--text-primary)]">{tool.label}</p>
-                  <p className="text-sm text-[var(--text-secondary)]">{tool.desc}</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={config.tools_enabled.includes(tool.id)}
-                  disabled
-                  readOnly
-                  className="peer size-5 appearance-none rounded-lg border-2 border-[var(--border)] bg-[var(--bg-secondary)] checked:bg-[var(--accent)] checked:border-[var(--accent)] transition-colors"
-                />
-              </label>
-            ))}
-          </div>
         </SectionCard>
 
         <SectionCard title="Voz" icon={Mic}>

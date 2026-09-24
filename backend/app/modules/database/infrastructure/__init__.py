@@ -351,6 +351,48 @@ class AutomationRuleORM(Base):
     )
 
 
+class SchedulerJobORM(Base):
+    __tablename__ = "jobs"
+    __table_args__ = (
+        Index("ix_scheduler_jobs_due", "enabled", "next_run_at"),
+        Index("ix_scheduler_jobs_user", "user_id", "created_at"),
+        {"schema": "scheduler"},
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("identity.users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    action_tool: Mapped[str] = mapped_column(String(128), nullable=False)
+    action_args: Mapped[dict[str, Any]] = mapped_column(
+        JSONB,
+        nullable=False,
+        server_default=text("'{}'::jsonb"),
+    )
+    run_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    interval_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    enabled: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default=text("true"),
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=text("now()")
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=text("now()")
+    )
+    last_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    next_run_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
 class AppConfigORM(Base):
     __tablename__ = "app_config"
     __table_args__ = {"schema": "config"}
@@ -374,6 +416,7 @@ __all__ = [
     "KnowledgeDocumentORM",
     "MemoryEntryORM",
     "MemoryPolicyORM",
+    "SchedulerJobORM",
     "DatabaseProvider",
     "UserORM",
     "create_provider",

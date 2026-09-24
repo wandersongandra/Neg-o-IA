@@ -1,7 +1,4 @@
-"""Módulo vision — análise de imagens, OCR e descrição.
-
-v0: esqueleto de contrato. Implementação efetiva em v4+ (Sentidos).
-"""
+"""Vision V1 — análise explícita e autenticada de imagens."""
 
 from __future__ import annotations
 

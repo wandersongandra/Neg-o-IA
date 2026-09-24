@@ -12,6 +12,7 @@ from app.modules.events.envelope import build_envelope
 from app.modules.planner.domain import ExecutionPlan, PlanStep
 from app.modules.planner.infrastructure import RedisPlanStore
 from app.modules.reasoning.application import get_reasoning_service
+from app.modules.reasoning.domain import IntentResolution
 
 _LOGGER = logging.getLogger("app.modules.planner.application")
 PRODUCER = "planner"
@@ -22,8 +23,17 @@ class PlannerService:
     def __init__(self, store: RedisPlanStore | None = None) -> None:
         self._store = store or RedisPlanStore()
 
-    async def create_plan(self, user_id: str, text: str) -> ExecutionPlan:
-        resolution = await get_reasoning_service().resolve_intent(text, user_id=user_id)
+    async def create_plan(
+        self,
+        user_id: str,
+        text: str,
+        *,
+        resolution: IntentResolution | None = None,
+    ) -> ExecutionPlan:
+        resolution = resolution or await get_reasoning_service().resolve_intent(
+            text,
+            user_id=user_id,
+        )
         steps = self._steps_for_resolution(text, resolution.suggested_tool, resolution.entities)
         now = datetime.now(UTC)
         plan = ExecutionPlan(

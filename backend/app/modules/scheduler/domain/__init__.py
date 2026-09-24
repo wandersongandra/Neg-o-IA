@@ -1,18 +1,38 @@
-"""Contratos do módulo scheduler — domain (framework-free).
-
-Responsabilidade única: agendar tarefas temporais (cron-like) e acordar
-o Brain via `scheduler.tick`. Faz agendamento, cron e lembretes;
-NÃO decide o conteúdo das tarefas.
-"""
+"""Contratos do Scheduler V1."""
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from datetime import datetime
 from typing import Any, Protocol
 
 
+@dataclass(frozen=True, slots=True)
+class ScheduledJob:
+    id: str
+    user_id: str
+    name: str
+    action_tool: str
+    action_args: dict[str, Any]
+    run_at: datetime
+    interval_seconds: int | None
+    enabled: bool
+    created_at: datetime
+    updated_at: datetime
+    last_run_at: datetime | None
+    next_run_at: datetime
+
+
 class SchedulerPort(Protocol):
-    """Porta pública do Scheduler (agendamento temporal)."""
+    async def schedule(
+        self,
+        user_id: str,
+        *,
+        name: str,
+        action_tool: str,
+        action_args: dict[str, Any],
+        run_at: datetime,
+        interval_seconds: int | None = None,
+    ) -> ScheduledJob: ...
 
-    async def schedule(self, *, name: str, cron: str, action: dict[str, Any]) -> str: ...
-
-    async def cancel(self, job_id: str) -> bool: ...
+    async def cancel(self, user_id: str, job_id: str) -> bool: ...
