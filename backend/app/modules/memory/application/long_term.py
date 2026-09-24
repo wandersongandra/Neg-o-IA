@@ -114,10 +114,7 @@ class LongTermMemoryService:
         hits = await self.search(user_id, query, limit=limit)
         if not hits:
             return ""
-        lines = [
-            f"- [{hit.entry.source}; score={hit.score:.2f}] {hit.entry.content}"
-            for hit in hits
-        ]
+        lines = [f"- [{hit.entry.source} {hit.score:.2f}] {hit.entry.content}" for hit in hits]
         return "\n".join(lines)
 
     async def _publish(
