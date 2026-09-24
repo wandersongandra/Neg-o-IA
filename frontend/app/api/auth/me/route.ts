@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveApiConfig } from "@/lib/env";
+import { getSessionToken } from "@/lib/session-cookie";
 import { trustedClientIpHeaders } from "@/lib/request-security";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
   const { apiUrl } = resolveApiConfig();
-  const token = request.cookies.get("sophie_session")?.value;
+  const token = getSessionToken(request.cookies);
   if (!token) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
   try {
     const upstream = await fetch(`${apiUrl}/security/status`, {
