@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app import __version__
 from app.core.context import get_request_context, request_context_middleware
@@ -206,6 +207,11 @@ async def rate_limit_middleware(request: Request, call_next: RequestResponseEndp
 
 
 def _add_middlewares(app: FastAPI, settings: Settings) -> None:
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=settings.effective_trusted_hosts(),
+        www_redirect=False,
+    )
     app.add_middleware(BaseHTTPMiddleware, dispatch=rate_limit_middleware)
     app.add_middleware(
         CORSMiddleware,
