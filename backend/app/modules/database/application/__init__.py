@@ -82,9 +82,7 @@ def _compute_audit_integrity_hash(
     payload: dict[str, Any],
 ) -> str:
     return hmac.new(
-        _audit_integrity_key(
-            secret_key or get_settings().effective_audit_integrity_keys()[0]
-        ),
+        _audit_integrity_key(secret_key or get_settings().effective_audit_integrity_keys()[0]),
         _audit_integrity_material(
             event_id=event_id,
             event_type=event_type,
