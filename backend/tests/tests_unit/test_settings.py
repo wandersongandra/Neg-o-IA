@@ -168,3 +168,20 @@ def test_trusted_hosts_derivados_de_cors_em_producao() -> None:
         "backend",
         "sophie.example.com",
     ]
+
+
+
+def test_producao_rejeita_audit_integrity_key_fraca() -> None:
+    kwargs = _strong_production_kwargs()
+    kwargs["audit_integrity_key"] = "fraca"
+    with pytest.raises(ValidationError, match="AUDIT_INTEGRITY_KEY"):
+        Settings.model_validate(kwargs)
+
+
+def test_audit_integrity_keyring_preserva_chaves_anteriores() -> None:
+    settings = Settings(
+        secret_key="s" * 40,
+        audit_integrity_key="n" * 40,
+        audit_integrity_previous_keys=["o" * 40],
+    )
+    assert settings.effective_audit_integrity_keys() == ["n" * 40, "o" * 40]
