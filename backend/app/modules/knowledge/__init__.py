@@ -1,7 +1,4 @@
-"""Módulo knowledge — base de conhecimento curada da Sophie.
-
-v0: esqueleto de contrato. Implementação efetiva em v2+ (Knowledge Vault).
-"""
+"""Knowledge Vault — ingestão, chunking e recuperação semântica por usuário."""
 
 from __future__ import annotations
 
