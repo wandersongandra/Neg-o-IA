@@ -45,6 +45,8 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://negao:negao@localhost:5432/negao"
     redis_url: str = "redis://localhost:6379/0"
     secret_key: str = "negao-dev-secret-key"
+    audit_integrity_key: str = ""
+    audit_integrity_previous_keys: list[str] = []
     cors_origins: list[str] = ["*"]
     otel_exporter_otlp_endpoint: str = "http://localhost:4317"
     metrics_enabled: bool = True
@@ -102,7 +104,13 @@ class Settings(BaseSettings):
     tool_circuit_failures: int = 3
     tool_circuit_cooldown_seconds: float = 30.0
 
-    @field_validator("cors_origins", "service_api_scopes", "trusted_hosts", mode="before")
+    @field_validator(
+        "cors_origins",
+        "service_api_scopes",
+        "trusted_hosts",
+        "audit_integrity_previous_keys",
+        mode="before",
+    )
     @classmethod
     def _split_csv_list(cls, value: object) -> object:
         if isinstance(value, str):
@@ -131,6 +139,23 @@ class Settings(BaseSettings):
             problems.append(
                 "NEGAO_SECRET_KEY deve ser definida com um valor forte "
                 f"(>= {_MIN_PRODUCTION_SECRET_LENGTH} caracteres) em produção"
+            )
+        if self.audit_integrity_key and (
+            len(self.audit_integrity_key) < _MIN_PRODUCTION_SECRET_LENGTH
+            or _looks_like_placeholder(self.audit_integrity_key)
+        ):
+            problems.append(
+                "NEGAO_AUDIT_INTEGRITY_KEY deve ter pelo menos "
+                f"{_MIN_PRODUCTION_SECRET_LENGTH} caracteres quando definida"
+            )
+        invalid_previous_audit_keys = [
+            key
+            for key in self.audit_integrity_previous_keys
+            if len(key) < _MIN_PRODUCTION_SECRET_LENGTH or _looks_like_placeholder(key)
+        ]
+        if invalid_previous_audit_keys:
+            problems.append(
+                "NEGAO_AUDIT_INTEGRITY_PREVIOUS_KEYS contém chave inválida"
             )
         if self.cors_origins == ["*"]:
             problems.append("NEGAO_CORS_ORIGINS não pode ser '*' em produção")
@@ -202,6 +227,11 @@ class Settings(BaseSettings):
         if problems:
             raise ValueError("; ".join(problems))
         return self
+
+
+    def effective_audit_integrity_keys(self) -> list[str]:
+        primary = self.audit_integrity_key or self.secret_key
+        return [primary, *self.audit_integrity_previous_keys]
 
 
     def effective_trusted_hosts(self) -> list[str]:
