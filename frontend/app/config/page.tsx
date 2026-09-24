@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Save, RotateCcw, Mic, Wrench, Globe, Brain, Settings, Loader2 } from "lucide-react";
+import { Save, RotateCcw, Mic, Wrench, Brain, Settings, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 
 const DEFAULT_SYSTEM_PROMPT = `Você é a Sophie, assistente pessoal de inteligência artificial do usuário autenticado. Fala sempre em português brasileiro, com tom profissional, elegante e direto, inspirado no JARVIS: nunca invente fatos, admita quando não souber, e use humor sutil quando apropriado. Trate o usuário como 'chefe'. Seja conciso: prefira respostas curtas e úteis, em vez de longas explicações. Nunca repita o que o usuário acabou de dizer.`;
