@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from app.modules.configuration.settings import Settings
 from app.modules.database.application import (
     create_api_key,
     generate_api_key,
@@ -16,7 +17,6 @@ from app.modules.database.application import (
     verify_api_key,
     verify_audit_event_integrity,
 )
-from app.modules.configuration.settings import Settings
 from app.modules.database.infrastructure import ApiKeyORM
 from app.modules.events.envelope import build_envelope
 
