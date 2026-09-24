@@ -83,7 +83,7 @@ class SchedulerService:
         return removed
 
     async def run_due_once(self) -> int:
-        jobs = await self._store.list_due(limit=50)
+        jobs = await self._store.claim_due(limit=50)
         tools = get_tool_manager_service()
         executed = 0
         for job in jobs:
@@ -118,7 +118,7 @@ class SchedulerService:
                     {"success": False},
                 )
             finally:
-                await self._store.complete_run(job.id, success=success)
+                await self._store.record_result(job.id)
         return executed
 
     async def start(self) -> None:
