@@ -45,8 +45,10 @@ def upgrade() -> None:
         """
     )
     op.execute(
-        "CREATE INDEX ix_memory_entries_user_created "
-        "ON memory.entries (user_id, created_at DESC)"
+        """
+        CREATE INDEX ix_memory_entries_user_created
+        ON memory.entries (user_id, created_at DESC)
+        """
     )
     op.execute("CREATE INDEX ix_memory_entries_expiry ON memory.entries (expires_at)")
     op.execute(
@@ -85,8 +87,10 @@ def upgrade() -> None:
         """
     )
     op.execute(
-        "CREATE INDEX ix_knowledge_documents_user "
-        "ON knowledge.documents (user_id, updated_at DESC)"
+        """
+        CREATE INDEX ix_knowledge_documents_user
+        ON knowledge.documents (user_id, updated_at DESC)
+        """
     )
     op.execute("CREATE INDEX ix_knowledge_chunks_user ON knowledge.chunks (user_id)")
     op.execute(
