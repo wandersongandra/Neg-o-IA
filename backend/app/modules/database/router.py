@@ -17,6 +17,7 @@ from app.infrastructure.db import get_db_session
 from app.modules.configuration.settings import get_settings
 from app.modules.database import get_database_provider
 from app.modules.database.application import (
+    audit_integrity_summary,
     count_audit_events,
     create_api_key,
     get_config,
@@ -101,6 +102,14 @@ async def revoke_api_key_endpoint(key_id: str, session: SessionDep) -> None:
     revoked = await revoke_api_key(session, key_id)
     if not revoked:
         raise HTTPException(status_code=404, detail="api key not found")
+
+
+@router.get("/audit/integrity", tags=["internal"])
+async def audit_integrity(
+    session: SessionDep,
+    limit: int = Query(default=1000, ge=1, le=5000),
+) -> dict[str, int]:
+    return await audit_integrity_summary(session, limit=limit)
 
 
 @router.get("/audit", tags=["internal"])
