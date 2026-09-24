@@ -1,7 +1,4 @@
-"""Módulo tool_manager — catálogo e execução de ferramentas (plugins).
-
-v0: esqueleto de contrato. Implementação efetiva em v3+ (Mãos).
-"""
+"""Tool Manager V1 — catálogo fechado e execução governada de ferramentas."""
 
 from __future__ import annotations
 
