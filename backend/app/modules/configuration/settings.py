@@ -154,9 +154,7 @@ class Settings(BaseSettings):
             if len(key) < _MIN_PRODUCTION_SECRET_LENGTH or _looks_like_placeholder(key)
         ]
         if invalid_previous_audit_keys:
-            problems.append(
-                "NEGAO_AUDIT_INTEGRITY_PREVIOUS_KEYS contém chave inválida"
-            )
+            problems.append("NEGAO_AUDIT_INTEGRITY_PREVIOUS_KEYS contém chave inválida")
         if self.cors_origins == ["*"]:
             problems.append("NEGAO_CORS_ORIGINS não pode ser '*' em produção")
         invalid_origins = [
@@ -228,11 +226,9 @@ class Settings(BaseSettings):
             raise ValueError("; ".join(problems))
         return self
 
-
     def effective_audit_integrity_keys(self) -> list[str]:
         primary = self.audit_integrity_key or self.secret_key
         return [primary, *self.audit_integrity_previous_keys]
-
 
     def effective_trusted_hosts(self) -> list[str]:
         if self.env != "production":
