@@ -7,6 +7,7 @@ a sessão.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from dataclasses import dataclass
 from typing import Any
@@ -232,7 +233,7 @@ class ConversationService:
                 confirmed=resolution.explicit_action,
                 idempotency_key=(
                     f"conversation:{session_id}:{resolution.intent}:"
-                    f"{hash(text.casefold())}"
+                    + hashlib.sha256(text.casefold().encode()).hexdigest()[:24]
                 ),
             )
         except ToolConfirmationRequiredError:
