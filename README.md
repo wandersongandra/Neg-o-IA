@@ -1,15 +1,31 @@
 # Sophie
 
-Sophie is a personal AI assistant with conversation, memory, knowledge, automation, voice and vision modules. The modules share one conversation core; voice and Bluetooth are input/output concerns, not a separate assistant.
+Sophie is a personal AI assistant built as a secure modular monolith. The same conversation core now coordinates identity, conversation, long-term memory, semantic retrieval, planning, governed tools, event automations, voice and opt-in vision.
 
-## Architecture
+## Current architecture
 
-- Backend: FastAPI, Python 3.13, SQLAlchemy, PostgreSQL and Redis.
-- Frontend: Next.js 15, React 19 and Tailwind CSS.
-- Integrations: NVIDIA APIs for model and speech services, `edge-tts` for synthesis, WebSockets for realtime sessions.
-- Operations: Docker Compose, Nginx, Prometheus, Grafana and Loki.
+- **Backend:** FastAPI, Python 3.13, SQLAlchemy, PostgreSQL 17 + pgvector and Redis.
+- **Frontend:** Next.js 15, React 19 and Tailwind CSS.
+- **Brain:** OpenAI-compatible NVIDIA endpoint with retry, circuit breaker and Redis cache.
+- **Memory:** short-term Redis plus long-term PostgreSQL/pgvector, per-user retention policy and semantic recall.
+- **Knowledge Vault:** chunking, local deterministic embeddings and pgvector retrieval.
+- **Agent Core:** deterministic intent resolution, bounded plans and an allowlisted Tool Manager.
+- **Automation:** persisted event rules that may call only tools explicitly marked automation-safe.
+- **Voice:** authenticated WebSocket voice sessions with NVIDIA STT and edge-tts synthesis.
+- **Vision V1:** explicit authenticated PNG/JPEG/WebP uploads to a configured multimodal provider.
+- **Operations:** Docker Compose, Nginx, Prometheus, Grafana and Loki.
 
-The backend is organized by domain modules under `backend/app/modules`. The frontend uses the Next.js App Router under `frontend/app` and shared components under `frontend/components`.
+## Safety model
+
+Agent actions are fail-closed:
+
+- Tool names come from a closed catalog.
+- Read-only tools may execute automatically after intent resolution.
+- Write tools require an explicit user action/confirmation.
+- Automations may use only tools marked `automation_safe` and never confirmation-required writes.
+- Retrieved memory/knowledge is injected as **untrusted data**, never as executable instructions.
+- Vision is disabled by default and sends only images explicitly selected by the authenticated user.
+- User data is namespaced by authenticated identity across conversations, memory, knowledge and automations.
 
 ## Development
 
@@ -20,18 +36,18 @@ Prerequisites:
 - Python 3.13
 - Node.js and npm
 
-Create a local environment from the versioned template and review every value before starting the services:
+Create the local environment:
 
 ```bash
 cp .env.example .env
 make dev
 ```
 
-The default local endpoints are:
+Default endpoints:
 
 - Frontend: `http://localhost:3000`
 - Backend: `http://localhost:8000`
-- API documentation: `http://localhost:8000/docs`
+- API docs in non-production: `http://localhost:8000/docs`
 
 Useful commands:
 
@@ -44,25 +60,29 @@ make logs
 make stop
 ```
 
-Detailed validation procedures are documented in [TESTING_GUIDE.md](TESTING_GUIDE.md). Infrastructure notes are in [INFRASTRUCTURE_READY.md](INFRASTRUCTURE_READY.md) and [REDIS_CLOUD_CONFIG.md](REDIS_CLOUD_CONFIG.md).
+## Product workspaces
 
-## Voice
+The frontend exposes authenticated workspaces for:
 
-Voice V1 is exposed through `/ws/voice`. A session uses a short-lived, purpose-bound WebSocket ticket and keeps conversation context through the existing conversation service. Audio is held in memory for the active turn and is discarded after processing.
+- Conversation
+- Voice
+- Long-term Memory
+- Knowledge Vault
+- Agent inspection (Reasoning / Planner / Tool catalog)
+- Event Automations
+- Vision
+- Monitoring
+- Configuration
 
-The browser can select independent input and output devices when supported. Bluetooth pairing remains managed by the operating system.
+## Compatibility
 
-## Security and compatibility
-
-User sessions are server-side. Service credentials are separate from user sessions. Secrets belong in ignored environment files or a secret manager.
-
-The `NEGAO_*` environment variables, internal metric names, logger names, database identifiers and deployment paths are retained for compatibility. Optional `SOPHIE_*` aliases are documented in [docs/sophie/COMPATIBILITY.md](docs/sophie/COMPATIBILITY.md). Do not rename persistent identifiers without a migration plan.
+`SOPHIE_*` environment variables are accepted with precedence over legacy `NEGAO_*` names. Persistent database identifiers and deployment paths retain compatibility names until an explicit migration is scheduled.
 
 ## Repository layout
 
 ```text
-backend/       FastAPI application and migrations
-frontend/      Next.js application
+backend/       FastAPI application, domain modules, tests and migrations
+frontend/      Next.js BFF and UI workspaces
 infra/         Docker, Nginx and deployment scripts
-docs/          Architecture and compatibility references
+docs/          Architecture, compatibility and current-state references
 ```
