@@ -60,6 +60,7 @@ class Settings(BaseSettings):
     brain_chat_model: str = "deepseek-ai/deepseek-v4-flash"
     brain_fallback_model: str = "meta/llama-3.1-8b-instruct"
     brain_stt_model: str = "nvidia/parakeet-tdt-0.6b-v2"
+    brain_vision_model: str = ""
     brain_temperature: float = 0.3
     brain_max_tokens: int = 1024
     brain_retry_attempts: int = 2
@@ -78,6 +79,10 @@ class Settings(BaseSettings):
     voice_stt_timeout_seconds: float = 30.0
     voice_tts_timeout_seconds: float = 30.0
     voice_conversation_timeout_seconds: float = 60.0
+
+    vision_max_image_bytes: int = 8 * 1024 * 1024
+    vision_timeout_seconds: float = 45.0
+    vision_max_prompt_chars: int = 4000
 
     conversation_max_context_messages: int = 20
     memory_recall_limit: int = 5
