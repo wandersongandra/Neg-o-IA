@@ -22,6 +22,10 @@ class ReplanRequest(BaseModel):
     reason: str = Field(min_length=1, max_length=500)
 
 
+class ExecutePlanRequest(BaseModel):
+    confirmed_step_ids: list[str] = Field(default_factory=list, max_length=20)
+
+
 def _user_id(auth: CurrentAuth) -> str:
     user_id = auth.effective_user_id
     if not user_id:
@@ -82,3 +86,34 @@ async def replan(
     except RuntimeError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     return _response(plan)
+
+
+@router.post("/plans/{plan_id}/execute")
+async def execute_plan(
+    plan_id: str,
+    body: ExecutePlanRequest,
+    auth: CurrentAuth,
+) -> dict[str, Any]:
+    try:
+        result = await get_planner_service().execute_plan(
+            _user_id(auth),
+            plan_id,
+            confirmed_step_ids=set(body.confirmed_step_ids),
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail="plan not found") from exc
+    return {
+        "plan_id": result.plan_id,
+        "revision": result.revision,
+        "status": result.status,
+        "steps": [
+            {
+                "step_id": step.step_id,
+                "status": step.status,
+                "tool_name": step.tool_name,
+                "output": step.output,
+                "error": step.error,
+            }
+            for step in result.steps
+        ],
+    }
