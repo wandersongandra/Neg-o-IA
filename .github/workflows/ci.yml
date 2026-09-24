@@ -137,6 +137,17 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Validate production Compose topology
+        env:
+          POSTGRES_PASSWORD: ci-postgres-password
+          REDIS_PASSWORD: ci-redis-password
+          TLS_CERT_PATH: /tmp/sophie-tls/fullchain.pem
+          TLS_KEY_PATH: /tmp/sophie-tls/privkey.pem
+        run: |
+          touch .env
+          docker compose -f infra/docker/compose/prod.yml config > /tmp/sophie-prod-compose.yml
+          rm -f .env
+
       - name: Build Nginx image
         run: docker build -t sophie-nginx-ci infra/nginx
 
@@ -186,7 +197,7 @@ jobs:
 
   codeql:
     name: CodeQL (${{ matrix.language }})
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     permissions:
       actions: read
