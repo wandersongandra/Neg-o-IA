@@ -11,6 +11,8 @@ Sophie is a personal AI assistant built as a secure modular monolith. The same c
 - **Knowledge Vault:** chunking, local deterministic embeddings and pgvector retrieval.
 - **Agent Core:** deterministic intent resolution, bounded plans and an allowlisted Tool Manager.
 - **Automation:** persisted event rules that may call only tools explicitly marked automation-safe.
+- **Scheduler:** persistent one-shot/recurring jobs claimed transactionally across replicas and restricted to automation-safe tools.
+- **Learning:** explicit feedback stored through long-term memory; no autonomous prompt mutation or training.
 - **Voice:** authenticated WebSocket voice sessions with NVIDIA STT and edge-tts synthesis.
 - **Vision V1:** explicit authenticated PNG/JPEG/WebP uploads to a configured multimodal provider.
 - **Operations:** Docker Compose, Nginx, Prometheus, Grafana and Loki.
@@ -70,6 +72,8 @@ The frontend exposes authenticated workspaces for:
 - Knowledge Vault
 - Agent inspection (Reasoning / Planner / Tool catalog)
 - Event Automations
+- Persistent Scheduler
+- Controlled Learning
 - Vision
 - Monitoring
 - Configuration
