@@ -734,7 +734,7 @@ export default function ChatPanel() {
           <h2 className="truncate text-sm font-semibold tracking-wide text-[#F8FAFC]">
             Conversa com a Sophie
           </h2>
-          <p className="truncate font-mono-data text-[10px] uppercase tracking-widest text-[#94A3B8]">
+          <p className="truncate font-mono-data text-[10px] uppercase tracking-widest text-[var(--text-secondary)]">
             {thinking
               ? "pensando…"
               : sessionId
@@ -759,8 +759,10 @@ export default function ChatPanel() {
         <button
           type="button"
           onClick={() => setHistoryOpen(!historyOpen)}
-          className="glass glass-hover flex size-9 shrink-0 items-center justify-center rounded-xl text-[#94A3B8] hover:text-[#00D4FF] sm:size-9"
+          className="glass glass-hover flex size-9 shrink-0 items-center justify-center rounded-xl text-[var(--text-secondary)] hover:text-[var(--accent)] sm:size-9"
           aria-label="Histórico"
+          aria-expanded={historyOpen}
+          aria-controls="chat-history"
           title="Histórico"
         >
           <History className="size-4" />
@@ -769,7 +771,7 @@ export default function ChatPanel() {
         <button
           type="button"
           onClick={toggleTtsMuted}
-          className={`glass glass-hover flex size-9 shrink-0 items-center justify-center rounded-lg text-[#00D4FF] hover:bg-[var(--accent-muted)]`}
+          className="glass glass-hover flex size-9 shrink-0 items-center justify-center rounded-lg text-[var(--accent)] hover:bg-[var(--accent-muted)]"
           aria-label={ttsMuted ? "Ativar voz da Sophie" : "Mutar voz da Sophie"}
           title={ttsMuted ? "Ativar voz" : "Mutar voz"}
         >
@@ -779,7 +781,7 @@ export default function ChatPanel() {
         <button
           type="button"
           onClick={resetConversation}
-          className="glass glass-hover flex size-9 shrink-0 items-center justify-center rounded-xl text-[#94A3B8] hover:text-[#00D4FF]"
+          className="glass glass-hover flex size-9 shrink-0 items-center justify-center rounded-xl text-[var(--text-secondary)] hover:text-[var(--accent)]"
           aria-label="Nova conversa"
           title="Nova conversa"
         >
@@ -788,15 +790,26 @@ export default function ChatPanel() {
       </header>
 
       <div className="flex-1 overflow-hidden">
-        <div className="flex h-full">
+        <div className="relative flex h-full">
+          {historyOpen ? (
+            <button
+              type="button"
+              aria-label="Fechar histórico"
+              className="absolute inset-0 z-10 bg-black/55 sm:hidden"
+              onClick={() => setHistoryOpen(false)}
+            />
+          ) : null}
           <div
-            className={`transition-all duration-300 ease-in-out ${
-              historyOpen ? "w-64" : "w-0"
+            id="chat-history"
+            className={`absolute inset-y-0 left-0 z-20 w-64 transition-all duration-300 ease-in-out sm:relative sm:z-auto ${
+              historyOpen
+                ? "translate-x-0 sm:w-64"
+                : "-translate-x-full sm:w-0 sm:translate-x-0"
             }`}
             aria-hidden={!historyOpen}
           >
             {historyOpen && (
-              <div className="flex h-full flex-col overflow-y-auto border-r border-white/[0.06] p-3">
+              <div className="flex h-full flex-col overflow-y-auto border-r border-white/[0.06] bg-[var(--bg-primary)]/95 p-3 backdrop-blur-xl sm:bg-transparent sm:backdrop-blur-none">
                 <div className="mb-3 flex items-center justify-between">
                   <h3 className="font-mono-data text-[10px] uppercase tracking-wider text-[var(--text-secondary)]">Histórico</h3>
                   <button
@@ -904,13 +917,13 @@ export default function ChatPanel() {
             {messages.length === 0 && (
               <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
                 <div className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#3B82F6]/20 to-[#00D4FF]/20 ring-1 ring-white/10">
-                  <MessageSquare className="size-6 text-[#00D4FF]" />
+                  <MessageSquare className="size-6 text-[var(--accent)]" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-[#E2E8F0]">
+                  <p className="text-sm font-medium text-[var(--text-primary)]">
                     Fala, chefe.
                   </p>
-                  <p className="mt-1 text-sm text-[#64748B]">
+                  <p className="mt-1 text-sm text-[var(--text-secondary)]">
                     Pergunta qualquer coisa… a conexão é em tempo real.
                   </p>
                 </div>
@@ -925,7 +938,7 @@ export default function ChatPanel() {
             {messages.map((m) =>
               m.role === "user" ? (
                 <div key={m.id} className="flex justify-end">
-                  <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-[#3B82F6]/15 px-4 py-2.5 text-sm text-[#E2E8F0] shadow-[0_0_20px_-8px_rgba(59,130,246,0.5)] ring-1 ring-[#3B82F6]/25">
+                  <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-[#3B82F6]/15 px-4 py-2.5 text-sm text-[var(--text-primary)] shadow-[0_0_20px_-8px_rgba(59,130,246,0.5)] ring-1 ring-[#3B82F6]/25">
                     {m.content}
                   </div>
                 </div>
@@ -937,9 +950,9 @@ export default function ChatPanel() {
                   <div className="glass max-w-[85%] rounded-2xl rounded-tl-md px-4 py-2.5">
                     {m.status === "streaming" ? (
                       m.content ? (
-                        <div className="text-sm whitespace-pre-wrap break-words text-[#E2E8F0]">
+                        <div className="text-sm whitespace-pre-wrap break-words text-[var(--text-primary)]">
                           <Markdown text={m.content} />
-                          <span className="ml-1 inline-block h-3.5 w-1.5 animate-pulse rounded-sm bg-[#00D4FF] align-middle" />
+                          <span className="ml-1 inline-block h-3.5 w-1.5 animate-pulse rounded-sm bg-[var(--accent)] align-middle" />
                         </div>
                       ) : (
                         <TypingIndicator />
@@ -954,9 +967,9 @@ export default function ChatPanel() {
                           <Markdown text={m.content} />
                         </div>
                         {(m.model !== undefined || m.latency_ms !== undefined) && (
-                          <div className="mt-2 flex items-center gap-3 font-mono-data text-[10px] text-[#64748B]">
+                          <div className="mt-2 flex items-center gap-3 font-mono-data text-[10px] text-[var(--text-secondary)]">
                             {m.model !== undefined && (
-                              <span className="text-[#00D4FF]">{m.model}</span>
+                              <span className="text-[var(--accent)]">{m.model}</span>
                             )}
                             {m.latency_ms !== undefined && (
                               <span>{m.latency_ms}ms</span>
@@ -967,7 +980,7 @@ export default function ChatPanel() {
                           <button
                             type="button"
                             onClick={() => void copyMessage(m.id, m.content)}
-                            className="flex items-center gap-1 rounded-md px-1.5 py-1 text-[10px] text-[#64748B] transition-colors hover:bg-white/[0.04] hover:text-[#00D4FF]"
+                            className="flex items-center gap-1 rounded-md px-1.5 py-1 text-[10px] text-[var(--text-secondary)] transition-colors hover:bg-white/[0.04] hover:text-[var(--accent)]"
                             title="Copiar resposta"
                           >
                             {copiedId === m.id ? (
@@ -981,7 +994,7 @@ export default function ChatPanel() {
                             type="button"
                             onClick={() => void regenerate(m.id)}
                             disabled={sending || regenMessageId !== null}
-                            className="flex items-center gap-1 rounded-md px-1.5 py-1 text-[10px] text-[#64748B] transition-colors hover:bg-white/[0.04] hover:text-[#00D4FF] disabled:cursor-not-allowed disabled:opacity-40"
+                            className="flex items-center gap-1 rounded-md px-1.5 py-1 text-[10px] text-[var(--text-secondary)] transition-colors hover:bg-white/[0.04] hover:text-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-40"
                             title="Gerar nova resposta"
                           >
                             <RefreshCw
@@ -1015,7 +1028,7 @@ export default function ChatPanel() {
             className={`glass glass-hover mb-1 flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
               recording
                 ? "bg-[var(--color-danger)]/20 text-[var(--color-danger)] animate-pulse"
-                : "text-[#00D4FF] hover:bg-[var(--accent-muted)]"
+                : "text-[var(--accent)] hover:bg-[var(--accent-muted)]"
             }`}
             aria-label={recording ? "Parar gravação" : "Gravar áudio"}
             title={recording ? `Parar gravação (${recordingSeconds}s)` : "Gravar áudio"}
@@ -1040,7 +1053,7 @@ export default function ChatPanel() {
             }}
             rows={1}
             placeholder="Fala, chefe…  (Enter envia, Shift+Enter quebra linha)"
-            className="max-h-32 min-h-[36px] flex-1 resize-none overflow-y-auto bg-transparent py-2 text-base text-[#F8FAFC] outline-none placeholder:text-[#64748B] sm:text-sm"
+            className="max-h-32 min-h-[36px] flex-1 resize-none overflow-y-auto bg-transparent py-2 text-base text-[#F8FAFC] outline-none placeholder:text-[var(--text-secondary)] sm:text-sm"
           />
           <button
             type="button"
@@ -1055,7 +1068,7 @@ export default function ChatPanel() {
           <button
             type="submit"
             disabled={sending || !input.trim()}
-            className="glass glass-hover mb-1 flex size-9 shrink-0 items-center justify-center rounded-lg text-[#00D4FF] disabled:cursor-not-allowed disabled:opacity-40"
+            className="glass glass-hover mb-1 flex size-9 shrink-0 items-center justify-center rounded-lg text-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-40"
             aria-label="Enviar mensagem"
           >
             {sending ? (
