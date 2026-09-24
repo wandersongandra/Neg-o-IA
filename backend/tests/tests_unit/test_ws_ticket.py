@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -88,3 +89,20 @@ async def test_missing_ticket_fails() -> None:
     result = await redeem_ws_ticket("")
     assert result.authenticated is False
     assert result.reason == "missing_ticket"
+
+
+
+async def test_production_user_ticket_requires_auth_session_binding(
+    fake_redis: FakeAsyncRedis,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "app.modules.security.infrastructure.get_settings",
+        lambda: SimpleNamespace(env="production"),
+    )
+    token = await issue_ws_ticket("user-test", AuthorizationLevel.READ_ONLY)
+
+    result = await redeem_ws_ticket(token)
+
+    assert result.authenticated is False
+    assert result.reason == "ticket_missing_session_binding"
