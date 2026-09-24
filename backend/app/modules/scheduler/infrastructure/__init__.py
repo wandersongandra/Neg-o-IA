@@ -84,46 +84,44 @@ class PostgresSchedulerStore:
             )
             return [_domain(row) for row in result.scalars()]
 
-    async def list_due(self, *, limit: int = 50) -> list[ScheduledJob]:
+    async def claim_due(self, *, limit: int = 50) -> list[ScheduledJob]:
+        """Claim jobs atomically so multiple replicas cannot execute the same due run."""
         now = datetime.now(UTC)
+        claimed: list[ScheduledJob] = []
         async with self._factory() as session:
-            result = await session.execute(
-                select(SchedulerJobORM)
-                .where(
-                    SchedulerJobORM.enabled.is_(True),
-                    SchedulerJobORM.next_run_at <= now,
+            async with session.begin():
+                result = await session.execute(
+                    select(SchedulerJobORM)
+                    .where(
+                        SchedulerJobORM.enabled.is_(True),
+                        SchedulerJobORM.next_run_at <= now,
+                    )
+                    .order_by(SchedulerJobORM.next_run_at.asc())
+                    .with_for_update(skip_locked=True)
+                    .limit(max(1, min(limit, 100)))
                 )
-                .order_by(SchedulerJobORM.next_run_at.asc())
-                .limit(max(1, min(limit, 100)))
-            )
-            return [_domain(row) for row in result.scalars()]
+                for row in result.scalars():
+                    claimed.append(_domain(row))
+                    row.last_run_at = now
+                    row.updated_at = now
+                    if row.interval_seconds is None:
+                        row.enabled = False
+                    else:
+                        row.next_run_at = now + timedelta(seconds=row.interval_seconds)
+                await session.flush()
+        return claimed
 
-    async def complete_run(
-        self,
-        job_id: str,
-        *,
-        success: bool,
-    ) -> None:
+    async def record_result(self, job_id: str) -> None:
         try:
             parsed = uuid.UUID(job_id)
         except ValueError:
             return
-        now = datetime.now(UTC)
         async with self._factory() as session:
             async with session.begin():
                 row = await session.get(SchedulerJobORM, parsed)
-                if row is None:
-                    return
-                row.last_run_at = now
-                row.updated_at = now
-                if row.interval_seconds is None:
-                    row.enabled = False
-                else:
-                    # Advance from "now" so a delayed runner never loops over missed intervals.
-                    row.next_run_at = now + timedelta(seconds=row.interval_seconds)
-                if not success and row.interval_seconds is None:
-                    row.enabled = False
-                await session.flush()
+                if row is not None:
+                    row.updated_at = datetime.now(UTC)
+                    await session.flush()
 
     async def set_enabled(
         self,
