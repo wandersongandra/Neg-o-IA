@@ -28,7 +28,7 @@ class FakeVisionAdapter:
 
 @pytest.mark.asyncio
 async def test_vision_rejects_unsupported_media_type() -> None:
-    service = VisionService(adapter=FakeVisionAdapter())
+    service = VisionService(adapter=FakeVisionAdapter())  # type: ignore[arg-type]
 
     with pytest.raises(ValueError, match="unsupported"):
         await service.analyze(b"abc", media_type="image/gif")
@@ -37,7 +37,7 @@ async def test_vision_rejects_unsupported_media_type() -> None:
 @pytest.mark.asyncio
 async def test_vision_analyzes_allowed_image(monkeypatch: pytest.MonkeyPatch) -> None:
     adapter = FakeVisionAdapter()
-    service = VisionService(adapter=adapter)
+    service = VisionService(adapter=adapter)  # type: ignore[arg-type]
 
     class FakeBus:
         async def publish_event(self, envelope: Any) -> None:
