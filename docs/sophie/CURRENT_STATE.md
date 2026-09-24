@@ -23,6 +23,8 @@ The current evolution adds a governed Agent Core to the live conversation flow a
 | Planner | Bounded plans with capped replanning |
 | Tool Manager | Closed allowlist, timeout, circuit breaker, idempotency and confirmation gates |
 | Automation | Persisted event rules restricted to automation-safe tools |
+| Scheduler | Persistent one-shot/recurring jobs, transactional claim and safe-tool-only execution |
+| Learning | Explicit feedback recorded via long-term memory; no autonomous model/prompt mutation |
 | Voice | Authenticated WebSocket sessions, STT and TTS |
 | Vision V1 | Explicit image analysis behind feature/provider gates |
 | Monitoring / events | Metrics, durable audit/event flow and redacted logs |
@@ -88,5 +90,7 @@ The following are intentionally not granted to the agent by default:
 - silent desktop screenshots
 - generic SSH control
 - unrestricted e-mail/calendar actions
+
+Scheduler and Learning are deliberately bounded: Scheduler cannot call write/confirmation-required tools, and Learning cannot silently rewrite the system prompt or fine-tune models.
 
 Those capabilities should only be introduced as separately permissioned tools with scoped credentials, confirmation rules, idempotency and audit trails.
