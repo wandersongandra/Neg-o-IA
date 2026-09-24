@@ -58,7 +58,6 @@ const SOON_NAV: SoonNavItem[] = [
   { label: "Banco de Dados", icon: Database },
   { label: "Observação", icon: Eye },
   { label: "Automação", icon: Bot },
-  { label: "Configurações", icon: Settings },
 ];
 
 interface SidebarProps {
