@@ -57,7 +57,11 @@ class SchedulerService:
             run_at=normalized_run_at,
             interval_seconds=interval_seconds,
         )
-        await self._publish("scheduler.job.created", job, {"next_run_at": job.next_run_at.isoformat()})
+        await self._publish(
+            "scheduler.job.created",
+            job,
+            {"next_run_at": job.next_run_at.isoformat()},
+        )
         return job
 
     async def list_jobs(self, user_id: str) -> list[ScheduledJob]:
@@ -87,7 +91,6 @@ class SchedulerService:
         tools = get_tool_manager_service()
         executed = 0
         for job in jobs:
-            success = False
             try:
                 spec = tools.get_spec(job.action_tool)
                 if spec is None or not spec.automation_safe or spec.requires_confirmation:
@@ -99,7 +102,6 @@ class SchedulerService:
                     confirmed=False,
                     idempotency_key=f"scheduler:{job.id}:{job.next_run_at.isoformat()}",
                 )
-                success = True
                 executed += 1
                 await self._publish(
                     "scheduler.job.executed",
