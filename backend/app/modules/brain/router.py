@@ -122,13 +122,16 @@ async def brain_router_status() -> dict[str, object]:
 
 def _config_response(config: UserBrainConfig) -> dict[str, Any]:
     settings = get_settings()
+    from app.modules.tool_manager.application import get_tool_manager_service
+
+    tool_names = [spec.name for spec in get_tool_manager_service().catalog()]
     return {
         "system_prompt": config.system_prompt,
         "temperature": config.temperature,
         "max_tokens": config.max_tokens,
         "primary_model": settings.brain_chat_model,
         "fallback_model": settings.brain_fallback_model,
-        "tools_enabled": [],
+        "tools_enabled": tool_names,
         "voice": {
             "tts_enabled": settings.external_ai_enabled,
             "stt_enabled": settings.external_ai_enabled and bool(settings.nvidia_api_key),
