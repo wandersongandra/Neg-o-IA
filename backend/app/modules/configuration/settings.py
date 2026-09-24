@@ -80,6 +80,10 @@ class Settings(BaseSettings):
     voice_conversation_timeout_seconds: float = 60.0
 
     conversation_max_context_messages: int = 20
+    memory_recall_limit: int = 5
+    knowledge_recall_limit: int = 5
+    retrieval_min_score: float = 0.12
+    retrieval_context_max_chars: int = 6000
 
     @field_validator("cors_origins", "service_api_scopes", mode="before")
     @classmethod
