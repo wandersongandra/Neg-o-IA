@@ -209,7 +209,7 @@ class Settings(BaseSettings):
             return ["*"]
         if self.trusted_hosts:
             return self.trusted_hosts
-        hosts: list[str] = []
+        hosts: list[str] = ["localhost", "127.0.0.1", "backend"]
         for origin in self.cors_origins:
             hostname = urlparse(origin).hostname
             if hostname and hostname not in hosts:
