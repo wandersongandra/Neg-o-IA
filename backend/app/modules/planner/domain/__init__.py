@@ -1,20 +1,42 @@
-"""Contratos do módulo planner — domain (framework-free).
-
-Responsabilidade única: transformar intenção em plano de passos
-executáveis e replanejar em falha (decomposição, ordenação, replan com
-limite de tentativas). NÃO executa ferramentas.
-"""
+"""Contratos do Planner — planos limitados, auditáveis e sem execução direta."""
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from datetime import datetime
 from typing import Any, Protocol
 
 
+@dataclass(frozen=True, slots=True)
+class PlanStep:
+    step_id: str
+    kind: str
+    description: str
+    tool_name: str | None
+    arguments: dict[str, Any]
+    requires_confirmation: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class ExecutionPlan:
+    plan_id: str
+    user_id: str
+    goal: str
+    intent: str
+    steps: tuple[PlanStep, ...]
+    revision: int
+    created_at: datetime
+    updated_at: datetime
+
+
 class PlannerPort(Protocol):
-    """Porta pública do Planner (decomposição de intenção em passos)."""
+    async def create_plan(self, user_id: str, text: str) -> ExecutionPlan: ...
 
-    async def create_plan(
-        self, intent: str, context: dict[str, Any] | None = None
-    ) -> dict[str, Any]: ...
+    async def get_plan(self, user_id: str, plan_id: str) -> ExecutionPlan | None: ...
 
-    async def replan(self, plan_id: str, failure: dict[str, Any]) -> dict[str, Any]: ...
+    async def replan(
+        self,
+        user_id: str,
+        plan_id: str,
+        failure: dict[str, Any],
+    ) -> ExecutionPlan: ...
