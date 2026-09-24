@@ -14,6 +14,7 @@ const DEFAULT_TIMEOUT_MS = 60_000;
 const DEFAULT_MAX_BODY_BYTES = 128 * 1024;
 const KNOWLEDGE_MAX_BODY_BYTES = 256 * 1024;
 const VOICE_MAX_BODY_BYTES = 12 * 1024 * 1024;
+const VISION_MAX_BODY_BYTES = 8 * 1024 * 1024;
 
 type Method = "GET" | "POST" | "PATCH" | "DELETE";
 
@@ -34,6 +35,8 @@ const ALLOWLIST: AllowEntry[] = [
   { path: "voice/status", methods: ["GET"] },
   { path: "voice/transcribe", methods: ["POST"] },
   { path: "voice/synthesize", methods: ["POST"] },
+  { path: "vision/status", methods: ["GET"] },
+  { path: "vision/analyze", methods: ["POST"] },
   { path: "memory/status", methods: ["GET"] },
   { path: "memory/long-term", methods: ["POST"] },
   { path: "memory/long-term/:id", methods: ["DELETE"] },
@@ -111,12 +114,15 @@ async function proxy(req: NextRequest, path: string[]): Promise<Response> {
 
   const isVoice = path.includes("voice");
   const isKnowledge = path[0] === "knowledge";
+  const isVision = path[0] === "vision";
   const timeoutMs = isVoice ? VOICE_TIMEOUT_MS : DEFAULT_TIMEOUT_MS;
   const maxBodyBytes = isVoice
     ? VOICE_MAX_BODY_BYTES
-    : isKnowledge
-      ? KNOWLEDGE_MAX_BODY_BYTES
-      : DEFAULT_MAX_BODY_BYTES;
+    : isVision
+      ? VISION_MAX_BODY_BYTES
+      : isKnowledge
+        ? KNOWLEDGE_MAX_BODY_BYTES
+        : DEFAULT_MAX_BODY_BYTES;
   const declaredLength = Number(req.headers.get("content-length") ?? "0");
   if (Number.isFinite(declaredLength) && declaredLength > maxBodyBytes) {
     return Response.json({ error: "payload_too_large" }, { status: 413 });
