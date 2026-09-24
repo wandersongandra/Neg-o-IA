@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies, headers as requestHeaders } from "next/headers";
 import { resolveApiConfig } from "@/lib/env";
+import { getSessionToken } from "@/lib/session-cookie";
 import { trustedClientIpHeadersFromHeaders } from "@/lib/request-security";
 import type {
   DashboardData,
@@ -80,7 +81,8 @@ async function getLogs(
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const sessionToken = (await cookies()).get("sophie_session")?.value;
+  const cookieStore = await cookies();
+  const sessionToken = getSessionToken(cookieStore);
   if (!sessionToken) {
     return NextResponse.json(
       { error: "unauthenticated" },
