@@ -9,7 +9,12 @@ from typing import Any
 
 from app.modules.configuration.settings import get_settings
 from app.modules.events.envelope import build_envelope
-from app.modules.planner.domain import ExecutionPlan, PlanExecutionResult, PlanStep, PlanStepExecution
+from app.modules.planner.domain import (
+    ExecutionPlan,
+    PlanExecutionResult,
+    PlanStep,
+    PlanStepExecution,
+)
 from app.modules.planner.infrastructure import RedisPlanStore
 from app.modules.reasoning.application import get_reasoning_service
 
