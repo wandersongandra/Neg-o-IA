@@ -305,6 +305,52 @@ class KnowledgeChunkORM(Base):
     )
 
 
+class AutomationRuleORM(Base):
+    __tablename__ = "rules"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "name",
+            name="uq_automation_rule_name",
+        ),
+        Index("ix_automation_rules_user_event", "user_id", "event_type", "enabled"),
+        {"schema": "automation"},
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("identity.users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    event_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    action_tool: Mapped[str] = mapped_column(String(128), nullable=False)
+    action_args: Mapped[dict[str, Any]] = mapped_column(
+        JSONB,
+        nullable=False,
+        server_default=text("'{}'::jsonb"),
+    )
+    enabled: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        server_default=text("true"),
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=text("now()")
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=text("now()")
+    )
+    last_triggered_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+
 class AppConfigORM(Base):
     __tablename__ = "app_config"
     __table_args__ = {"schema": "config"}
@@ -318,6 +364,7 @@ class AppConfigORM(Base):
 
 __all__ = [
     "ApiKeyORM",
+    "AutomationRuleORM",
     "AuthSessionORM",
     "AppConfigORM",
     "AuditEventORM",
