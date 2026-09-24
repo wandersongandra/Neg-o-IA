@@ -76,6 +76,27 @@ async def memory_session(session_id: str, auth: CurrentAuth) -> dict[str, Any]:
     return {"session_id": session_id, "entries": entries}
 
 
+@router.get("/long-term")
+async def list_long_term_memory(
+    auth: CurrentAuth,
+    limit: int = Query(default=50, ge=1, le=100),
+) -> dict[str, Any]:
+    entries = await get_long_term_memory_service().list_recent(_user_id(auth), limit=limit)
+    return {
+        "memories": [
+            {
+                "id": entry.id,
+                "content": entry.content,
+                "source": entry.source,
+                "importance": entry.importance,
+                "created_at": entry.created_at.isoformat(),
+                "expires_at": entry.expires_at.isoformat() if entry.expires_at else None,
+            }
+            for entry in entries
+        ]
+    }
+
+
 @router.post("/long-term")
 async def remember(body: RememberRequest, auth: CurrentAuth) -> dict[str, Any]:
     user_id = _user_id(auth)
