@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePathname } from "next/navigation";
 import { ToastProvider } from "@/components/ui/toast";
 import { AvatarProvider } from "@/components/avatar/avatar-context";
 
@@ -15,41 +14,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const pathname = usePathname();
-
-  useEffect(() => {
-    if (!document.startViewTransition) return;
-
-    const handleLinkClick = (e: MouseEvent) => {
-      const anchor = e.target instanceof HTMLAnchorElement ? e.target : (e.target as HTMLElement).closest("a");
-      if (!anchor) return;
-      const href = anchor.getAttribute("href");
-      if (
-        e.defaultPrevented ||
-        e.button !== 0 ||
-        e.metaKey ||
-        e.ctrlKey ||
-        e.shiftKey ||
-        e.altKey ||
-        !href ||
-        href.startsWith("#") ||
-        href.startsWith("http") ||
-        anchor.target === "_blank" ||
-        anchor.hasAttribute("download")
-      ) return;
-      if (anchor.origin !== window.location.origin) return;
-
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-      e.preventDefault();
-      document.startViewTransition(() => {
-        window.location.href = href;
-      });
-    };
-
-    document.addEventListener("click", handleLinkClick);
-    return () => document.removeEventListener("click", handleLinkClick);
-  }, [pathname]);
 
   return (
     <AvatarProvider>

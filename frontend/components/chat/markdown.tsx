@@ -24,7 +24,7 @@ function Inline({ text }: InlineProps) {
           return (
             <code
               key={i}
-              className="rounded bg-white/[0.06] px-1 py-0.5 font-mono-data text-[0.85em] text-[#7DD3FC]"
+              className="rounded bg-white/[0.06] px-1 py-0.5 font-mono-data text-[0.85em] text-[var(--accent)]"
             >
               {part.slice(1, -1)}
             </code>
@@ -51,7 +51,7 @@ function Inline({ text }: InlineProps) {
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#00D4FF] underline decoration-[#00D4FF]/40 underline-offset-2 hover:text-[#67E8F9]"
+                className="text-[var(--accent)] underline decoration-[var(--accent-muted)] underline-offset-2 hover:text-[var(--accent-glow)]"
               >
                 {link[1]}
               </a>
@@ -68,7 +68,7 @@ function Inline({ text }: InlineProps) {
 function CodeBlock({ code }: { code: string }) {
   return (
     <div className="my-2 overflow-x-auto rounded-xl border border-white/[0.08] bg-black/40 p-3">
-      <pre className="font-mono-data text-[12.5px] leading-relaxed text-[#E2E8F0]">
+      <pre className="font-mono-data text-[12.5px] leading-relaxed text-[var(--text-primary)]">
         <code>{code}</code>
       </pre>
     </div>
@@ -79,7 +79,7 @@ function ListBlock({ items, ordered }: { items: string[]; ordered: boolean }) {
   return (
     <ul className={`my-1.5 space-y-1 ${ordered ? "list-decimal" : "list-disc"} pl-5`}>
       {items.map((item, i) => (
-        <li key={i} className="text-sm leading-relaxed text-[#E2E8F0]">
+        <li key={i} className="text-sm leading-relaxed text-[var(--text-primary)]">
           <Inline text={item} />
         </li>
       ))}
@@ -108,7 +108,7 @@ function parseBlocks(text: string): ReactNode[] {
       nodes.push(
         <div key={`code-${nodes.length}`} className="group/code relative">
           {lang && (
-            <span className="mb-1 inline-block font-mono-data text-[9px] uppercase tracking-widest text-[#64748B]">
+            <span className="mb-1 inline-block font-mono-data text-[9px] uppercase tracking-widest text-[var(--text-secondary)]">
               {lang}
             </span>
           )}
@@ -126,21 +126,21 @@ function parseBlocks(text: string): ReactNode[] {
         level === 1 ? (
           <h3
             key={`h-${nodes.length}`}
-            className="mt-3 mb-1 text-base font-semibold text-[#F8FAFC]"
+            className="mt-3 mb-1 text-base font-semibold text-[var(--text-primary)]"
           >
             {content}
           </h3>
         ) : level === 2 ? (
           <h4
             key={`h-${nodes.length}`}
-            className="mt-2.5 mb-1 text-sm font-semibold text-[#F8FAFC]"
+            className="mt-2.5 mb-1 text-sm font-semibold text-[var(--text-primary)]"
           >
             {content}
           </h4>
         ) : (
           <h5
             key={`h-${nodes.length}`}
-            className="mt-2 mb-1 text-[13px] font-semibold text-[#F8FAFC]"
+            className="mt-2 mb-1 text-[13px] font-semibold text-[var(--text-primary)]"
           >
             {content}
           </h5>
@@ -185,7 +185,7 @@ function parseBlocks(text: string): ReactNode[] {
       i += 1;
     }
     nodes.push(
-      <p key={`p-${nodes.length}`} className="my-1 text-sm leading-relaxed text-[#E2E8F0]">
+      <p key={`p-${nodes.length}`} className="my-1 text-sm leading-relaxed text-[var(--text-primary)]">
         <Inline text={para.join(" ")} />
       </p>
     );

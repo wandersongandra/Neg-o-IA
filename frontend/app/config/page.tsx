@@ -69,7 +69,7 @@ const RATE_OPTIONS = [
 
 function SectionCard({ title, icon: Icon, children, className = "" }: { title: string; icon: React.ComponentType<{ className?: string }>; children: React.ReactNode; className?: string }) {
   return (
-    <div className={`glass glass-hover animate-fade-up p-6 rounded-2xl ${className}`}>
+    <div className={`glass animate-fade-up p-5 sm:p-6 rounded-2xl ${className}`}>
       <div className="flex items-center gap-3 mb-4">
         <div className="size-10 rounded-xl bg-[var(--accent-muted)] flex items-center justify-center">
           <Icon className="size-5 text-[var(--accent)]" />
@@ -203,17 +203,17 @@ export default function ConfigPage() {
 
   if (loading) {
     return (
-      <div className="flex h-[60vh] items-center justify-center">
+      <main className="flex min-h-[60vh] items-center justify-center px-4">
         <div className="flex flex-col items-center gap-4">
           <div className="size-10 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
           <p className="text-[var(--text-secondary)]">Carregando configuração...</p>
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+    <main className="mx-auto max-w-4xl space-y-6 px-4 py-6 sm:py-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-[var(--text-primary)]">Configuração da Sophie</h1>
@@ -221,7 +221,7 @@ export default function ConfigPage() {
         </div>
         <button
           onClick={handleSave}
-          disabled={saving}
+          disabled={saving || offline}
           className="glass glass-hover interactive-control flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-[var(--text-primary)] hover:bg-[var(--accent-muted)] transition-colors disabled:opacity-50"
         >
           <Save className="size-5" />
@@ -311,7 +311,7 @@ export default function ConfigPage() {
           </p>
           <div className="space-y-3">
             {TOOL_OPTIONS.map(tool => (
-              <label key={tool.id} className="glass glass-hover flex items-center gap-3 p-3 rounded-xl cursor-pointer group">
+              <label key={tool.id} className="glass flex items-center gap-3 rounded-xl p-3 opacity-70">
                 <div className="size-10 rounded-xl bg-[var(--accent-muted)] flex items-center justify-center">
                   <tool.icon className="size-5 text-[var(--accent)]" />
                 </div>
@@ -387,7 +387,7 @@ export default function ConfigPage() {
         </button>
         <button
           onClick={handleSave}
-          disabled={saving}
+          disabled={saving || offline}
           className="interactive-control flex items-center gap-2 px-6 py-3 rounded-xl font-semibold text-[var(--bg-primary)] bg-[var(--accent)] hover:bg-[var(--accent-glow)] transition-colors disabled:opacity-50"
         >
           <Save className="size-5" />
@@ -395,6 +395,6 @@ export default function ConfigPage() {
           {saving && <Loader2 className="size-5 animate-spin" />}
         </button>
       </div>
-    </div>
+    </main>
   );
 }

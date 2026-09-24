@@ -114,7 +114,7 @@ export function ModelCard({ brain }: { brain: BrainStatus | null }) {
   const modeColor =
     mode === "nvidia" || mode === "local" ? "text-[var(--color-ok)]" : "text-[var(--color-warn)]";
   const rows: Row[] = [
-    { label: "FORNECEDOR", value: mode === "local" ? "LOCAL (GPU)" : mode === "nvidia" ? "NVIDIA API" : "—" },
+    { label: "FORNECEDOR", value: mode === "local" ? "LOCAL" : mode === "nvidia" ? "NVIDIA API" : "—" },
     { label: "FALLBACK MODEL", value: fallback ?? "—" },
     { label: "TEMPO MÉDIO", value: "—" },
     { label: "TOKENS (SESSÃO)", value: "—" },

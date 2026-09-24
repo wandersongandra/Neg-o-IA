@@ -165,7 +165,7 @@ export default function Dashboard() {
   if (!mounted) {
     return (
       <div className="flex min-h-dvh flex-col">
-        <TopBar data={null} onOpenPalette={() => undefined} />
+        <TopBar data={null} />
         <div className="flex flex-1">
           <Sidebar data={null} onNavigate={() => undefined} />
           <main className="page-transition flex-1 space-y-5 overflow-x-hidden p-4 sm:p-5 md:space-y-6 md:p-6">

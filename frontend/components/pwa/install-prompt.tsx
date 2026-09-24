@@ -85,6 +85,7 @@ export function InstallPrompt() {
               </p>
             </div>
             <button
+              type="button"
               onClick={handleDismiss}
               className="glass-hover flex size-8 items-center justify-center rounded-lg text-[var(--text-secondary)] shrink-0"
               aria-label="Fechar"
@@ -112,6 +113,7 @@ export function InstallPrompt() {
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button
+              type="button"
               onClick={handleInstall}
               className="glass glass-hover flex items-center gap-2 rounded-xl bg-[var(--accent)]/20 px-4 py-2 text-sm font-medium text-[var(--accent)] transition-colors"
             >
@@ -119,6 +121,7 @@ export function InstallPrompt() {
               Instalar
             </button>
             <button
+              type="button"
               onClick={handleDismiss}
               className="glass-hover flex size-8 items-center justify-center rounded-lg text-[var(--text-secondary)]"
               aria-label="Fechar"
@@ -175,10 +178,11 @@ export function InstallButton({ onClick }: { onClick?: () => void }) {
     }
   };
 
-  if (!canInstall && !isIOS) return null;
+  if (!canInstall && (!isIOS || !onClick)) return null;
 
   return (
     <button
+      type="button"
       onClick={handleClick}
       className="glass glass-hover relative flex size-10 items-center justify-center rounded-xl text-[var(--text-secondary)]"
       aria-label={isIOS ? "Instruções de instalação iOS" : "Instalar Sophie AI"}
