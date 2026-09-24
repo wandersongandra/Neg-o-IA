@@ -196,12 +196,14 @@ async def persist_session(
     session.add(auth_session)
     await session.flush()
 
+    idle_cutoff = now - timedelta(seconds=settings.auth_session_idle_seconds)
     active_result = await session.execute(
         select(AuthSessionORM)
         .where(
             AuthSessionORM.user_id == identity.user_id,
             AuthSessionORM.revoked_at.is_(None),
             AuthSessionORM.expires_at > now,
+            AuthSessionORM.last_seen_at > idle_cutoff,
         )
         .order_by(AuthSessionORM.created_at.desc(), AuthSessionORM.id.desc())
     )
