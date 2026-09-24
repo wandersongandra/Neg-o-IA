@@ -34,8 +34,8 @@ from app.modules.conversation.router import (
 )
 from app.modules.database.router import router as database_router
 from app.modules.events.router import router as events_router
-from app.modules.memory.router import router as memory_router
 from app.modules.knowledge.router import router as knowledge_router
+from app.modules.memory.router import router as memory_router
 from app.modules.monitoring.router import router as monitoring_router
 from app.modules.security.router import require_authenticated_user, require_service_scope
 from app.modules.security.router import router as security_router
