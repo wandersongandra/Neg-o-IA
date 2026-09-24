@@ -25,6 +25,7 @@ _LOGGER = logging.getLogger("app.modules.agent.application")
 class AgentContext:
     intent: str
     plan_id: str | None = None
+    plan_steps: tuple[str, ...] = ()
     tool_name: str | None = None
     tool_output: dict[str, Any] | None = None
     confirmation_required: bool = False
@@ -33,6 +34,8 @@ class AgentContext:
         payload: dict[str, Any] = {"intent": self.intent}
         if self.plan_id:
             payload["plan_id"] = self.plan_id
+        if self.plan_steps:
+            payload["plan_steps"] = list(self.plan_steps)
         if self.tool_name:
             payload["tool_name"] = self.tool_name
         if self.tool_output is not None:
@@ -60,13 +63,22 @@ class AgentOrchestrator:
             return None
 
         plan = await get_planner_service().create_plan(user_id, text)
+        plan_steps = tuple(step.description for step in plan.steps)
         if not resolution.suggested_tool:
-            return AgentContext(intent=resolution.intent, plan_id=plan.plan_id)
+            return AgentContext(
+                intent=resolution.intent,
+                plan_id=plan.plan_id,
+                plan_steps=plan_steps,
+            )
 
         tools = get_tool_manager_service()
         spec = tools.get_spec(resolution.suggested_tool)
         if spec is None:
-            return AgentContext(intent=resolution.intent, plan_id=plan.plan_id)
+            return AgentContext(
+                intent=resolution.intent,
+                plan_id=plan.plan_id,
+                plan_steps=plan_steps,
+            )
 
         step = next(
             (item for item in plan.steps if item.tool_name == resolution.suggested_tool),
@@ -79,6 +91,7 @@ class AgentOrchestrator:
             return AgentContext(
                 intent=resolution.intent,
                 plan_id=plan.plan_id,
+                plan_steps=plan_steps,
                 tool_name=spec.name,
                 confirmation_required=True,
             )
@@ -95,6 +108,7 @@ class AgentOrchestrator:
             return AgentContext(
                 intent=resolution.intent,
                 plan_id=plan.plan_id,
+                plan_steps=plan_steps,
                 tool_name=spec.name,
                 confirmation_required=True,
             )
@@ -109,6 +123,7 @@ class AgentOrchestrator:
         return AgentContext(
             intent=resolution.intent,
             plan_id=plan.plan_id,
+            plan_steps=plan_steps,
             tool_name=result.tool_name,
             tool_output=result.output,
         )
