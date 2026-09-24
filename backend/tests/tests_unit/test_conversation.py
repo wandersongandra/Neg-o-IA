@@ -305,3 +305,60 @@ def test_domain_message_validation() -> None:
         ConversationMessage(role="foo", content="x", created_at="")
     with pytest.raises(ValueError):
         ConversationMessage(role="user", content="   ", created_at="")
+
+
+async def test_capability_orchestration_executes_explicit_memory_write(
+    store: ConversationStore,
+    monkeypatch: Any,
+) -> None:
+    class FakeReasoning:
+        async def resolve_intent(self, text: str, **kwargs: Any) -> Any:
+            del text, kwargs
+            return type(
+                "Resolution",
+                (),
+                {
+                    "intent": "memory.remember",
+                    "confidence": 1.0,
+                    "entities": {"content": "prefiro respostas curtas"},
+                    "requires_plan": True,
+                    "suggested_tool": "memory.remember",
+                    "explicit_action": True,
+                },
+            )()
+
+    class FakeTools:
+        def __init__(self) -> None:
+            self.confirmed: bool | None = None
+
+        async def execute_tool(self, tool_name: str, arguments: Any, **kwargs: Any) -> Any:
+            assert tool_name == "memory.remember"
+            assert arguments["content"] == "prefiro respostas curtas"
+            self.confirmed = kwargs["confirmed"]
+            return type(
+                "Result",
+                (),
+                {"output": {"stored": True}, "cached": False},
+            )()
+
+    tools = FakeTools()
+    monkeypatch.setattr(
+        "app.modules.reasoning.application.get_reasoning_service",
+        lambda: FakeReasoning(),
+    )
+    monkeypatch.setattr(
+        "app.modules.tool_manager.application.get_tool_manager_service",
+        lambda: tools,
+    )
+
+    service = ConversationService(store=store)
+    result = await service._handle_capability(
+        "session-1",
+        "Lembre que prefiro respostas curtas",
+        user_id="user-1",
+    )
+
+    assert result is not None
+    assert result.model == "sophie/tool-manager"
+    assert "Guardei" in result.text
+    assert tools.confirmed is True

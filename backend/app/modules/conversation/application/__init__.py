@@ -7,6 +7,7 @@ a sessão.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 from dataclasses import dataclass
 from typing import Any
@@ -169,10 +170,177 @@ class ConversationService:
         )
         return context
 
+    async def _handle_capability(
+        self,
+        session_id: str,
+        text: str,
+        *,
+        user_id: str,
+    ) -> ChatResult | None:
+        from app.modules.reasoning.application import get_reasoning_service
+
+        resolution = await get_reasoning_service().resolve_intent(
+            text,
+            user_id=user_id,
+            context={"session_id": session_id},
+        )
+        if resolution.intent == "chat":
+            return None
+
+        if resolution.intent == "planning":
+            from app.modules.planner.application import get_planner_service
+
+            plan = await get_planner_service().create_plan(user_id, text)
+            lines = [
+                f"{index}. {step.description}" for index, step in enumerate(plan.steps, start=1)
+            ]
+            return ChatResult(
+                text="Plano criado, chefe:\n" + "\n".join(lines),
+                model="sophie/planner",
+                latency_ms=0,
+                fallback_used=False,
+                cached=False,
+            )
+
+        if not resolution.suggested_tool:
+            return None
+
+        from app.modules.tool_manager.application import (
+            ToolConfirmationRequiredError,
+            get_tool_manager_service,
+        )
+
+        arguments = dict(resolution.entities)
+        if resolution.suggested_tool in {"memory.search", "knowledge.search"}:
+            arguments = {
+                "query": str(arguments.get("query") or text),
+                "limit": 5,
+            }
+        elif resolution.suggested_tool == "memory.remember":
+            arguments = {
+                "content": str(arguments.get("content") or text),
+                "importance": 0.8,
+            }
+        else:
+            arguments = {}
+
+        try:
+            execution = await get_tool_manager_service().execute_tool(
+                resolution.suggested_tool,
+                arguments,
+                user_id=user_id,
+                confirmed=resolution.explicit_action,
+                idempotency_key=(
+                    f"conversation:{session_id}:{resolution.intent}:"
+                    + hashlib.sha256(text.casefold().encode()).hexdigest()[:24]
+                ),
+            )
+        except ToolConfirmationRequiredError:
+            return ChatResult(
+                text=(
+                    "Essa ação altera dados e precisa de uma confirmação explícita "
+                    "antes de eu executar."
+                ),
+                model="sophie/tool-manager",
+                latency_ms=0,
+                fallback_used=False,
+                cached=False,
+            )
+        except Exception:
+            _LOGGER.warning(
+                "conversation_capability_execution_failed",
+                extra={"intent": resolution.intent},
+                exc_info=True,
+            )
+            return ChatResult(
+                text="Não consegui executar essa capacidade agora, chefe.",
+                model="sophie/tool-manager",
+                latency_ms=0,
+                fallback_used=False,
+                cached=False,
+            )
+
+        output = execution.output
+        if resolution.intent == "memory.remember":
+            response_text = "Certo, chefe. Guardei isso na minha memória de longo prazo."
+        elif resolution.intent == "memory.search":
+            hits = output.get("hits")
+            if not isinstance(hits, list) or not hits:
+                response_text = "Não encontrei nenhuma memória relevante para essa busca."
+            else:
+                items = [
+                    f"- {str(item.get('content', '')).strip()}"
+                    for item in hits[:5]
+                    if isinstance(item, dict) and str(item.get("content", "")).strip()
+                ]
+                response_text = (
+                    "Encontrei estas memórias relevantes:\n" + "\n".join(items)
+                    if items
+                    else "Não encontrei nenhuma memória relevante para essa busca."
+                )
+        elif resolution.intent == "knowledge.search":
+            hits = output.get("hits")
+            if not isinstance(hits, list) or not hits:
+                response_text = "Não encontrei conteúdo relevante na base de conhecimento."
+            else:
+                items = [
+                    (
+                        f"- {str(item.get('title', 'Documento')).strip()}: "
+                        f"{str(item.get('content', '')).strip()}"
+                    )
+                    for item in hits[:5]
+                    if isinstance(item, dict) and str(item.get("content", "")).strip()
+                ]
+                response_text = (
+                    "Encontrei isto na base de conhecimento:\n" + "\n".join(items)
+                    if items
+                    else "Não encontrei conteúdo relevante na base de conhecimento."
+                )
+        elif resolution.intent == "system.health":
+            response_text = (
+                "Estado do sistema: "
+                f"PostgreSQL {output.get('database', 'desconhecido')}, "
+                f"Redis {output.get('redis', 'desconhecido')}. "
+                + ("Sistema pronto." if output.get("ready") else "Sistema degradado.")
+            )
+        else:
+            return None
+
+        return ChatResult(
+            text=response_text,
+            model="sophie/tool-manager",
+            latency_ms=0,
+            fallback_used=False,
+            cached=execution.cached,
+        )
+
     async def chat(self, session_id: str, text: str, *, user_id: str | None = None) -> ChatResult:
         if user_id is not None and await self._store.get_owned_session(session_id, user_id) is None:
             raise ConversationNotFoundError(session_id)
         await self.append_message(session_id, "user", text, user_id=user_id)
+        if user_id:
+            capability = await self._handle_capability(
+                session_id,
+                text,
+                user_id=user_id,
+            )
+            if capability is not None:
+                await self.append_message(
+                    session_id,
+                    "assistant",
+                    capability.text,
+                    user_id=user_id,
+                )
+                await self._publish(
+                    EVENT_CONVERSATION_MESSAGE_RESPONDED,
+                    {
+                        "session_id": session_id,
+                        "user_id": user_id,
+                        "model": capability.model,
+                        "latency_ms": capability.latency_ms,
+                    },
+                )
+                return capability
         context = await self.get_context(session_id, user_id=user_id, query=text)
         try:
             from app.modules.brain.application import get_brain_service

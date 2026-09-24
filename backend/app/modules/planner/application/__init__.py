@@ -9,7 +9,13 @@ from typing import Any
 
 from app.modules.configuration.settings import get_settings
 from app.modules.events.envelope import build_envelope
-from app.modules.planner.domain import ExecutionPlan, PlanStep
+from app.modules.planner.domain import (
+    ExecutionPlan,
+    PlanExecutionResult,
+    PlanStep,
+    PlanStepExecution,
+    PlanStore,
+)
 from app.modules.planner.infrastructure import RedisPlanStore
 from app.modules.reasoning.application import get_reasoning_service
 
@@ -19,7 +25,7 @@ _service: PlannerService | None = None
 
 
 class PlannerService:
-    def __init__(self, store: RedisPlanStore | None = None) -> None:
+    def __init__(self, store: PlanStore | None = None) -> None:
         self._store = store or RedisPlanStore()
 
     async def create_plan(self, user_id: str, text: str) -> ExecutionPlan:
@@ -80,6 +86,123 @@ class PlannerService:
         await self._store.save(updated)
         await self._publish("planner.plan.replanned", updated)
         return updated
+
+    async def execute_plan(
+        self,
+        user_id: str,
+        plan_id: str,
+        *,
+        confirmed_step_ids: set[str] | None = None,
+    ) -> PlanExecutionResult:
+        plan = await self._store.get(user_id, plan_id)
+        if plan is None:
+            raise LookupError("plan not found")
+
+        confirmed = confirmed_step_ids or set()
+        executions: list[PlanStepExecution] = []
+        overall_status = "completed"
+
+        from app.modules.tool_manager.application import (
+            ToolConfirmationRequiredError,
+            get_tool_manager_service,
+        )
+
+        tools = get_tool_manager_service()
+        for step in plan.steps:
+            if step.kind != "tool" or step.tool_name is None:
+                executions.append(
+                    PlanStepExecution(
+                        step_id=step.step_id,
+                        status="completed",
+                        tool_name=None,
+                    )
+                )
+                continue
+
+            is_confirmed = step.step_id in confirmed
+            if step.requires_confirmation and not is_confirmed:
+                executions.append(
+                    PlanStepExecution(
+                        step_id=step.step_id,
+                        status="confirmation_required",
+                        tool_name=step.tool_name,
+                    )
+                )
+                overall_status = "confirmation_required"
+                break
+
+            try:
+                tool_result = await tools.execute_tool(
+                    step.tool_name,
+                    step.arguments,
+                    user_id=user_id,
+                    confirmed=is_confirmed or not step.requires_confirmation,
+                    idempotency_key=(f"plan:{plan.plan_id}:{plan.revision}:{step.step_id}"),
+                )
+            except ToolConfirmationRequiredError:
+                executions.append(
+                    PlanStepExecution(
+                        step_id=step.step_id,
+                        status="confirmation_required",
+                        tool_name=step.tool_name,
+                    )
+                )
+                overall_status = "confirmation_required"
+                break
+            except Exception as exc:
+                executions.append(
+                    PlanStepExecution(
+                        step_id=step.step_id,
+                        status="failed",
+                        tool_name=step.tool_name,
+                        error=str(exc)[:500],
+                    )
+                )
+                overall_status = "failed"
+                break
+
+            executions.append(
+                PlanStepExecution(
+                    step_id=step.step_id,
+                    status="completed",
+                    tool_name=step.tool_name,
+                    output=tool_result.output,
+                )
+            )
+
+        execution_result = PlanExecutionResult(
+            plan_id=plan.plan_id,
+            revision=plan.revision,
+            status=overall_status,
+            steps=tuple(executions),
+        )
+        await self._publish_execution(execution_result, user_id=user_id)
+        return execution_result
+
+    async def _publish_execution(
+        self,
+        execution: PlanExecutionResult,
+        *,
+        user_id: str,
+    ) -> None:
+        try:
+            from app.modules.events.application import get_event_bus_service
+
+            await get_event_bus_service().publish_event(
+                build_envelope(
+                    "planner.plan.executed",
+                    PRODUCER,
+                    {
+                        "plan_id": execution.plan_id,
+                        "revision": execution.revision,
+                        "status": execution.status,
+                        "steps": len(execution.steps),
+                    },
+                    user_id=user_id,
+                )
+            )
+        except Exception:
+            _LOGGER.warning("planner_execution_event_failed", exc_info=True)
 
     @staticmethod
     def _steps_for_resolution(
