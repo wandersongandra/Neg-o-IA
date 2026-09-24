@@ -244,7 +244,7 @@ export default function TopBar({ data, onOpenPalette, commandLabel }: TopBarProp
             W
           </div>
           <div className="hidden leading-tight lg:block">
-            <p className="text-xs font-medium text-[var(--text-primary)]">Wanderson</p>
+            <p className="text-xs font-medium text-[var(--text-primary)]">Usuário</p>
             <p className="font-mono-data text-[10px] uppercase text-[var(--accent)]">
               {level}
             </p>
