@@ -29,9 +29,11 @@ class RateLimiter:
         *,
         window_seconds: int = _DEFAULT_WINDOW_SECONDS,
         redis_client: aioredis.Redis[str] | None = None,
+        fail_closed: bool = False,
     ) -> None:
         self._limit = limit
         self._window_seconds = window_seconds
+        self._fail_closed = fail_closed
         if redis_client is None:
             from app.infrastructure.redis import get_redis
 
@@ -59,6 +61,8 @@ class RateLimiter:
                 return await self._allow_redis(key, window)
             except Exception:
                 self._redis_available = False
+        if self._fail_closed:
+            return False, self._limit, 0, self._window_seconds
         return await self._allow_memory(key, window)
 
     async def _redis_alive(self) -> bool:
