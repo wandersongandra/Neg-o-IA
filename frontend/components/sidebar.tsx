@@ -41,23 +41,24 @@ const MAIN_NAV: MainNavItem[] = [
   { label: "Dashboard", href: "/", icon: Home },
   { label: "Conversa", href: "/conversa", icon: MessagesSquare },
   { label: "Voz", href: "/voz", icon: Mic },
+  { label: "Memória", href: "/memoria", icon: Brain },
+  { label: "Conhecimento", href: "/conhecimento", icon: Braces },
+  { label: "Planner", href: "/planner", icon: Activity },
+  { label: "Ferramentas", href: "/ferramentas", icon: Wrench },
+  { label: "Automação", href: "/automacao", icon: Bot },
+  { label: "Visão", href: "/visao", icon: Eye },
   { label: "Monitor", href: "/monitor", icon: Monitor },
   { label: "Configuração", href: "/config", icon: Settings },
 ];
 
 const SOON_NAV: SoonNavItem[] = [
-  { label: "Memória", icon: Brain },
-  { label: "Conhecimento", icon: Braces },
   { label: "Projetos", icon: FolderKanban },
   { label: "Documentos", icon: FileText },
   { label: "Tarefas", icon: Activity },
-  { label: "Ferramentas", icon: Wrench },
   { label: "Docker", icon: Boxes },
   { label: "VPS", icon: Server },
   { label: "Cloudflare", icon: Cloud },
   { label: "Banco de Dados", icon: Database },
-  { label: "Observação", icon: Eye },
-  { label: "Automação", icon: Bot },
 ];
 
 interface SidebarProps {
