@@ -9,6 +9,7 @@ import pytest
 from starlette.requests import Request
 
 from app.main import _rate_limit_key
+from app.modules.api.rate_limit import RateLimiter
 from app.modules.security.domain import AuthResult
 
 API_KEY = "test-rate-limit-key"
@@ -72,3 +73,24 @@ def test_chave_invalida_e_sem_chave_colidem_no_mesmo_bucket() -> None:
     forged = _make_request({"x-api-key": "outra-chave-forjada"})
     missing = _make_request({})
     assert _rate_limit_key(forged) == _rate_limit_key(missing)
+
+
+
+class _BrokenRedis:
+    async def ping(self) -> bool:
+        raise ConnectionError("redis unavailable")
+
+
+@pytest.mark.asyncio
+async def test_rate_limiter_fail_closed_denies_when_redis_is_unavailable() -> None:
+    limiter = RateLimiter(
+        limit=5,
+        redis_client=_BrokenRedis(),  # type: ignore[arg-type]
+        fail_closed=True,
+    )
+    allowed, limit, remaining, retry_after = await limiter.allow("login:user")
+
+    assert allowed is False
+    assert limit == 5
+    assert remaining == 0
+    assert retry_after > 0
