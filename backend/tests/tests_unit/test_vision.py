@@ -20,9 +20,7 @@ class FakeVisionAdapter:
         media_type: str,
         prompt: str,
     ) -> dict[str, Any]:
-        self.calls.append(
-            {"image_bytes": image_bytes, "media_type": media_type, "prompt": prompt}
-        )
+        self.calls.append({"image_bytes": image_bytes, "media_type": media_type, "prompt": prompt})
         return {"text": "imagem analisada", "model": "vision-test", "latency_ms": 1}
 
 
