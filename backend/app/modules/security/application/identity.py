@@ -11,6 +11,7 @@ import base64
 import hashlib
 import hmac
 import secrets
+import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
@@ -194,13 +195,31 @@ async def persist_session(
     )
     session.add(auth_session)
     await session.flush()
+
+    active_result = await session.execute(
+        select(AuthSessionORM)
+        .where(
+            AuthSessionORM.user_id == identity.user_id,
+            AuthSessionORM.revoked_at.is_(None),
+            AuthSessionORM.expires_at > now,
+        )
+        .order_by(AuthSessionORM.created_at.desc(), AuthSessionORM.id.desc())
+    )
+    active_sessions = list(active_result.scalars().all())
+    for older_session in active_sessions[settings.auth_max_active_sessions :]:
+        older_session.revoked_at = now
+    if len(active_sessions) > settings.auth_max_active_sessions:
+        await session.flush()
     return expires_at
 
 
 async def authenticate_session(
-    session: AsyncSession, token: str
+    session: AsyncSession,
+    token: str,
+    settings: Settings,
 ) -> tuple[IdentityRecord, AuthSessionORM] | None:
     now = datetime.now(UTC)
+    idle_cutoff = now - timedelta(seconds=settings.auth_session_idle_seconds)
     result = await session.execute(
         select(AuthSessionORM, UserORM)
         .join(UserORM, UserORM.id == AuthSessionORM.user_id)
@@ -208,6 +227,7 @@ async def authenticate_session(
             AuthSessionORM.token_hash == hash_session_token(token),
             AuthSessionORM.revoked_at.is_(None),
             AuthSessionORM.expires_at > now,
+            AuthSessionORM.last_seen_at > idle_cutoff,
             UserORM.status == "active",
         )
     )
@@ -225,6 +245,38 @@ async def authenticate_session(
         ),
         auth_session,
     )
+
+
+async def validate_active_session(
+    session: AsyncSession,
+    user_id: str,
+    session_id: str,
+    settings: Settings,
+) -> bool:
+    """Valida a sessão que originou uma delegação curta, como ticket WebSocket."""
+    try:
+        user_uuid = uuid.UUID(user_id)
+        session_uuid = uuid.UUID(session_id)
+    except (TypeError, ValueError):
+        return False
+
+    now = datetime.now(UTC)
+    idle_cutoff = now - timedelta(seconds=settings.auth_session_idle_seconds)
+    result = await session.execute(
+        select(AuthSessionORM).where(
+            AuthSessionORM.id == session_uuid,
+            AuthSessionORM.user_id == user_uuid,
+            AuthSessionORM.revoked_at.is_(None),
+            AuthSessionORM.expires_at > now,
+            AuthSessionORM.last_seen_at > idle_cutoff,
+        )
+    )
+    auth_session = result.scalar_one_or_none()
+    if auth_session is None:
+        return False
+    auth_session.last_seen_at = now
+    await session.flush()
+    return True
 
 
 async def revoke_session(session: AsyncSession, session_id: str, user_id: str) -> bool:
