@@ -182,9 +182,7 @@ class MemoryPolicyORM(Base):
     auto_capture_enabled: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("false")
     )
-    retention_days: Mapped[int] = mapped_column(
-        Integer, nullable=False, server_default=text("90")
-    )
+    retention_days: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("90"))
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=text("now()")
     )
@@ -217,9 +215,7 @@ class MemoryEntryORM(Base):
     source: Mapped[str] = mapped_column(String(32), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
-    importance: Mapped[float] = mapped_column(
-        Float, nullable=False, server_default=text("0.5")
-    )
+    importance: Mapped[float] = mapped_column(Float, nullable=False, server_default=text("0.5"))
     embedding: Mapped[list[float]] = mapped_column(Vector(384), nullable=False)
     attributes: Mapped[dict[str, Any]] = mapped_column(
         "metadata",
