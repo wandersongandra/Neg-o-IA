@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any
+
+import pytest
+
 from app.modules.planner.application import PlannerService
 
 
@@ -30,30 +34,30 @@ def test_read_only_search_does_not_require_confirmation() -> None:
 
 
 class _FakePlanStore:
-    def __init__(self, plan):
+    def __init__(self, plan: Any) -> None:
         self.plan = plan
 
-    async def get(self, user_id: str, plan_id: str):
+    async def get(self, user_id: str, plan_id: str) -> Any:
         del user_id, plan_id
         return self.plan
 
-    async def save(self, plan):
+    async def save(self, plan: Any) -> None:
         self.plan = plan
 
 
 class _FakeToolManager:
-    def __init__(self):
-        self.calls = []
+    def __init__(self) -> None:
+        self.calls: list[tuple[Any, ...]] = []
 
     async def execute_tool(
         self,
-        tool_name,
-        arguments,
+        tool_name: str,
+        arguments: dict[str, Any],
         *,
-        user_id,
-        confirmed=False,
-        idempotency_key=None,
-    ):
+        user_id: str,
+        confirmed: bool = False,
+        idempotency_key: str | None = None,
+    ) -> Any:
         self.calls.append((tool_name, arguments, user_id, confirmed, idempotency_key))
         return type(
             "Result",
@@ -62,8 +66,9 @@ class _FakeToolManager:
         )()
 
 
+@pytest.mark.asyncio
 async def test_plan_execution_stops_before_unconfirmed_write(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from datetime import UTC, datetime
 
@@ -101,8 +106,9 @@ async def test_plan_execution_stops_before_unconfirmed_write(
     assert tools.calls == []
 
 
+@pytest.mark.asyncio
 async def test_plan_execution_runs_confirmed_write(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from datetime import UTC, datetime
 
