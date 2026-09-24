@@ -3,10 +3,7 @@
 import {
   Boxes,
   Brain,
-  Cloud,
   Database,
-  FileText,
-  FolderGit2,
   GitBranch,
   HardDrive,
   MemoryStick,
