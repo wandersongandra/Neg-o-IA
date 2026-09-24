@@ -1,7 +1,4 @@
-"""Módulo reasoning — interpretação da intenção do usuário.
-
-v0: esqueleto de contrato. Implementação efetiva em v1+ (Núcleo Vivo).
-"""
+"""Reasoning V1 — resolução determinística e segura de intenção."""
 
 from __future__ import annotations
 
