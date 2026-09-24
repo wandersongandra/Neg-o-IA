@@ -38,7 +38,7 @@ const ALLOWLIST: AllowEntry[] = [
   { path: "vision/status", methods: ["GET"] },
   { path: "vision/analyze", methods: ["POST"] },
   { path: "memory/status", methods: ["GET"] },
-  { path: "memory/long-term", methods: ["POST"] },
+  { path: "memory/long-term", methods: ["GET", "POST"] },
   { path: "memory/long-term/:id", methods: ["DELETE"] },
   { path: "memory/search", methods: ["GET"] },
   { path: "memory/policy", methods: ["GET", "PATCH"] },
