@@ -61,6 +61,14 @@ class LongTermMemoryService:
         )
         return hits
 
+    async def list_recent(
+        self,
+        user_id: str,
+        *,
+        limit: int = 50,
+    ) -> list[LongTermMemoryEntry]:
+        return await self._store.list_recent(user_id, limit=limit)
+
     async def delete(self, user_id: str, memory_id: str) -> bool:
         removed = await self._store.delete(user_id, memory_id)
         if removed:
