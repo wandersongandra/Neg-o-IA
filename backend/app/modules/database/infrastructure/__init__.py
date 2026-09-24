@@ -351,7 +351,6 @@ class AutomationRuleORM(Base):
     )
 
 
-
 class SchedulerJobORM(Base):
     __tablename__ = "jobs"
     __table_args__ = (
