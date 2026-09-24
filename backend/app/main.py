@@ -36,10 +36,12 @@ from app.modules.conversation.router import (
 from app.modules.database.router import router as database_router
 from app.modules.events.router import router as events_router
 from app.modules.knowledge.router import router as knowledge_router
+from app.modules.learning.router import router as learning_router
 from app.modules.memory.router import router as memory_router
 from app.modules.monitoring.router import router as monitoring_router
 from app.modules.planner.router import router as planner_router
 from app.modules.reasoning.router import router as reasoning_router
+from app.modules.scheduler.router import router as scheduler_router
 from app.modules.security.router import require_authenticated_user, require_service_scope
 from app.modules.security.router import router as security_router
 from app.modules.tool_manager.router import router as tool_manager_router
@@ -109,6 +111,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.services = services
 
     event_bus = None
+    scheduler_service = None
     try:
         from app.modules.automation.application import register_automation_handlers
         from app.modules.events.application import get_event_bus_service
@@ -118,6 +121,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await event_bus.start()
     except Exception:
         logger.warning("event_bus_start_failed", exc_info=True)
+
+    try:
+        from app.modules.scheduler.application import get_scheduler_service
+
+        scheduler_service = get_scheduler_service()
+        await scheduler_service.start()
+    except Exception:
+        logger.warning("scheduler_start_failed", exc_info=True)
 
     logger.info(
         "application_started",
@@ -130,6 +141,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await connection_manager.disconnect_all()
     except Exception:
         logger.warning("websocket_disconnect_all_failed", exc_info=True)
+    if scheduler_service is not None:
+        try:
+            await scheduler_service.stop()
+        except Exception:
+            logger.warning("scheduler_stop_failed", exc_info=True)
     if event_bus is not None:
         try:
             await event_bus.stop()
@@ -344,10 +360,12 @@ def create_app() -> FastAPI:
     application.include_router(monitoring_router)
     application.include_router(memory_router, dependencies=auth_required)
     application.include_router(knowledge_router, dependencies=auth_required)
+    application.include_router(learning_router, dependencies=auth_required)
     application.include_router(reasoning_router, dependencies=auth_required)
     application.include_router(planner_router, dependencies=auth_required)
     application.include_router(tool_manager_router, dependencies=auth_required)
     application.include_router(automation_router, dependencies=auth_required)
+    application.include_router(scheduler_router, dependencies=auth_required)
     application.include_router(brain_router, dependencies=auth_required)
     application.include_router(vision_router, dependencies=auth_required)
     application.include_router(voice_router, dependencies=auth_required)
