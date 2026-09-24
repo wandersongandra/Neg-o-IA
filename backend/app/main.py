@@ -35,6 +35,7 @@ from app.modules.conversation.router import (
 from app.modules.database.router import router as database_router
 from app.modules.events.router import router as events_router
 from app.modules.memory.router import router as memory_router
+from app.modules.knowledge.router import router as knowledge_router
 from app.modules.monitoring.router import router as monitoring_router
 from app.modules.security.router import require_authenticated_user, require_service_scope
 from app.modules.security.router import router as security_router
@@ -320,6 +321,7 @@ def create_app() -> FastAPI:
     application.include_router(events_router, dependencies=auth_required)
     application.include_router(monitoring_router)
     application.include_router(memory_router, dependencies=auth_required)
+    application.include_router(knowledge_router, dependencies=auth_required)
     application.include_router(brain_router, dependencies=auth_required)
     application.include_router(voice_router, dependencies=auth_required)
     application.include_router(voice_ws_router)
