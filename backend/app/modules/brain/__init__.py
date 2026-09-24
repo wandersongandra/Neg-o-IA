@@ -1,7 +1,4 @@
-"""Módulo brain — orquestrador do ciclo completo de um pedido (cérebro único).
-
-v0: esqueleto de contrato. Implementação efetiva em v1+ (Núcleo Vivo).
-"""
+"""Brain — geração, roteamento de modelo, cache e resiliência da Sophie."""
 
 from __future__ import annotations
 
