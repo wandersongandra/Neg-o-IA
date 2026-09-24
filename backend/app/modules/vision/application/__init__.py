@@ -26,9 +26,7 @@ class VisionService:
     def status(self) -> dict[str, Any]:
         settings = get_settings()
         available = bool(
-            settings.external_ai_enabled
-            and settings.nvidia_api_key
-            and settings.brain_vision_model
+            settings.external_ai_enabled and settings.nvidia_api_key and settings.brain_vision_model
         )
         return {
             "available": available,
@@ -48,9 +46,7 @@ class VisionService:
     ) -> VisionAnalysis:
         settings = get_settings()
         if not (
-            settings.external_ai_enabled
-            and settings.nvidia_api_key
-            and settings.brain_vision_model
+            settings.external_ai_enabled and settings.nvidia_api_key and settings.brain_vision_model
         ):
             raise VisionUnavailableError("vision provider is not configured")
         if not image_bytes:
