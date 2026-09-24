@@ -47,6 +47,7 @@ const ALLOWLIST: AllowEntry[] = [
   { path: "planner/plans", methods: ["POST"] },
   { path: "planner/plans/:id", methods: ["GET"] },
   { path: "planner/plans/:id/replan", methods: ["POST"] },
+  { path: "planner/plans/:id/execute", methods: ["POST"] },
   { path: "tool-manager/catalog", methods: ["GET"] },
   { path: "tool-manager/execute", methods: ["POST"] },
   { path: "automation/capabilities", methods: ["GET"] },
