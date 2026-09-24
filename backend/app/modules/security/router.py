@@ -43,12 +43,21 @@ router = APIRouter(prefix="/security", tags=["security"])
 _logger = structlog.get_logger("sophie.security")
 _AUTH_EVENT_PUBLISH_TIMEOUT = 2.0
 _login_limiter: RateLimiter | None = None
+_DEV_SESSION_COOKIE = "sophie_session"
+_PROD_SESSION_COOKIE = "__Host-sophie_session"
+
+
+def _session_cookie_name() -> str:
+    return _PROD_SESSION_COOKIE if get_settings().env == "production" else _DEV_SESSION_COOKIE
 
 
 def _get_login_limiter() -> RateLimiter:
     global _login_limiter
     if _login_limiter is None:
-        _login_limiter = RateLimiter(limit=get_settings().rate_limit_burst)
+        _login_limiter = RateLimiter(
+            limit=get_settings().rate_limit_burst,
+            fail_closed=get_settings().env == "production",
+        )
     return _login_limiter
 
 
@@ -155,16 +164,23 @@ async def require_authenticated_user(
     request: Request,
     authorization: Annotated[str | None, Header(alias="Authorization")] = None,
     session_cookie: Annotated[str | None, Cookie(alias="sophie_session")] = None,
+    host_session_cookie: Annotated[
+        str | None,
+        Cookie(alias="__Host-sophie_session"),
+    ] = None,
 ) -> AuthResult:
     """Resolve usuário exclusivamente por sessão server-side."""
     token = ""
+    cookie_token = (
+        host_session_cookie if get_settings().env == "production" else session_cookie
+    )
     if authorization and authorization.startswith("Bearer "):
         token = authorization[7:].strip()
-    elif session_cookie:
-        token = session_cookie
+    elif cookie_token:
+        token = cookie_token
 
     if token:
-        if session_cookie and not authorization:
+        if cookie_token and not authorization:
             _validate_cookie_request_origin(request)
         try:
             result = await authenticate_bearer_token(token)
@@ -298,12 +314,12 @@ async def login(body: LoginRequest, response: Response, request: Request) -> Ses
             )
             await session.commit()
             response.set_cookie(
-                "sophie_session",
+                _session_cookie_name(),
                 token,
                 max_age=get_settings().auth_session_ttl_seconds,
                 httponly=True,
                 secure=get_settings().env == "production",
-                samesite="lax",
+                samesite="strict",
                 path="/",
             )
             return SessionResponse(
@@ -331,7 +347,8 @@ async def logout(
         except SQLAlchemyError as exc:
             _logger.exception("logout_database_unavailable")
             raise HTTPException(status_code=503, detail="identity dependency unavailable") from exc
-    response.delete_cookie("sophie_session", path="/")
+    response.delete_cookie(_DEV_SESSION_COOKIE, path="/")
+    response.delete_cookie(_PROD_SESSION_COOKIE, path="/", secure=True, samesite="strict")
 
 
 @router.get("/status")
@@ -379,6 +396,8 @@ async def create_ws_ticket(
             auth.authorization_level,
             purpose=request.purpose,
             session_id=request.session_id,
+            auth_session_id=auth.session_id,
+            device_id=auth.device_id,
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
