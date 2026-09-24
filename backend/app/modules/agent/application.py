@@ -62,7 +62,7 @@ class AgentOrchestrator:
         if not resolution.requires_plan:
             return None
 
-        plan = await get_planner_service().create_plan(user_id, text)
+        plan = await get_planner_service().create_plan(user_id, text, resolution=resolution)
         plan_steps = tuple(step.description for step in plan.steps)
         if not resolution.suggested_tool:
             return AgentContext(
