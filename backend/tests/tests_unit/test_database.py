@@ -26,10 +26,12 @@ def _execute_returning(row: ApiKeyORM | None) -> MagicMock:
     result.scalar_one_or_none.return_value = row
     return result
 
+
 def test_hash_api_key_is_deterministic() -> None:
     key = "chave-exemplo-123"
     assert hash_api_key(key) == hash_api_key(key)
     assert len(hash_api_key(key)) == 64
+
 
 def test_generate_api_key_is_unique_and_safe() -> None:
     k1 = generate_api_key()
@@ -38,6 +40,7 @@ def test_generate_api_key_is_unique_and_safe() -> None:
     assert k1.startswith("sophie_sk_")
     assert k2.startswith("sophie_sk_")
     assert len(k1) > 43
+
 
 @pytest.mark.asyncio
 async def test_create_api_key_returns_plain_key_and_record(fake_session: AsyncMock) -> None:
@@ -49,6 +52,7 @@ async def test_create_api_key_returns_plain_key_and_record(fake_session: AsyncMo
     assert record.scopes == ["read"]
     added = fake_session.add.call_args.args[0]
     assert isinstance(added, ApiKeyORM)
+
 
 @pytest.mark.asyncio
 async def test_verify_api_key_revoked_returns_none(fake_session: AsyncMock) -> None:
@@ -63,6 +67,7 @@ async def test_verify_api_key_revoked_returns_none(fake_session: AsyncMock) -> N
     record = await verify_api_key(fake_session, "chave")
     assert record is None
 
+
 @pytest.mark.asyncio
 async def test_verify_api_key_valid_updates_last_used(fake_session: AsyncMock) -> None:
     row = ApiKeyORM(key_hash=hash_api_key("chave"), name="x", scopes=["read"])
@@ -72,6 +77,7 @@ async def test_verify_api_key_valid_updates_last_used(fake_session: AsyncMock) -
     assert record is not None
     assert record.revoked_at is None
     assert row.last_used_at is not None
+
 
 @pytest.mark.asyncio
 async def test_register_audit_event_maps_envelope(fake_session: AsyncMock) -> None:
