@@ -96,7 +96,10 @@ _ws_limiter: RateLimiter | None = None
 def _get_ws_limiter() -> RateLimiter:
     global _ws_limiter
     if _ws_limiter is None:
-        _ws_limiter = RateLimiter(limit=get_settings().rate_limit_burst)
+        _ws_limiter = RateLimiter(
+            limit=get_settings().rate_limit_burst,
+            fail_closed=get_settings().env == "production",
+        )
     return _ws_limiter
 
 
