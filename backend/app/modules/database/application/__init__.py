@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
+import json
 import secrets
 import uuid
 from datetime import UTC, datetime
@@ -12,10 +14,108 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.models import ApiKeyRecord, AppConfigRecord, AuditEventRecord
+from app.modules.configuration.settings import get_settings
 from app.modules.database.infrastructure import ApiKeyORM, AppConfigORM, AuditEventORM
 from app.modules.events.envelope import EventEnvelope
 
 PERSISTED_API_KEY_PREFIX = "sophie_sk_"
+_AUDIT_KEY_CONTEXT = b"sophie:audit-integrity:v1"
+
+
+def _audit_integrity_key(secret_key: str) -> bytes:
+    return hmac.new(
+        secret_key.encode("utf-8"),
+        _AUDIT_KEY_CONTEXT,
+        hashlib.sha256,
+    ).digest()
+
+
+def _audit_integrity_material(
+    *,
+    event_id: str,
+    event_type: str,
+    version: int,
+    producer: str,
+    trace_id: str | None,
+    correlation_id: str | None,
+    parent_id: str | None,
+    user_id: str | None,
+    session_id: str | None,
+    occurred_at: datetime,
+    payload: dict[str, Any],
+) -> bytes:
+    material = {
+        "id": event_id,
+        "event_type": event_type,
+        "version": version,
+        "producer": producer,
+        "trace_id": trace_id,
+        "correlation_id": correlation_id,
+        "parent_id": parent_id,
+        "user_id": user_id,
+        "session_id": session_id,
+        "occurred_at": occurred_at.isoformat(),
+        "payload": payload,
+    }
+    return json.dumps(
+        material,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        default=str,
+    ).encode("utf-8")
+
+
+def _compute_audit_integrity_hash(
+    *,
+    event_id: str,
+    event_type: str,
+    version: int,
+    producer: str,
+    trace_id: str | None,
+    correlation_id: str | None,
+    parent_id: str | None,
+    user_id: str | None,
+    session_id: str | None,
+    occurred_at: datetime,
+    payload: dict[str, Any],
+) -> str:
+    return hmac.new(
+        _audit_integrity_key(get_settings().secret_key),
+        _audit_integrity_material(
+            event_id=event_id,
+            event_type=event_type,
+            version=version,
+            producer=producer,
+            trace_id=trace_id,
+            correlation_id=correlation_id,
+            parent_id=parent_id,
+            user_id=user_id,
+            session_id=session_id,
+            occurred_at=occurred_at,
+            payload=payload,
+        ),
+        hashlib.sha256,
+    ).hexdigest()
+
+
+def verify_audit_event_integrity(row: AuditEventORM) -> bool | None:
+    if not row.integrity_hash:
+        return None
+    expected = _compute_audit_integrity_hash(
+        event_id=str(row.id),
+        event_type=row.event_type,
+        version=row.version,
+        producer=row.producer,
+        trace_id=row.trace_id,
+        correlation_id=row.correlation_id,
+        parent_id=row.parent_id,
+        user_id=row.user_id,
+        session_id=row.session_id,
+        occurred_at=row.occurred_at,
+        payload=row.payload,
+    )
+    return hmac.compare_digest(row.integrity_hash, expected)
 
 
 def hash_api_key(key: str) -> str:
@@ -86,7 +186,21 @@ async def verify_api_key(session: AsyncSession, key: str) -> ApiKeyRecord | None
 
 
 async def register_audit_event(session: AsyncSession, envelope: EventEnvelope) -> AuditEventRecord:
-    """Persiste um evento no esquema `events` (base da auditoria completa)."""
+    """Persiste evento de auditoria com HMAC para detectar adulteração no banco."""
+    occurred_at = datetime.fromisoformat(envelope.occurred_at)
+    integrity_hash = _compute_audit_integrity_hash(
+        event_id=envelope.id,
+        event_type=envelope.type,
+        version=envelope.version,
+        producer=envelope.producer,
+        trace_id=envelope.trace_id,
+        correlation_id=envelope.correlation_id,
+        parent_id=envelope.parent_id,
+        user_id=envelope.user_id,
+        session_id=envelope.session_id,
+        occurred_at=occurred_at,
+        payload=envelope.payload,
+    )
     row = AuditEventORM(
         id=uuid.UUID(envelope.id),
         event_type=envelope.type,
@@ -97,8 +211,9 @@ async def register_audit_event(session: AsyncSession, envelope: EventEnvelope) -
         parent_id=envelope.parent_id,
         user_id=envelope.user_id,
         session_id=envelope.session_id,
-        occurred_at=datetime.fromisoformat(envelope.occurred_at),
+        occurred_at=occurred_at,
         payload=envelope.payload,
+        integrity_hash=integrity_hash,
     )
     session.add(row)
     await session.flush()
@@ -113,6 +228,8 @@ async def register_audit_event(session: AsyncSession, envelope: EventEnvelope) -
         parent_id=str(row.parent_id) if row.parent_id else None,
         user_id=str(row.user_id) if row.user_id else None,
         session_id=str(row.session_id) if row.session_id else None,
+        integrity_hash=row.integrity_hash,
+        integrity_valid=True,
         occurred_at=row.occurred_at,
     )
 
@@ -134,10 +251,28 @@ async def list_audit_events(session: AsyncSession, limit: int = 100) -> list[Aud
             parent_id=str(row.parent_id) if row.parent_id else None,
             user_id=str(row.user_id) if row.user_id else None,
             session_id=str(row.session_id) if row.session_id else None,
+            integrity_hash=row.integrity_hash,
+            integrity_valid=verify_audit_event_integrity(row),
             occurred_at=row.occurred_at,
         )
         for row in result.scalars()
     ]
+
+
+async def audit_integrity_summary(session: AsyncSession, limit: int = 1000) -> dict[str, int]:
+    result = await session.execute(
+        select(AuditEventORM).order_by(AuditEventORM.occurred_at.desc()).limit(limit)
+    )
+    summary = {"verified": 0, "invalid": 0, "unsigned_legacy": 0}
+    for row in result.scalars():
+        valid = verify_audit_event_integrity(row)
+        if valid is True:
+            summary["verified"] += 1
+        elif valid is False:
+            summary["invalid"] += 1
+        else:
+            summary["unsigned_legacy"] += 1
+    return summary
 
 
 async def get_config(session: AsyncSession, key: str) -> AppConfigRecord | None:
