@@ -185,7 +185,10 @@ async def rate_limit_middleware(request: Request, call_next: RequestResponseEndp
     global _rate_limiter
     if request.url.path not in _RATE_LIMIT_WHITELIST:
         if _rate_limiter is None:
-            _rate_limiter = RateLimiter(limit=get_settings().rate_limit_per_minute)
+            _rate_limiter = RateLimiter(
+                limit=get_settings().rate_limit_per_minute,
+                fail_closed=get_settings().env == "production",
+            )
         key = _rate_limit_key(request)
         allowed, limit, remaining, retry_after = await _rate_limiter.allow(key)
         if not allowed:
