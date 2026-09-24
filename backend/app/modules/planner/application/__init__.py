@@ -12,6 +12,7 @@ from app.modules.events.envelope import build_envelope
 from app.modules.planner.domain import (
     ExecutionPlan,
     PlanExecutionResult,
+    PlanStore,
     PlanStep,
     PlanStepExecution,
 )
@@ -24,7 +25,7 @@ _service: PlannerService | None = None
 
 
 class PlannerService:
-    def __init__(self, store: RedisPlanStore | None = None) -> None:
+    def __init__(self, store: PlanStore | None = None) -> None:
         self._store = store or RedisPlanStore()
 
     async def create_plan(self, user_id: str, text: str) -> ExecutionPlan:
@@ -131,7 +132,7 @@ class PlannerService:
                 break
 
             try:
-                result = await tools.execute_tool(
+                tool_result = await tools.execute_tool(
                     step.tool_name,
                     step.arguments,
                     user_id=user_id,
@@ -165,18 +166,18 @@ class PlannerService:
                     step_id=step.step_id,
                     status="completed",
                     tool_name=step.tool_name,
-                    output=result.output,
+                    output=tool_result.output,
                 )
             )
 
-        result = PlanExecutionResult(
+        execution_result = PlanExecutionResult(
             plan_id=plan.plan_id,
             revision=plan.revision,
             status=overall_status,
             steps=tuple(executions),
         )
-        await self._publish_execution(result, user_id=user_id)
-        return result
+        await self._publish_execution(execution_result, user_id=user_id)
+        return execution_result
 
     async def _publish_execution(
         self,
