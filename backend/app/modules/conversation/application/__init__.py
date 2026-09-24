@@ -192,8 +192,7 @@ class ConversationService:
 
             plan = await get_planner_service().create_plan(user_id, text)
             lines = [
-                f"{index}. {step.description}"
-                for index, step in enumerate(plan.steps, start=1)
+                f"{index}. {step.description}" for index, step in enumerate(plan.steps, start=1)
             ]
             return ChatResult(
                 text="Plano criado, chefe:\n" + "\n".join(lines),
