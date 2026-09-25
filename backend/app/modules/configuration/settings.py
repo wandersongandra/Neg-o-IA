@@ -56,7 +56,9 @@ class Settings(BaseSettings):
     auth_session_ttl_seconds: int = 8 * 60 * 60
     auth_session_idle_seconds: int = 30 * 60
     auth_max_active_sessions: int = 5
+    auth_session_touch_interval_seconds: int = 60
     trusted_hosts: list[str] = []
+    internal_proxy_key: str = ""
     registration_enabled: bool = False
 
     external_ai_enabled: bool = False
@@ -174,6 +176,19 @@ class Settings(BaseSettings):
             )
         if not 1 <= self.auth_max_active_sessions <= 20:
             problems.append("NEGAO_AUTH_MAX_ACTIVE_SESSIONS deve estar entre 1 e 20")
+        if not 10 <= self.auth_session_touch_interval_seconds <= self.auth_session_idle_seconds:
+            problems.append(
+                "NEGAO_AUTH_SESSION_TOUCH_INTERVAL_SECONDS deve ficar entre 10 segundos "
+                "e o idle timeout"
+            )
+        if (
+            len(self.internal_proxy_key) < _MIN_PRODUCTION_SECRET_LENGTH
+            or _looks_like_placeholder(self.internal_proxy_key)
+        ):
+            problems.append(
+                "NEGAO_INTERNAL_PROXY_KEY deve ser definida com um valor forte "
+                f"(>= {_MIN_PRODUCTION_SECRET_LENGTH} caracteres) em produção"
+            )
         if "*" in self.trusted_hosts:
             problems.append("NEGAO_TRUSTED_HOSTS não pode conter '*' em produção")
         if self.debug:
@@ -215,11 +230,12 @@ class Settings(BaseSettings):
         credential_values = {
             self.service_api_key,
             self.secret_key,
+            self.internal_proxy_key,
             database.password or "",
             redis.password or "",
         }
         nonempty_credentials = [value for value in credential_values if value]
-        expected_credentials = 4
+        expected_credentials = 5
         if len(nonempty_credentials) != expected_credentials:
             problems.append("credenciais críticas de produção devem usar valores distintos")
         if problems:
