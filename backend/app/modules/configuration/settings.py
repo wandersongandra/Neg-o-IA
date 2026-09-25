@@ -297,9 +297,7 @@ class Settings(BaseSettings):
                     "NEGAO_EXTERNAL_AI_ALLOWED_HOSTS"
                 )
         if not 64 * 1024 <= self.provider_max_response_bytes <= 8 * 1024 * 1024:
-            problems.append(
-                "NEGAO_PROVIDER_MAX_RESPONSE_BYTES deve ficar entre 65536 e 8388608"
-            )
+            problems.append("NEGAO_PROVIDER_MAX_RESPONSE_BYTES deve ficar entre 65536 e 8388608")
         credential_values = [
             self.secret_key,
             self.internal_proxy_key,
