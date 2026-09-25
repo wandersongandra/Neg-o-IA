@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Save, RotateCcw, Mic, Wrench, Globe, Brain, Settings, Loader2 } from "lucide-react";
+import { Save, RotateCcw, Mic, Wrench, Globe, Brain, Settings, Loader2, ShieldCheck, LogOut } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 
 const DEFAULT_SYSTEM_PROMPT = `Você é a Sophie, assistente pessoal de inteligência artificial do Wanderson. Fala sempre em português brasileiro, com tom profissional, elegante e direto, inspirado no JARVIS: nunca invente fatos, admita quando não souber, e use humor sutil quando apropriado. Trate o usuário como 'chefe'. Seja conciso: prefira respostas curtas e úteis, em vez de longas explicações. Nunca repita o que o usuário acabou de dizer.`;
@@ -28,6 +28,17 @@ const TOOL_OPTIONS = [
   { id: "email", label: "E-mail", desc: "Envio e leitura", icon: Wrench },
   { id: "weather", label: "Clima", desc: "Previsão atual", icon: Globe },
 ];
+
+interface ActiveSession {
+  session_id: string;
+  current: boolean;
+  device_id: string | null;
+  device_name: string | null;
+  device_type: string | null;
+  created_at: string;
+  last_seen_at: string;
+  expires_at: string;
+}
 
 interface Config {
   system_prompt: string;
@@ -147,6 +158,8 @@ export default function ConfigPage() {
   const [saving, setSaving] = useState(false);
   const [offline, setOffline] = useState(false);
   const [promptChars, setPromptChars] = useState(DEFAULT_SYSTEM_PROMPT.length);
+  const [sessions, setSessions] = useState<ActiveSession[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
 
   const fetchConfig = useCallback(async () => {
     try {
@@ -170,7 +183,22 @@ export default function ConfigPage() {
     }
   }, []);
 
-  useEffect(() => { fetchConfig(); }, [fetchConfig]);
+  const fetchSessions = useCallback(async () => {
+    try {
+      const res = await fetch("/api/proxy/security/sessions", { cache: "no-store" });
+      if (!res.ok) throw new Error("Falha ao carregar sessões");
+      setSessions((await res.json()) as ActiveSession[]);
+    } catch {
+      setSessions([]);
+    } finally {
+      setSessionsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchConfig();
+    void fetchSessions();
+  }, [fetchConfig, fetchSessions]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -200,6 +228,54 @@ export default function ConfigPage() {
     setConfig(prev => ({ ...prev, system_prompt: DEFAULT_SYSTEM_PROMPT }));
     setPromptChars(DEFAULT_SYSTEM_PROMPT.length);
   };
+
+  const revokeSession = async (sessionId: string) => {
+    if (!window.confirm("Revogar esta sessão? O dispositivo perderá acesso imediatamente.")) {
+      return;
+    }
+    const res = await fetch(`/api/proxy/security/sessions/${encodeURIComponent(sessionId)}`, {
+      method: "DELETE",
+    });
+    if (res.ok) {
+      toast({
+        title: "Sessão revogada",
+        description: "O dispositivo foi desconectado.",
+        variant: "success",
+      });
+      await fetchSessions();
+    } else {
+      toast({
+        title: "Falha ao revogar sessão",
+        description: "A sessão não pôde ser encerrada.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const revokeOtherSessions = async () => {
+    if (!window.confirm("Encerrar todas as outras sessões e manter somente esta?")) {
+      return;
+    }
+    const res = await fetch("/api/proxy/security/sessions/revoke-others", {
+      method: "POST",
+    });
+    if (res.ok) {
+      const data = (await res.json()) as { revoked?: number };
+      toast({
+        title: "Outras sessões encerradas",
+        description: `${data.revoked ?? 0} sessão(ões) revogada(s).`,
+        variant: "success",
+      });
+      await fetchSessions();
+    } else {
+      toast({
+        title: "Falha ao encerrar sessões",
+        description: "Não foi possível revogar as outras sessões.",
+        variant: "destructive",
+      });
+    }
+  };
+
 
   if (loading) {
     return (
@@ -377,6 +453,74 @@ export default function ConfigPage() {
           </div>
         </SectionCard>
       </div>
+
+      <SectionCard title="Sessões e dispositivos" icon={ShieldCheck}>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm text-[var(--text-secondary)]">
+                Revogue acessos que você não reconhece. Tokens nunca são exibidos nesta tela.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => void revokeOtherSessions()}
+              disabled={sessionsLoading || sessions.filter(session => !session.current).length === 0}
+              className="glass glass-hover interactive-control inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm text-[var(--color-warn)] disabled:opacity-50"
+            >
+              <LogOut className="size-4" />
+              Encerrar outras sessões
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {sessionsLoading ? (
+              <p className="text-sm text-[var(--text-secondary)]">Carregando sessões...</p>
+            ) : sessions.length === 0 ? (
+              <p className="text-sm text-[var(--text-secondary)]">
+                Nenhuma sessão ativa foi encontrada.
+              </p>
+            ) : (
+              sessions.map(session => (
+                <div
+                  key={session.session_id}
+                  className="flex flex-col gap-3 rounded-xl border border-[var(--border)] p-4 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium text-[var(--text-primary)]">
+                        {session.device_name || "Dispositivo desconhecido"}
+                      </p>
+                      {session.current ? (
+                        <span className="rounded-full bg-[var(--accent-muted)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--accent)]">
+                          sessão atual
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-1 text-xs text-[var(--text-secondary)]">
+                      {session.device_type || "tipo não informado"} · último uso{" "}
+                      {new Date(session.last_seen_at).toLocaleString("pt-BR")}
+                    </p>
+                    <p className="mt-1 font-mono-data text-[10px] text-[var(--text-secondary)]">
+                      expira {new Date(session.expires_at).toLocaleString("pt-BR")}
+                    </p>
+                  </div>
+                  {!session.current ? (
+                    <button
+                      type="button"
+                      onClick={() => void revokeSession(session.session_id)}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--color-danger)]/30 px-3 py-2 text-sm text-[var(--color-danger)]"
+                    >
+                      <LogOut className="size-4" />
+                      Revogar
+                    </button>
+                  ) : null}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </SectionCard>
 
       <div className="flex justify-end gap-3 pt-4 border-t border-[var(--border)]">
         <button
