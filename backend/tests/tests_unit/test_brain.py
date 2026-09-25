@@ -18,6 +18,7 @@ from app.modules.brain.infrastructure import (
     ProviderError,
     RetryableProviderError,
     RetryPolicy,
+    _new_provider_http_client,
     get_model_router,
     reset_router,
 )
@@ -353,3 +354,23 @@ async def test_brain_service_applies_user_config(monkeypatch: Any) -> None:
     assert request.messages[0].role == "system"
     assert request.messages[0].content == "Prompt efetivo isolado do usuário."
     assert all(message.content != "Prompt legado." for message in request.messages)
+
+
+def test_provider_http_client_disables_ambient_proxy_and_redirects(
+    monkeypatch: Any,
+) -> None:
+    captured: dict[str, Any] = {}
+
+    class FakeClient:
+        def __init__(self, **kwargs: Any) -> None:
+            captured.update(kwargs)
+
+    import httpx
+
+    monkeypatch.setattr(httpx, "AsyncClient", FakeClient)
+    client = _new_provider_http_client()
+
+    assert isinstance(client, FakeClient)
+    assert captured["trust_env"] is False
+    assert captured["follow_redirects"] is False
+    assert captured["timeout"].connect == 10.0

@@ -167,6 +167,18 @@ async def _cache_set(cache_key: str, response: ModelResponse, ttl: int) -> None:
         _LOGGER.debug("cache_write_skipped", exc_info=True)
 
 
+def _new_provider_http_client() -> Any:
+    """Cliente HTTP do provedor sem proxy herdado e sem redirects automáticos."""
+    import httpx
+
+    return httpx.AsyncClient(
+        timeout=httpx.Timeout(60.0, connect=10.0),
+        follow_redirects=False,
+        trust_env=False,
+        limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
+    )
+
+
 class NvidiaChatAdapter:
     """LLM via NVIDIA build.nvidia.com — endpoint OpenAI-compatível."""
 
@@ -176,9 +188,7 @@ class NvidiaChatAdapter:
 
     def _http(self) -> Any:
         if self._client is None:
-            import httpx
-
-            self._client = httpx.AsyncClient(timeout=60.0)
+            self._client = _new_provider_http_client()
         return self._client
 
     async def complete(self, request: ModelRequest) -> ModelResponse:
@@ -325,8 +335,6 @@ class ModelRouter:
         raise ModelError("todos os provedores de modelo falharam")
 
     async def _complete_fallback(self, request: ModelRequest) -> ModelResponse:
-        import httpx
-
         settings = self._settings
         started = time.perf_counter()
         payload = {
@@ -342,7 +350,7 @@ class ModelRouter:
             ),
         }
         try:
-            async with httpx.AsyncClient(timeout=60.0) as client:
+            async with _new_provider_http_client() as client:
                 response = await client.post(
                     f"{settings.nvidia_base_url.rstrip('/')}/chat/completions",
                     json=payload,
