@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
         display_name: payload.display_name,
         expires_in: payload.expires_in,
       },
-      { status: 200 },
+      { status: 200, headers: { "Cache-Control": "no-store, max-age=0" } },
     );
     if (typeof payload.access_token === "string") {
       response.cookies.set(sessionCookieName(), payload.access_token, {
