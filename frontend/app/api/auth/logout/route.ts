@@ -31,7 +31,13 @@ export async function POST(request: NextRequest) {
       // Always remove the browser cookie; the backend will reject expired/revoked state.
     }
   }
-  const response = new NextResponse(null, { status: 204 });
+  const response = new NextResponse(null, {
+    status: 204,
+    headers: {
+      "Cache-Control": "no-store, max-age=0",
+      "Clear-Site-Data": '"cache", "cookies", "storage"',
+    },
+  });
   response.cookies.delete(DEV_SESSION_COOKIE);
   response.cookies.delete(PROD_SESSION_COOKIE);
   return response;
