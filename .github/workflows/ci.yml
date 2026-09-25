@@ -146,8 +146,10 @@ jobs:
       - name: Generate backend SBOM
         run: |
           mkdir -p sbom
-          pip install -e "backend" "cyclonedx-bom==7.4.0"
-          cyclonedx-py environment --spec-version 1.6 --output-format JSON --output-reproducible --pyproject backend/pyproject.toml --output-file sbom/backend.cdx.json
+          python -m venv /tmp/sophie-sbom-env
+          /tmp/sophie-sbom-env/bin/pip install -e "backend"
+          pip install "cyclonedx-bom==7.4.0"
+          cyclonedx-py environment /tmp/sophie-sbom-env/bin/python --spec-version 1.6 --output-format JSON --output-reproducible --pyproject backend/pyproject.toml --output-file sbom/backend.cdx.json
 
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
@@ -160,7 +162,7 @@ jobs:
         run: |
           npm ci --prefix frontend
           cd frontend
-          npx --yes @cyclonedx/cyclonedx-npm@6.0.1 --omit dev --ignore-npm-errors --spec-version 1.6 --output-format JSON --output-file ../sbom/frontend.cdx.json
+          npx --yes @cyclonedx/cyclonedx-npm@6.0.1 --omit dev --ignore-npm-errors --output-reproducible --spec-version 1.6 --output-format JSON --output-file ../sbom/frontend.cdx.json
 
       - name: Validate SBOM payloads
         run: |
