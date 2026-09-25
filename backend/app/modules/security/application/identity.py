@@ -184,6 +184,28 @@ async def persist_session(
     device_id: str | None = None,
 ) -> datetime:
     now = datetime.now(UTC)
+
+    active_result = await session.execute(
+        select(AuthSessionORM)
+        .where(
+            AuthSessionORM.user_id == identity.user_id,
+            AuthSessionORM.revoked_at.is_(None),
+            AuthSessionORM.expires_at > now,
+        )
+        .order_by(AuthSessionORM.created_at.desc())
+    )
+    active_sessions = list(active_result.scalars().all())
+
+    if device_id:
+        for existing in active_sessions:
+            if str(existing.device_id) == device_id:
+                existing.revoked_at = now
+
+    still_active = [item for item in active_sessions if item.revoked_at is None]
+    keep_existing = max(0, settings.auth_max_active_sessions - 1)
+    for stale in still_active[keep_existing:]:
+        stale.revoked_at = now
+
     expires_at = now + timedelta(seconds=settings.auth_session_ttl_seconds)
     auth_session = AuthSessionORM(
         user_id=identity.user_id,
@@ -237,7 +259,15 @@ async def authenticate_session(
     if row is None:
         return None
     auth_session, user = row
-    auth_session.last_seen_at = now
+    idle_deadline = now - timedelta(seconds=settings.auth_session_idle_seconds)
+    if auth_session.last_seen_at < idle_deadline:
+        auth_session.revoked_at = now
+        await session.flush()
+        return None
+    touch_deadline = now - timedelta(seconds=settings.auth_session_touch_interval_seconds)
+    if auth_session.last_seen_at < touch_deadline:
+        auth_session.last_seen_at = now
+        await session.flush()
     return (
         IdentityRecord(
             str(user.id),
