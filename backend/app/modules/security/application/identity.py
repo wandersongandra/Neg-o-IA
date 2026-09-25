@@ -308,7 +308,6 @@ async def revoke_session(session: AsyncSession, session_id: str, user_id: str) -
     return True
 
 
-
 async def list_active_sessions(
     session: AsyncSession,
     user_id: str,
