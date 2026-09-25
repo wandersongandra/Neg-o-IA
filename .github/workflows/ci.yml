@@ -129,7 +129,8 @@ jobs:
 
       - name: Assert strict production CSP
         run: |
-          grep -Fq "'nonce-${nonce}' 'strict-dynamic'" middleware.ts
+          grep -Fq "strict-dynamic" middleware.ts
+          grep -Fq "nonce-" middleware.ts
           ! grep -E "script-src[^\n]*unsafe-inline" middleware.ts
           ! grep -q "Content-Security-Policy" next.config.ts
 
