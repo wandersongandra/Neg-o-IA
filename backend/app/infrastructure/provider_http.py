@@ -38,6 +38,42 @@ def new_provider_http_client(timeout_seconds: float = 60.0) -> httpx.AsyncClient
     )
 
 
+async def read_json_limited(
+    response: httpx.Response,
+    *,
+    max_response_bytes: int,
+) -> ProviderHttpResponse:
+    """Cap a streamed provider response before parsing it into Python objects."""
+    content_length = response.headers.get("content-length")
+    if content_length:
+        try:
+            declared_length = int(content_length)
+        except ValueError:
+            declared_length = -1
+        if declared_length > max_response_bytes:
+            raise ProviderResponseTooLargeError("provider response exceeds configured limit")
+
+    chunks: list[bytes] = []
+    total = 0
+    async for chunk in response.aiter_bytes():
+        total += len(chunk)
+        if total > max_response_bytes:
+            raise ProviderResponseTooLargeError("provider response exceeds configured limit")
+        chunks.append(chunk)
+
+    if response.status_code >= 400:
+        return ProviderHttpResponse(status_code=response.status_code, payload=None)
+
+    raw = b"".join(chunks)
+    try:
+        decoded = json.loads(raw)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ProviderInvalidResponseError("provider returned invalid JSON") from exc
+    if not isinstance(decoded, dict):
+        raise ProviderInvalidResponseError("provider returned invalid JSON payload")
+    return ProviderHttpResponse(status_code=response.status_code, payload=decoded)
+
+
 async def post_json_limited(
     client: httpx.AsyncClient,
     url: str,
@@ -48,31 +84,4 @@ async def post_json_limited(
 ) -> ProviderHttpResponse:
     """POST JSON and cap the response body before parsing it into Python objects."""
     async with client.stream("POST", url, headers=headers, json=payload) as response:
-        content_length = response.headers.get("content-length")
-        if content_length:
-            try:
-                declared_length = int(content_length)
-            except ValueError:
-                declared_length = -1
-            if declared_length > max_response_bytes:
-                raise ProviderResponseTooLargeError("provider response exceeds configured limit")
-
-        chunks: list[bytes] = []
-        total = 0
-        async for chunk in response.aiter_bytes():
-            total += len(chunk)
-            if total > max_response_bytes:
-                raise ProviderResponseTooLargeError("provider response exceeds configured limit")
-            chunks.append(chunk)
-
-        if response.status_code >= 400:
-            return ProviderHttpResponse(status_code=response.status_code, payload=None)
-
-        raw = b"".join(chunks)
-        try:
-            decoded = json.loads(raw)
-        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise ProviderInvalidResponseError("provider returned invalid JSON") from exc
-        if not isinstance(decoded, dict):
-            raise ProviderInvalidResponseError("provider returned invalid JSON payload")
-        return ProviderHttpResponse(status_code=response.status_code, payload=decoded)
+        return await read_json_limited(response, max_response_bytes=max_response_bytes)
