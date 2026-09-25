@@ -63,6 +63,8 @@ services:
   backend:
     build:
       context: ../../../backend
+    env_file:
+      - ../../../.env
     environment:
       NEGAO_ENV: production
       NEGAO_DEBUG: "false"
