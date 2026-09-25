@@ -11,7 +11,8 @@ RUN useradd --create-home --uid 1000 negao
 COPY pyproject.toml ./
 RUN pip install --no-cache-dir --root-user-action=ignore "setuptools>=78.1.1" \
     && mkdir -p app && touch app/__init__.py \
-    && pip install --no-cache-dir --root-user-action=ignore .
+    && pip install --no-cache-dir --root-user-action=ignore . \
+    && python -m pip uninstall -y pip setuptools wheel
 
 COPY app ./app
 COPY migrations ./migrations
