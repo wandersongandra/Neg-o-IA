@@ -167,9 +167,6 @@ async def _cache_set(cache_key: str, response: ModelResponse, ttl: int) -> None:
         _LOGGER.debug("cache_write_skipped", exc_info=True)
 
 
-
-
-
 def _new_provider_http_client() -> Any:
     """Cliente HTTP do provedor sem proxy herdado e sem redirects automáticos."""
     import httpx
@@ -180,6 +177,7 @@ def _new_provider_http_client() -> Any:
         trust_env=False,
         limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
     )
+
 
 class NvidiaChatAdapter:
     """LLM via NVIDIA build.nvidia.com — endpoint OpenAI-compatível."""
