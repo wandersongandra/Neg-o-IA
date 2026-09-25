@@ -21,7 +21,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from app import __version__
 from app.core.context import get_request_context, request_context_middleware
 from app.core.di import build_services
-from app.modules.api.rate_limit import RateLimiter
+from app.modules.api.rate_limit import RateLimiter, trusted_client_ip
 from app.modules.api.router import router as api_router
 from app.modules.api.websocket import connection_manager
 from app.modules.api.websocket import router as websocket_router
@@ -179,7 +179,7 @@ def _rate_limit_key(request: Request) -> str:
     # O middleware roda antes das dependencies de autenticação. Nunca use um
     # Bearer ainda não validado como bucket: um atacante poderia rotacionar
     # tokens aleatórios e criar limites infinitos.
-    return request.client.host if request.client else "unknown"
+    return trusted_client_ip(request)
 
 
 async def rate_limit_middleware(request: Request, call_next: RequestResponseEndpoint) -> Response:
@@ -217,8 +217,9 @@ def _add_middlewares(app: FastAPI, settings: Settings) -> None:
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=settings.cors_origins != ["*"],
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "X-API-Key", "X-Request-ID"],
+        expose_headers=["X-Request-ID"],
     )
     app.add_middleware(BaseHTTPMiddleware, dispatch=request_context_middleware)
     app.add_middleware(BaseHTTPMiddleware, dispatch=access_log_middleware)
