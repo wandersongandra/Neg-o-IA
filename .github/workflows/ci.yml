@@ -171,7 +171,7 @@ jobs:
         run: docker run --rm -e SOPHIE_HOST=sophie.example.test -e NGINX_ENVSUBST_FILTER='^SOPHIE_HOST$' --add-host backend:127.0.0.1 --add-host frontend:127.0.0.1 -v /tmp/sophie-tls/fullchain.pem:/etc/nginx/tls/fullchain.pem:ro -v /tmp/sophie-tls/privkey.pem:/etc/nginx/tls/privkey.pem:ro sophie-nginx-ci nginx -t
 
       - name: Verify Nginx host allowlist rendering
-        run: docker run --rm -e SOPHIE_HOST=sophie.example.test -e NGINX_ENVSUBST_FILTER='^SOPHIE_HOST$' --add-host backend:127.0.0.1 --add-host frontend:127.0.0.1 -v /tmp/sophie-tls/fullchain.pem:/etc/nginx/tls/fullchain.pem:ro -v /tmp/sophie-tls/privkey.pem:/etc/nginx/tls/privkey.pem:ro sophie-nginx-ci sh -ec 'nginx -T 2>&1 | grep -q "server_name sophie.example.test;"'
+        run: docker run --rm -e SOPHIE_HOST=sophie.example.test -e NGINX_ENVSUBST_FILTER='^SOPHIE_HOST$' --add-host backend:127.0.0.1 --add-host frontend:127.0.0.1 -v /tmp/sophie-tls/fullchain.pem:/etc/nginx/tls/fullchain.pem:ro -v /tmp/sophie-tls/privkey.pem:/etc/nginx/tls/privkey.pem:ro sophie-nginx-ci sh -ec 'nginx -T 2>&1 | grep -Eq "server_name[[:space:]]+sophie\\.example\\.test;"'
   secret_scan:
     name: Gitleaks Secret Scan
     runs-on: ubuntu-latest
