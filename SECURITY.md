@@ -73,7 +73,11 @@ Variáveis de exemplo devem conter apenas placeholders fictícios.
 
 IA externa e Vision permanecem fail-closed: o envio de dados a provedores externos só ocorre quando a integração externa está explicitamente habilitada e as credenciais/modelos necessários estão configurados.
 
-Em produção, `SOPHIE_NVIDIA_BASE_URL`/ `NEGAO_NVIDIA_BASE_URL` precisa usar HTTPS na porta 443, sem credenciais, query string ou fragmento, e o hostname deve estar explicitamente presente em `SOPHIE_EXTERNAL_AI_ALLOWED_HOSTS`/ `NEGAO_EXTERNAL_AI_ALLOWED_HOSTS`. Isso reduz risco de SSRF/exfiltração por alteração de endpoint do provedor.
+Em produção, `SOPHIE_NVIDIA_BASE_URL`/ `NEGAO_NVIDIA_BASE_URL` precisa usar HTTPS na porta 443, sem credenciais, query string ou fragmento, e o hostname deve estar explicitamente presente em `SOPHIE_EXTERNAL_AI_ALLOWED_HOSTS`/ `NEGAO_EXTERNAL_AI_ALLOWED_HOSTS`. A allowlist rejeita localhost, IP literal, nomes `.local`, esquema e porta. Isso reduz risco de SSRF/exfiltração por alteração de endpoint do provedor.
+
+Chat, Vision e STT usam o mesmo cliente HTTP endurecido: não herdam proxies do ambiente, não seguem redirects automaticamente, usam limites de conexão e impõem orçamento máximo de bytes antes de desserializar respostas JSON. `SOPHIE_PROVIDER_MAX_RESPONSE_BYTES`/ `NEGAO_PROVIDER_MAX_RESPONSE_BYTES` controla esse teto dentro de limites seguros.
+
+O TTS via `edge-tts` é uma integração externa separada. Em produção, permanece fail-closed até `SOPHIE_EXTERNAL_TTS_ENABLED=true` (ou alias legado `NEGAO_*`) ser definido explicitamente.
 
 ## Rede e containers
 
@@ -108,7 +112,7 @@ O CI inclui:
 - geração de SBOM CycloneDX 1.6 reproduzível para backend Python e frontend npm;
 - validação estrutural dos SBOMs e publicação dos artefatos com `SHA256SUMS`.
 
-Actions externas do GitHub devem permanecer pinadas por commit SHA. Checkouts do CI não persistem credenciais Git após o checkout. Imagens base e serviços de produção usam tag legível acompanhada de digest `sha256` imutável; o CI falha se os pins forem removidos.
+Actions externas do GitHub devem permanecer pinadas por commit SHA. Checkouts do CI não persistem credenciais Git após o checkout. Imagens base e serviços de produção usam tag legível acompanhada de digest `sha256` imutável; o CI falha se os pins forem removidos. Dependências Python diretas de runtime e desenvolvimento ficam fixadas em versões exatas no `pyproject.toml`; atualizações devem entrar por PR e atravessar novamente os gates de audit, testes e análise estática.
 
 ## Divulgação
 
