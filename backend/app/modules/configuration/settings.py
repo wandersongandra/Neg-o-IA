@@ -4,6 +4,7 @@ import logging
 import os
 from functools import lru_cache
 from pathlib import Path
+from typing import Any
 from urllib.parse import urlparse
 
 from pydantic import field_validator, model_validator
@@ -321,8 +322,8 @@ def _read_secret_file(path_value: str, env_name: str) -> str:
     return value
 
 
-def _secret_file_overrides() -> dict[str, str]:
-    overrides: dict[str, str] = {}
+def _secret_file_overrides() -> dict[str, Any]:
+    overrides: dict[str, Any] = {}
     for field_name in _SECRET_FILE_FIELDS:
         suffix = field_name.upper()
         new_direct = f"{_NEW_ENV_PREFIX}{suffix}"
