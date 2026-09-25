@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import hmac
+import ipaddress
 import time
 from collections.abc import Awaitable, Callable
 
@@ -108,12 +110,31 @@ class RateLimiter:
                 del self._counts[memory_key]
 
 
+def trusted_client_ip(request: Request) -> str:
+    """Aceita IP encaminhado somente de um proxy interno autenticado."""
+    direct_ip = request.client.host if request.client else "unknown"
+    settings = __import__(
+        "app.modules.configuration.settings",
+        fromlist=["get_settings"],
+    ).get_settings()
+    proxy_key = request.headers.get("x-sophie-internal-proxy", "")
+    forwarded_ip = request.headers.get("x-real-ip", "").strip()
+    if not settings.internal_proxy_key or not proxy_key or not forwarded_ip:
+        return direct_ip
+    if not hmac.compare_digest(proxy_key, settings.internal_proxy_key):
+        return direct_ip
+    try:
+        return str(ipaddress.ip_address(forwarded_ip))
+    except ValueError:
+        return direct_ip
+
+
 def _extract_key(request: Request) -> str:
     auth_result = getattr(request.state, "auth_result", None)
     principal = getattr(auth_result, "principal", None)
     if isinstance(principal, str) and principal:
         return principal
-    return request.client.host if request.client else "unknown"
+    return trusted_client_ip(request)
 
 
 def make_rate_limit_dependency(limit: int) -> Callable[[Request], Awaitable[None]]:
