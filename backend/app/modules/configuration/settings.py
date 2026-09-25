@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ipaddress
 import logging
 import os
 from functools import lru_cache
@@ -90,6 +91,7 @@ class Settings(BaseSettings):
     brain_circuit_failures: int = 3
     brain_circuit_cooldown_seconds: int = 60
     brain_cache_ttl_seconds: int = 300
+    provider_max_response_bytes: int = 2 * 1024 * 1024
 
     tts_voice: str = "pt-BR-FranciscaNeural"
     tts_rate: str = "+0%"
@@ -249,6 +251,30 @@ class Settings(BaseSettings):
                 for host in self.external_ai_allowed_hosts
                 if host.strip()
             }
+            invalid_allowed_hosts: list[str] = []
+            for host in sorted(allowed_hosts):
+                parsed_host = urlparse(f"//{host}")
+                if (
+                    not host
+                    or parsed_host.hostname != host
+                    or parsed_host.port is not None
+                    or host == "localhost"
+                    or host.endswith(".localhost")
+                    or host.endswith(".local")
+                ):
+                    invalid_allowed_hosts.append(host)
+                    continue
+                try:
+                    ipaddress.ip_address(host)
+                except ValueError:
+                    pass
+                else:
+                    invalid_allowed_hosts.append(host)
+            if invalid_allowed_hosts:
+                problems.append(
+                    "NEGAO_EXTERNAL_AI_ALLOWED_HOSTS deve conter apenas hostnames DNS "
+                    "públicos sem esquema, porta ou IP literal"
+                )
             if provider.scheme != "https":
                 problems.append(
                     "NEGAO_NVIDIA_BASE_URL deve usar HTTPS quando IA externa estiver ativa"
@@ -269,6 +295,10 @@ class Settings(BaseSettings):
                     "NEGAO_NVIDIA_BASE_URL deve apontar para um host presente em "
                     "NEGAO_EXTERNAL_AI_ALLOWED_HOSTS"
                 )
+        if not 64 * 1024 <= self.provider_max_response_bytes <= 8 * 1024 * 1024:
+            problems.append(
+                "NEGAO_PROVIDER_MAX_RESPONSE_BYTES deve ficar entre 65536 e 8388608"
+            )
         credential_values = [
             self.secret_key,
             self.internal_proxy_key,
