@@ -25,7 +25,7 @@ function buildContentSecurityPolicy(request: NextRequest, nonce: string): string
 }
 
 export function middleware(request: NextRequest) {
-  const nonce = crypto.randomUUID();
+  const nonce = btoa(crypto.randomUUID());
   const csp = buildContentSecurityPolicy(request, nonce);
   const requestHeaders = new Headers(request.headers);
 
