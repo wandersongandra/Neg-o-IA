@@ -67,9 +67,13 @@ A chave bootstrap de serviço fica desabilitada por padrão em produção. Para 
 
 Credenciais de APIs, chaves de modelo, tokens, arquivos `.env`, URLs privadas de banco, cookies, chaves de sessão e dados de produção não devem ser versionados.
 
+Para segredos suportados, produção pode usar `SOPHIE_<NOME>_FILE`/ `NEGAO_<NOME>_FILE` com caminho absoluto. O loader rejeita arquivo ausente, vazio, inválido, grande demais e configuração ambígua com valor direto + `*_FILE`. Isso permite montar Docker/Kubernetes secrets sem colocar o conteúdo do segredo no ambiente do processo de origem.
+
 Variáveis de exemplo devem conter apenas placeholders fictícios.
 
 IA externa e Vision permanecem fail-closed: o envio de dados a provedores externos só ocorre quando a integração externa está explicitamente habilitada e as credenciais/modelos necessários estão configurados.
+
+Em produção, `SOPHIE_NVIDIA_BASE_URL`/ `NEGAO_NVIDIA_BASE_URL` precisa usar HTTPS na porta 443, sem credenciais, query string ou fragmento, e o hostname deve estar explicitamente presente em `SOPHIE_EXTERNAL_AI_ALLOWED_HOSTS`/ `NEGAO_EXTERNAL_AI_ALLOWED_HOSTS`. Isso reduz risco de SSRF/exfiltração por alteração de endpoint do provedor.
 
 ## Rede e containers
 
@@ -100,7 +104,9 @@ O CI inclui:
 - CodeQL para Python e JavaScript/TypeScript;
 - build/typecheck do frontend;
 - validação do Nginx;
-- validação da topologia Docker Compose de produção.
+- validação da topologia Docker Compose de produção;
+- geração de SBOM CycloneDX 1.6 reproduzível para backend Python e frontend npm;
+- validação estrutural dos SBOMs e publicação dos artefatos com `SHA256SUMS`.
 
 Actions externas do GitHub devem permanecer pinadas por commit SHA. Checkouts do CI não persistem credenciais Git após o checkout.
 
