@@ -58,9 +58,7 @@ async def test_provider_response_rejects_declared_oversize() -> None:
 
 @pytest.mark.asyncio
 async def test_provider_response_rejects_streamed_oversize() -> None:
-    transport = httpx.MockTransport(
-        lambda _request: httpx.Response(200, content=b"x" * 512)
-    )
+    transport = httpx.MockTransport(lambda _request: httpx.Response(200, content=b"x" * 512))
     async with httpx.AsyncClient(transport=transport, trust_env=False) as client:
         with pytest.raises(ProviderResponseTooLargeError):
             await post_json_limited(
@@ -74,9 +72,7 @@ async def test_provider_response_rejects_streamed_oversize() -> None:
 
 @pytest.mark.asyncio
 async def test_provider_response_rejects_invalid_json() -> None:
-    transport = httpx.MockTransport(
-        lambda _request: httpx.Response(200, content=b"not-json")
-    )
+    transport = httpx.MockTransport(lambda _request: httpx.Response(200, content=b"not-json"))
     async with httpx.AsyncClient(transport=transport, trust_env=False) as client:
         with pytest.raises(ProviderInvalidResponseError):
             await post_json_limited(
@@ -90,9 +86,7 @@ async def test_provider_response_rejects_invalid_json() -> None:
 
 @pytest.mark.asyncio
 async def test_provider_response_accepts_bounded_json_object() -> None:
-    transport = httpx.MockTransport(
-        lambda _request: httpx.Response(200, json={"ok": True})
-    )
+    transport = httpx.MockTransport(lambda _request: httpx.Response(200, json={"ok": True}))
     async with httpx.AsyncClient(transport=transport, trust_env=False) as client:
         response = await post_json_limited(
             client,
