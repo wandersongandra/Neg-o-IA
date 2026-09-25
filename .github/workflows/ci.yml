@@ -141,6 +141,8 @@ jobs:
         env:
           POSTGRES_PASSWORD: ci-postgres-password
           REDIS_PASSWORD: ci-redis-password
+          SOPHIE_INTERNAL_PROXY_KEY: ci-internal-proxy-key-0123456789abcdef
+          SOPHIE_PUBLIC_ORIGIN: https://sophie.example.test
           TLS_CERT_PATH: /tmp/sophie-tls/fullchain.pem
           TLS_KEY_PATH: /tmp/sophie-tls/privkey.pem
         run: |
