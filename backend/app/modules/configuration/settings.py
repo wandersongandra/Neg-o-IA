@@ -333,17 +333,13 @@ def _secret_file_overrides() -> dict[str, str]:
         new_file_value = os.environ.get(new_file, "").strip()
         legacy_file_value = os.environ.get(legacy_file, "").strip()
         if new_file_value and legacy_file_value and new_file_value != legacy_file_value:
-            raise RuntimeError(
-                f"{new_file} e {legacy_file} apontam para arquivos diferentes"
-            )
+            raise RuntimeError(f"{new_file} e {legacy_file} apontam para arquivos diferentes")
         file_value = new_file_value or legacy_file_value
         if not file_value:
             continue
 
         if os.environ.get(new_direct) or os.environ.get(legacy_direct):
-            raise RuntimeError(
-                f"{suffix}: não defina valor direto e *_FILE ao mesmo tempo"
-            )
+            raise RuntimeError(f"{suffix}: não defina valor direto e *_FILE ao mesmo tempo")
         source_name = new_file if new_file_value else legacy_file
         overrides[field_name] = _read_secret_file(file_value, source_name)
     return overrides
