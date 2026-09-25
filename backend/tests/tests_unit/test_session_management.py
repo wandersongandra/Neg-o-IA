@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 
 import pytest
+from fastapi import HTTPException
 
 from app.modules.security.domain import AuthorizationLevel, AuthResult
 from app.modules.security.router import (
@@ -59,9 +60,9 @@ async def test_active_sessions_marks_current_session(monkeypatch: pytest.MonkeyP
 @pytest.mark.asyncio
 async def test_named_session_rejects_current_session() -> None:
     auth = _auth()
-    with pytest.raises(Exception) as exc_info:
+    with pytest.raises(HTTPException) as exc_info:
         await revoke_named_session(auth.session_id or "", auth)
-    assert getattr(exc_info.value, "status_code", None) == 409
+    assert exc_info.value.status_code == 409
 
 
 @pytest.mark.asyncio
