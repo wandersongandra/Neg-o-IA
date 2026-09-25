@@ -140,7 +140,7 @@ async def create_api_key(
     *,
     ttl_days: int | None = None,
 ) -> tuple[str, ApiKeyRecord]:
-    """Cria uma API key expiráveI; a plain key só é mostrada uma vez."""
+    """Cria uma API key expirável; a plain key só é mostrada uma vez."""
     settings = get_settings()
     effective_ttl = ttl_days or settings.service_api_key_default_ttl_days
     if not 1 <= effective_ttl <= settings.service_api_key_max_ttl_days:
@@ -196,7 +196,12 @@ async def verify_api_key(session: AsyncSession, key: str) -> ApiKeyRecord | None
     result = await session.execute(select(ApiKeyORM).where(ApiKeyORM.key_hash == hash_api_key(key)))
     record = result.scalar_one_or_none()
     now = datetime.now(UTC)
-    if record is None or record.revoked_at is not None or record.expires_at <= now:
+    if (
+        record is None
+        or record.revoked_at is not None
+        or record.expires_at is None
+        or record.expires_at <= now
+    ):
         return None
     record.last_used_at = now
     await session.flush()
