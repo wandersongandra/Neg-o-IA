@@ -9,7 +9,7 @@ import pytest
 from starlette.requests import Request
 
 from app.main import _rate_limit_key
-from app.modules.api.rate_limit import RateLimiter
+from app.modules.api.rate_limit import RateLimiter, trusted_client_ip
 from app.modules.security.domain import AuthResult
 
 API_KEY = "test-rate-limit-key"
@@ -93,3 +93,55 @@ async def test_rate_limiter_fail_closed_denies_when_redis_is_unavailable() -> No
     assert limit == 5
     assert remaining == 0
     assert retry_after > 0
+
+
+def test_forwarded_ip_requires_internal_proxy_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("NEGAO_INTERNAL_PROXY_KEY", "p" * 32)
+    from app.modules.configuration.settings import get_settings
+
+    get_settings.cache_clear()
+    request = _make_request(
+        {
+            "x-real-ip": "203.0.113.25",
+            "x-sophie-internal-proxy": "wrong-key",
+        },
+        client_host="10.0.0.5",
+    )
+    assert trusted_client_ip(request) == "10.0.0.5"
+    get_settings.cache_clear()
+
+
+def test_forwarded_ip_accepted_with_internal_proxy_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    proxy_key = "p" * 32
+    monkeypatch.setenv("NEGAO_INTERNAL_PROXY_KEY", proxy_key)
+    from app.modules.configuration.settings import get_settings
+
+    get_settings.cache_clear()
+    request = _make_request(
+        {
+            "x-real-ip": "203.0.113.25",
+            "x-sophie-internal-proxy": proxy_key,
+        },
+        client_host="10.0.0.5",
+    )
+    assert trusted_client_ip(request) == "203.0.113.25"
+    get_settings.cache_clear()
+
+
+def test_forwarded_ip_rejects_invalid_ip(monkeypatch: pytest.MonkeyPatch) -> None:
+    proxy_key = "p" * 32
+    monkeypatch.setenv("NEGAO_INTERNAL_PROXY_KEY", proxy_key)
+    from app.modules.configuration.settings import get_settings
+
+    get_settings.cache_clear()
+    request = _make_request(
+        {
+            "x-real-ip": "not-an-ip",
+            "x-sophie-internal-proxy": proxy_key,
+        },
+        client_host="10.0.0.5",
+    )
+    assert trusted_client_ip(request) == "10.0.0.5"
+    get_settings.cache_clear()
