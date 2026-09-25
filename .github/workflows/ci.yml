@@ -218,6 +218,7 @@ jobs:
           grep -q 'SOPHIE_INTERNAL_PROXY_KEY' /tmp/sophie-prod-compose.yml
           grep -q 'SOPHIE_PUBLIC_ORIGIN' /tmp/sophie-prod-compose.yml
           grep -q 'SOPHIE_HOST' /tmp/sophie-prod-compose.yml
+          test "$(grep -c '@sha256:' /tmp/sophie-prod-compose.yml)" -ge 2
           grep -q '/tmp' /tmp/sophie-prod-compose.yml
           rm -f .env
 
