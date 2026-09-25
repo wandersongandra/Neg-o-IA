@@ -60,8 +60,9 @@ def create_security_service(settings: Settings) -> InMemorySecurityService:
     # fallback anterior permitia que uma credencial histórica continuasse
     # autenticando em desenvolvimento/teste quando a chave de serviço não
     # estava configurada.
+    bootstrap_allowed = settings.env != "production" or settings.service_bootstrap_enabled
     return InMemorySecurityService(
-        expected_api_key=settings.service_api_key,
+        expected_api_key=settings.service_api_key if bootstrap_allowed else "",
         scopes=frozenset(settings.service_api_scopes),
     )
 
