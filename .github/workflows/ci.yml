@@ -121,6 +121,61 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Strict CSP nonce runtime smoke
+        run: |
+          cp -R public .next/standalone/public
+          mkdir -p .next/standalone/.next
+          cp -R .next/static .next/standalone/.next/static
+          (
+            cd .next/standalone
+            HOSTNAME=127.0.0.1 PORT=3100 node server.js > /tmp/sophie-next.log 2>&1
+          ) &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error --dump-header /tmp/sophie-headers --output /tmp/sophie-body http://127.0.0.1:3100/; then
+              break
+            fi
+            sleep 1
+          done
+          python - <<'PY'
+          import re
+          from pathlib import Path
+
+          headers = Path("/tmp/sophie-headers").read_text(encoding="utf-8")
+          body = Path("/tmp/sophie-body").read_text(encoding="utf-8")
+          match = re.search(r"(?im)^content-security-policy:\s*(.+)$", headers)
+          assert match, headers
+          csp = match.group(1).strip()
+          script = re.search(r"(?:^|;\s*)script-src\s+([^;]+)", csp)
+          assert script, csp
+          directive = script.group(1)
+          assert "'strict-dynamic'" in directive, directive
+          assert "'unsafe-inline'" not in directive, directive
+          nonce_match = re.search(r"'nonce-([^']+)'", directive)
+          assert nonce_match, directive
+          nonce = re.escape(nonce_match.group(1))
+          assert re.search(rf"<script[^>]+\bnonce=[\"']{nonce}[\"']", body), body[:2000]
+          assert "script-src-attr 'none'" in csp
+          PY
+          curl --fail --silent --show-error --dump-header /tmp/offline-headers --output /tmp/offline-body http://127.0.0.1:3100/offline.html
+          python - <<'PY'
+          import re
+          from pathlib import Path
+
+          headers = Path("/tmp/offline-headers").read_text(encoding="utf-8")
+          body = Path("/tmp/offline-body").read_text(encoding="utf-8")
+          match = re.search(r"(?im)^content-security-policy:\s*(.+)$", headers)
+          assert match, headers
+          csp = match.group(1).strip()
+          assert "script-src 'self'" in csp
+          assert "style-src 'self'" in csp
+          assert "'unsafe-inline'" not in csp
+          assert "<style" not in body.lower()
+          assert "onclick=" not in body.lower()
+          assert "<script>" not in body.lower()
+          PY
+
       - name: Typecheck
         run: npm run typecheck
 
