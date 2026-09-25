@@ -14,10 +14,22 @@ def test_default_settings_ok_fora_de_producao() -> None:
     assert not hasattr(settings, "api_key")
 
 
-def test_producao_rejeita_service_key_ausente() -> None:
+def test_producao_aceita_bootstrap_desabilitado_sem_service_key() -> None:
+    settings = Settings(
+        env="production",
+        secret_key="s" * 32,
+        cors_origins=["https://sophie.example.com"],
+        database_url="postgresql+asyncpg://sophie:strong-db-password@db:5432/sophie",
+        redis_url="redis://:strong-redis-password@redis:6379/0",
+    )
+    assert settings.service_bootstrap_enabled is False
+
+
+def test_producao_rejeita_service_key_ausente_quando_bootstrap_ativo() -> None:
     with pytest.raises(ValidationError, match="NEGAO_SERVICE_API_KEY"):
         Settings(
             env="production",
+            service_bootstrap_enabled=True,
             secret_key="s" * 32,
             cors_origins=["https://sophie.example.com"],
             database_url="postgresql+asyncpg://sophie:strong-db-password@db:5432/sophie",
@@ -40,6 +52,7 @@ def test_producao_rejeita_service_key_curta() -> None:
     with pytest.raises(ValidationError, match="NEGAO_SERVICE_API_KEY"):
         Settings(
             env="production",
+            service_bootstrap_enabled=True,
             service_api_key="curta",
             secret_key="s" * 32,
             cors_origins=["https://sophie.example.com"],
@@ -74,7 +87,8 @@ def test_producao_rejeita_debug_ativo() -> None:
 def _strong_production_kwargs() -> dict[str, object]:
     return {
         "env": "production",
-        "service_api_key": "k" * 32,
+        "service_api_key": "",
+        "service_bootstrap_enabled": False,
         "secret_key": "s" * 32,
         "cors_origins": ["https://sophie.example.com"],
         "database_url": "postgresql+asyncpg://sophie:database-password-strong@db:5432/sophie",
@@ -112,6 +126,8 @@ def test_producao_rejeita_cors_http() -> None:
 
 def test_producao_rejeita_reuso_de_credencial() -> None:
     kwargs = _strong_production_kwargs()
+    kwargs["service_bootstrap_enabled"] = True
+    kwargs["service_api_key"] = "k" * 32
     kwargs["secret_key"] = kwargs["service_api_key"]
     with pytest.raises(ValidationError, match="valores distintos"):
         Settings.model_validate(kwargs)
@@ -128,7 +144,8 @@ def test_ia_externa_exige_chave_do_provedor() -> None:
 def test_producao_aceita_configuracao_forte() -> None:
     settings = Settings(
         env="production",
-        service_api_key="k" * 32,
+        service_api_key="",
+        service_bootstrap_enabled=False,
         secret_key="s" * 32,
         cors_origins=["https://sophie.example.com"],
         database_url="postgresql+asyncpg://sophie:strong-db-password@db:5432/sophie",
