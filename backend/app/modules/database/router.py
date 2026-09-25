@@ -119,7 +119,6 @@ async def list_api_keys_endpoint(session: SessionDep) -> list[ApiKeyMetadataResp
             revoked_at=record.revoked_at,
         )
         for record in records
-        if record.expires_at is not None
     ]
 
 
@@ -148,13 +147,11 @@ async def create_api_key_endpoint(
                 "key_id": record.id,
                 "name": record.name,
                 "scopes": record.scopes,
-                "expires_at": record.expires_at.isoformat() if record.expires_at else None,
+                "expires_at": record.expires_at.isoformat(),
             },
             user_id=getattr(auth, "effective_user_id", None),
         ),
     )
-    if record.expires_at is None:
-        raise HTTPException(status_code=500, detail="service key expiry was not assigned")
     return ApiKeyCreateResponse(
         key_id=record.id,
         api_key=plain_key,
