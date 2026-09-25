@@ -168,18 +168,27 @@ async def create_api_key(
     return plain_key, domain
 
 
-async def revoke_api_key(session: AsyncSession, key_id: str) -> bool:
-    """Revoga uma chave persistida; nunca exige ou retorna o segredo original."""
+async def revoke_api_key(session: AsyncSession, key_id: str) -> ApiKeyRecord | None:
+    """Revoga uma chave persistida e retorna somente seus metadados."""
     try:
         parsed_id = uuid.UUID(key_id)
     except ValueError:
-        return False
+        return None
     record = await session.get(ApiKeyORM, parsed_id)
     if record is None or record.revoked_at is not None:
-        return False
+        return None
     record.revoked_at = datetime.now(UTC)
     await session.flush()
-    return True
+    return ApiKeyRecord(
+        id=str(record.id),
+        key_hash=record.key_hash,
+        name=record.name,
+        scopes=list(record.scopes),
+        created_at=record.created_at,
+        last_used_at=record.last_used_at,
+        expires_at=record.expires_at,
+        revoked_at=record.revoked_at,
+    )
 
 
 async def verify_api_key(session: AsyncSession, key: str) -> ApiKeyRecord | None:
