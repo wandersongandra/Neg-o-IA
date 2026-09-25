@@ -19,6 +19,7 @@ class ApiKeyRecord:
     scopes: list[str] = field(default_factory=list)
     created_at: datetime = field(default_factory=datetime.now)
     last_used_at: datetime | None = None
+    expires_at: datetime | None = None
     revoked_at: datetime | None = None
 
 
