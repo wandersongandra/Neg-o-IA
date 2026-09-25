@@ -75,6 +75,14 @@ IA externa e Vision permanecem fail-closed: o envio de dados a provedores extern
 
 Em produção, `SOPHIE_NVIDIA_BASE_URL`/ `NEGAO_NVIDIA_BASE_URL` precisa usar HTTPS na porta 443, sem credenciais, query string ou fragmento, e o hostname deve estar explicitamente presente em `SOPHIE_EXTERNAL_AI_ALLOWED_HOSTS`/ `NEGAO_EXTERNAL_AI_ALLOWED_HOSTS`. Isso reduz risco de SSRF/exfiltração por alteração de endpoint do provedor.
 
+## Content Security Policy
+
+Páginas renderizadas pelo Next.js usam nonce criptograficamente aleatório por request. Em produção, `script-src` não contém `'unsafe-inline'`; scripts do framework e bundles recebem automaticamente o nonce extraído pelo Next.js do CSP do request. `'strict-dynamic'` limita a cadeia de confiança aos scripts autorizados pelo nonce.
+
+O App Router é forçado a renderização dinâmica para garantir um nonce novo em cada resposta HTML. `style-src 'unsafe-inline'` permanece temporariamente porque a interface ainda contém estilos inline legítimos; removê-lo exige uma refatoração separada dos componentes.
+
+O CI sobe o servidor Next em modo de produção, valida o header CSP e confirma que todos os elementos `<script>` renderizados carregam o mesmo nonce.
+
 ## Rede e containers
 
 O Compose de produção separa a rede de dados da rede da aplicação:
