@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     # autenticação. Credenciais de serviço precisam ser explícitas.
     service_api_key: str = ""
     service_api_scopes: list[str] = ["database:admin", "metrics:read"]
+    service_bootstrap_enabled: bool = False
     database_url: str = "postgresql+asyncpg://negao:negao@localhost:5432/negao"
     redis_url: str = "redis://localhost:6379/0"
     secret_key: str = "negao-dev-secret-key"
@@ -122,14 +123,15 @@ class Settings(BaseSettings):
         if self.env != "production":
             return self
         problems: list[str] = []
-        if (
+        if self.service_bootstrap_enabled and (
             self.service_api_key in _INSECURE_DEFAULT_SECRETS
             or len(self.service_api_key) < _MIN_PRODUCTION_SECRET_LENGTH
             or _looks_like_placeholder(self.service_api_key)
         ):
             problems.append(
                 "NEGAO_SERVICE_API_KEY deve ser definida com um valor forte "
-                f"(>= {_MIN_PRODUCTION_SECRET_LENGTH} caracteres) em produção"
+                f"(>= {_MIN_PRODUCTION_SECRET_LENGTH} caracteres) quando "
+                "NEGAO_SERVICE_BOOTSTRAP_ENABLED=true"
             )
         if (
             self.secret_key in _INSECURE_DEFAULT_SECRETS
@@ -178,8 +180,11 @@ class Settings(BaseSettings):
             problems.append("NEGAO_TRUSTED_HOSTS não pode conter '*' em produção")
         if self.debug:
             problems.append("NEGAO_DEBUG deve ser false em produção")
-        if not self.service_api_scopes:
-            problems.append("NEGAO_SERVICE_API_SCOPES deve conter ao menos um escopo em produção")
+        if self.service_bootstrap_enabled and not self.service_api_scopes:
+            problems.append(
+                "NEGAO_SERVICE_API_SCOPES deve conter ao menos um escopo "
+                "quando o bootstrap de serviço estiver habilitado"
+            )
         unknown_scopes = sorted(set(self.service_api_scopes) - _ALLOWED_SERVICE_SCOPES)
         if unknown_scopes:
             problems.append(
@@ -212,15 +217,15 @@ class Settings(BaseSettings):
                 problems.append(
                     "NEGAO_NVIDIA_BASE_URL deve usar HTTPS quando IA externa estiver ativa"
                 )
-        credential_values = {
-            self.service_api_key,
+        credential_values = [
             self.secret_key,
             database.password or "",
             redis.password or "",
-        }
+        ]
+        if self.service_bootstrap_enabled:
+            credential_values.append(self.service_api_key)
         nonempty_credentials = [value for value in credential_values if value]
-        expected_credentials = 4
-        if len(nonempty_credentials) != expected_credentials:
+        if len(set(nonempty_credentials)) != len(nonempty_credentials):
             problems.append("credenciais críticas de produção devem usar valores distintos")
         if problems:
             raise ValueError("; ".join(problems))
