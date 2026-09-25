@@ -217,8 +217,9 @@ def _add_middlewares(app: FastAPI, settings: Settings) -> None:
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=settings.cors_origins != ["*"],
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type", "X-API-Key", "X-Request-ID"],
+        expose_headers=["X-Request-ID"],
     )
     app.add_middleware(BaseHTTPMiddleware, dispatch=request_context_middleware)
     app.add_middleware(BaseHTTPMiddleware, dispatch=access_log_middleware)
