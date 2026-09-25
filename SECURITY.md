@@ -43,6 +43,16 @@ Tickets WebSocket são:
 
 A chave de serviço via query string permanece permitida apenas fora de produção para compatibilidade de testes e scripts locais.
 
+## Memória e retenção
+
+A memória de longo prazo usa política por usuário e o auto-capture permanece desabilitado por padrão. Quando o usuário habilita captura automática, a Sophie aplica uma filtragem conservadora antes da persistência e recusa padrões de credenciais de alta confiança, como tokens Bearer/JWT, chaves privadas, tokens com prefixos conhecidos, URLs com credenciais embutidas e atribuições explícitas de segredo.
+
+Quando uma captura automática é recusada, a auditoria registra somente uma categoria genérica do motivo, nunca o valor detectado nem o conteúdo da mensagem.
+
+Entradas com `expires_at` vencido são removidas fisicamente do armazenamento durante operações de memória longa do usuário; não são apenas ocultadas dos resultados de busca.
+
+Memória manual continua sendo uma ação explícita do usuário e não passa pelo bloqueio automático de credenciais. Isso preserva a intenção explícita, mas a memória da Sophie não deve ser usada como cofre de senhas ou gerenciador de segredos. Conteúdo de memória e Knowledge Vault permanece persistido no banco conforme o modelo atual; criptografia de campo em repouso é uma camada separada de hardening.
+
 ## Auditoria tamper-evident
 
 Novos registros em `events.audit_events` recebem uma assinatura HMAC-SHA256 sobre os campos imutáveis do evento e seu payload canônico.
