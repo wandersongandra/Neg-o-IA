@@ -20,6 +20,7 @@ dependencies = [
     "structlog",
     "orjson",
     "httpx",
+    "msgpack>=1.2.1",
     "pyjwt",
     "opentelemetry-api",
     "opentelemetry-sdk",
