@@ -262,6 +262,10 @@ async def require_service_auth(
             headers={"WWW-Authenticate": "ApiKey"},
         )
     _set_auth_context(request, result)
+    try:
+        await _publish_auth_event("security.service_auth.completed", result)
+    except Exception:
+        _logger.warning("service_auth_event_publish_error", exc_info=True)
     return result
 
 
