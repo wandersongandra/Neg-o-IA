@@ -40,3 +40,7 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Segredos de runtime (Docker Secrets)
+secrets/*
+!secrets/README.md
