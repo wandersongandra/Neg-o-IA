@@ -46,6 +46,27 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Verify exact Python direct dependency pins
+        run: |
+          python - <<'PY'
+          import tomllib
+          from pathlib import Path
+
+          payload = tomllib.loads(Path("backend/pyproject.toml").read_text(encoding="utf-8"))
+          groups = {
+              "runtime": payload["project"]["dependencies"],
+              "dev": payload["project"]["optional-dependencies"]["dev"],
+          }
+          unpinned = [
+              f"{group}:{dependency}"
+              for group, dependencies in groups.items()
+              for dependency in dependencies
+              if "==" not in dependency
+          ]
+          if unpinned:
+              raise SystemExit("Unpinned direct Python dependencies: " + ", ".join(unpinned))
+          PY
+
       - name: Setup Python
         uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
         with:
