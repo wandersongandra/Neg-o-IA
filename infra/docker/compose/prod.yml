@@ -122,6 +122,9 @@ services:
   nginx:
     build:
       context: ../../nginx
+    environment:
+      SOPHIE_HOST: ${SOPHIE_HOST:?defina SOPHIE_HOST}
+      NGINX_ENVSUBST_FILTER: "^SOPHIE_HOST$"
     volumes:
       - ${TLS_CERT_PATH:?defina TLS_CERT_PATH}:/etc/nginx/tls/fullchain.pem:ro
       - ${TLS_KEY_PATH:?defina TLS_KEY_PATH}:/etc/nginx/tls/privkey.pem:ro
@@ -135,6 +138,7 @@ services:
     read_only: true
     tmpfs:
       - /var/cache/nginx:rw,noexec,nosuid,size=32m
+      - /etc/nginx/conf.d:rw,noexec,nosuid,size=1m
       - /var/run:rw,noexec,nosuid,size=8m
       - /tmp:rw,noexec,nosuid,size=16m
     init: true
