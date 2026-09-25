@@ -19,12 +19,13 @@ from app.modules.voice.domain import (
     AudioResult,
     TranscriptionResult,
     VoiceProtocolError,
+    VoiceProviderError,
     VoiceSessionState,
     VoiceUnavailableError,
     transition_voice_state,
 )
 from app.modules.voice.events import EVENT_VOICE_TRANSCRIPTION_COMPLETED
-from app.modules.voice.infrastructure import FakeSTTAdapter, FakeTTSAdapter
+from app.modules.voice.infrastructure import EdgeTTSAdapter, FakeSTTAdapter, FakeTTSAdapter
 from app.modules.voice.router import (
     _handle_audio_chunk,
     _handle_turn_start,
@@ -367,3 +368,11 @@ def test_ws_voice_v1_integra_conversa_e_preserva_sessao(
     assert len(voice_service.transcribe_calls) == 2
     assert all(content_type == "audio/webm" for _, content_type in voice_service.transcribe_calls)
     assert len(voice_service.synthesize_calls) == 2
+
+
+@pytest.mark.asyncio
+async def test_edge_tts_requires_explicit_external_opt_in() -> None:
+    adapter = EdgeTTSAdapter(Settings(external_tts_enabled=False))
+
+    with pytest.raises(VoiceProviderError, match="TTS externo desabilitado"):
+        await adapter.synthesize("texto privado")
