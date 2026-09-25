@@ -108,7 +108,7 @@ O CI inclui:
 - geração de SBOM CycloneDX 1.6 reproduzível para backend Python e frontend npm;
 - validação estrutural dos SBOMs e publicação dos artefatos com `SHA256SUMS`.
 
-Actions externas do GitHub devem permanecer pinadas por commit SHA. Checkouts do CI não persistem credenciais Git após o checkout.
+Actions externas do GitHub devem permanecer pinadas por commit SHA. Checkouts do CI não persistem credenciais Git após o checkout. Imagens base e serviços de produção usam tag legível acompanhada de digest `sha256` imutável; o CI falha se os pins forem removidos.
 
 ## Divulgação
 
