@@ -66,9 +66,7 @@ def test_bootstrap_service_key_disabled_by_default_in_production() -> None:
             service_api_key="k" * 40,
             secret_key="s" * 40,
             cors_origins=["https://sophie.example.com"],
-            database_url=(
-                "postgresql+asyncpg://sophie:database-password-strong@db:5432/sophie"
-            ),
+            database_url=("postgresql+asyncpg://sophie:database-password-strong@db:5432/sophie"),
             redis_url="redis://:redis-password-strong@redis:6379/0",
         )
     )
@@ -83,9 +81,7 @@ def test_bootstrap_service_key_requires_explicit_production_enablement() -> None
             service_api_key="k" * 40,
             secret_key="s" * 40,
             cors_origins=["https://sophie.example.com"],
-            database_url=(
-                "postgresql+asyncpg://sophie:database-password-strong@db:5432/sophie"
-            ),
+            database_url=("postgresql+asyncpg://sophie:database-password-strong@db:5432/sophie"),
             redis_url="redis://:redis-password-strong@redis:6379/0",
         )
     )
