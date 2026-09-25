@@ -30,6 +30,7 @@ const securityHeaders = [
       "frame-src 'none'",
       "form-action 'self'",
       `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"}`,
+      "script-src-attr 'none'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",
       "font-src 'self' data:",

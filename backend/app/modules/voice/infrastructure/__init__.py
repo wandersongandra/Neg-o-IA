@@ -8,6 +8,12 @@ from __future__ import annotations
 
 import httpx
 
+from app.infrastructure.provider_http import (
+    ProviderInvalidResponseError,
+    ProviderResponseTooLargeError,
+    new_provider_http_client,
+    read_json_limited,
+)
 from app.modules.configuration.settings import Settings, get_settings
 from app.modules.voice.domain import (
     AudioResult,
@@ -23,7 +29,7 @@ class NvidiaTranscriptionAdapter:
 
     def __init__(self, settings: Settings | None = None) -> None:
         self._settings = settings or get_settings()
-        self._client = httpx.AsyncClient(timeout=self._settings.voice_stt_timeout_seconds)
+        self._client = new_provider_http_client(self._settings.voice_stt_timeout_seconds)
 
     async def transcribe(self, audio_bytes: bytes, *, content_type: str) -> TranscriptionResult:
         url = f"{self._settings.nvidia_base_url}/audio/transcriptions"
@@ -31,15 +37,26 @@ class NvidiaTranscriptionAdapter:
         files = {"file": (_STT_FILENAME, audio_bytes, content_type)}
         data = {"model": self._settings.brain_stt_model, "language": "pt"}
         try:
-            response = await self._client.post(url, headers=headers, files=files, data=data)
+            async with self._client.stream(
+                "POST",
+                url,
+                headers=headers,
+                files=files,
+                data=data,
+            ) as raw_response:
+                response = await read_json_limited(
+                    raw_response,
+                    max_response_bytes=self._settings.provider_max_response_bytes,
+                )
+        except ProviderResponseTooLargeError as exc:
+            raise VoiceProviderError("STT indisponível: resposta muito grande") from exc
+        except ProviderInvalidResponseError as exc:
+            raise VoiceProviderError("STT indisponível: resposta inválida") from exc
         except httpx.HTTPError as exc:
             raise VoiceProviderError(f"STT indisponível: {exc}") from exc
-        if response.status_code != 200:
+        if response.status_code != 200 or response.payload is None:
             raise VoiceProviderError(f"STT indisponível: HTTP {response.status_code}")
-        try:
-            payload = response.json()
-        except ValueError as exc:
-            raise VoiceProviderError("STT indisponível: resposta inválida") from exc
+        payload = response.payload
         return TranscriptionResult(
             text=str(payload.get("text", "")).strip(),
             language="pt",
@@ -54,6 +71,10 @@ class EdgeTTSAdapter:
         self._settings = settings or get_settings()
 
     async def synthesize(self, text: str) -> AudioResult:
+        if not self._settings.external_tts_enabled:
+            raise VoiceProviderError(
+                "TTS externo desabilitado; habilite explicitamente para enviar texto ao provedor"
+            )
         try:
             from edge_tts import Communicate
         except ImportError as exc:

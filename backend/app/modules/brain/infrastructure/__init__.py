@@ -15,6 +15,12 @@ import time
 from collections.abc import Awaitable, Callable
 from typing import Any
 
+from app.infrastructure.provider_http import (
+    ProviderInvalidResponseError,
+    ProviderResponseTooLargeError,
+    new_provider_http_client,
+    post_json_limited,
+)
 from app.modules.brain.domain import (
     ModelRequest,
     ModelResponse,
@@ -168,15 +174,8 @@ async def _cache_set(cache_key: str, response: ModelResponse, ttl: int) -> None:
 
 
 def _new_provider_http_client() -> Any:
-    """Cliente HTTP do provedor sem proxy herdado e sem redirects automáticos."""
-    import httpx
-
-    return httpx.AsyncClient(
-        timeout=httpx.Timeout(60.0, connect=10.0),
-        follow_redirects=False,
-        trust_env=False,
-        limits=httpx.Limits(max_connections=20, max_keepalive_connections=10),
-    )
+    """Compatibilidade interna para testes e adapters do Brain."""
+    return new_provider_http_client(60.0)
 
 
 class NvidiaChatAdapter:
@@ -207,24 +206,30 @@ class NvidiaChatAdapter:
             ),
         }
         try:
-            response = await self._http().post(
+            response = await post_json_limited(
+                self._http(),
                 f"{settings.nvidia_base_url.rstrip('/')}/chat/completions",
-                json=payload,
                 headers={"Authorization": f"Bearer {settings.nvidia_api_key}"},
+                payload=payload,
+                max_response_bytes=settings.provider_max_response_bytes,
             )
+        except ProviderResponseTooLargeError as exc:
+            raise ProviderError("NVIDIA response exceeded configured limit") from exc
+        except ProviderInvalidResponseError as exc:
+            raise ProviderError("NVIDIA returned invalid JSON") from exc
         except Exception as exc:
             raise RetryableProviderError(f"erro de rede no NVIDIA: {exc}") from exc
 
         latency_ms = int((time.perf_counter() - started) * 1000)
         if response.status_code in {429, 500, 502, 503, 504, 529}:
             raise RetryableProviderError(f"NVIDIA HTTP {response.status_code}")
-        if response.status_code != 200:
+        if response.status_code != 200 or response.payload is None:
             raise ProviderError(f"NVIDIA HTTP {response.status_code}")
         try:
-            data = response.json()
+            data = response.payload
             text = data["choices"][0]["message"]["content"]
             usage = data.get("usage")
-        except (KeyError, IndexError, ValueError) as exc:
+        except (KeyError, IndexError, TypeError, ValueError) as exc:
             raise ProviderError(f"NVIDIA payload inválido: {exc}") from exc
         return ModelResponse(
             text=text,
@@ -351,24 +356,30 @@ class ModelRouter:
         }
         try:
             async with _new_provider_http_client() as client:
-                response = await client.post(
+                response = await post_json_limited(
+                    client,
                     f"{settings.nvidia_base_url.rstrip('/')}/chat/completions",
-                    json=payload,
                     headers={"Authorization": f"Bearer {settings.nvidia_api_key}"},
+                    payload=payload,
+                    max_response_bytes=settings.provider_max_response_bytes,
                 )
+        except ProviderResponseTooLargeError as exc:
+            raise ProviderError("fallback response exceeded configured limit") from exc
+        except ProviderInvalidResponseError as exc:
+            raise ProviderError("fallback returned invalid JSON") from exc
         except Exception as exc:
             raise RetryableProviderError(f"erro de rede no fallback: {exc}") from exc
 
         latency_ms = int((time.perf_counter() - started) * 1000)
         if response.status_code in {429, 500, 502, 503, 504, 529}:
             raise RetryableProviderError(f"fallback HTTP {response.status_code}")
-        if response.status_code != 200:
+        if response.status_code != 200 or response.payload is None:
             raise ProviderError(f"fallback HTTP {response.status_code}")
         try:
-            data = response.json()
+            data = response.payload
             text = data["choices"][0]["message"]["content"]
             usage = data.get("usage")
-        except (KeyError, IndexError, ValueError) as exc:
+        except (KeyError, IndexError, TypeError, ValueError) as exc:
             raise ProviderError(f"fallback payload inválido: {exc}") from exc
         return ModelResponse(
             text=text,
