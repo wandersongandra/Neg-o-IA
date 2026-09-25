@@ -9,7 +9,8 @@ WORKDIR /app
 RUN useradd --create-home --uid 1000 negao
 
 COPY pyproject.toml ./
-RUN mkdir -p app && touch app/__init__.py \
+RUN pip install --no-cache-dir --root-user-action=ignore "setuptools>=78.1.1" \
+    && mkdir -p app && touch app/__init__.py \
     && pip install --no-cache-dir --root-user-action=ignore .
 
 COPY app ./app
