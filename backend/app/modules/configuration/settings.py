@@ -93,6 +93,7 @@ class Settings(BaseSettings):
     brain_cache_ttl_seconds: int = 300
     provider_max_response_bytes: int = 2 * 1024 * 1024
 
+    external_tts_enabled: bool = False
     tts_voice: str = "pt-BR-FranciscaNeural"
     tts_rate: str = "+0%"
     voice_max_chunk_bytes: int = 256 * 1024
