@@ -73,7 +73,6 @@ class PostgresLongTermMemory:
         metadata: dict[str, Any],
     ) -> LongTermMemoryEntry:
         parsed_user = _user_uuid(user_id)
-        await self.purge_expired(user_id)
         content_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()
         expires_at = (
             datetime.now(UTC) + timedelta(days=retention_days)
@@ -113,7 +112,6 @@ class PostgresLongTermMemory:
 
     async def search(self, user_id: str, query: str, *, limit: int) -> list[MemorySearchHit]:
         parsed_user = _user_uuid(user_id)
-        await self.purge_expired(user_id)
         query_embedding = embed_text(query)
         distance = cast(Any, MemoryEntryORM.embedding).cosine_distance(query_embedding)
         now = datetime.now(UTC)
