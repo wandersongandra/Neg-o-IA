@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -50,6 +50,8 @@ async def test_create_api_key_returns_plain_key_and_record(fake_session: AsyncMo
     assert record.name == "teste"
     assert record.key_hash == hash_api_key(plain_key)
     assert record.scopes == ["read"]
+    assert record.expires_at is not None
+    assert record.expires_at > datetime.now(UTC)
     added = fake_session.add.call_args.args[0]
     assert isinstance(added, ApiKeyORM)
 
@@ -60,6 +62,7 @@ async def test_verify_api_key_revoked_returns_none(fake_session: AsyncMock) -> N
         key_hash=hash_api_key("chave"),
         name="x",
         scopes=[],
+        expires_at=datetime.now(UTC) + timedelta(days=1),
         revoked_at=datetime.now(UTC),
     )
     fake_session.execute.return_value = _execute_returning(row)
@@ -69,8 +72,28 @@ async def test_verify_api_key_revoked_returns_none(fake_session: AsyncMock) -> N
 
 
 @pytest.mark.asyncio
+async def test_verify_api_key_expired_returns_none(fake_session: AsyncMock) -> None:
+    row = ApiKeyORM(
+        key_hash=hash_api_key("chave"),
+        name="x",
+        scopes=[],
+        expires_at=datetime.now(UTC) - timedelta(seconds=1),
+    )
+    fake_session.execute.return_value = _execute_returning(row)
+
+    record = await verify_api_key(fake_session, "chave")
+    assert record is None
+    assert row.last_used_at is None
+
+
+@pytest.mark.asyncio
 async def test_verify_api_key_valid_updates_last_used(fake_session: AsyncMock) -> None:
-    row = ApiKeyORM(key_hash=hash_api_key("chave"), name="x", scopes=["read"])
+    row = ApiKeyORM(
+        key_hash=hash_api_key("chave"),
+        name="x",
+        scopes=["read"],
+        expires_at=datetime.now(UTC) + timedelta(days=1),
+    )
     fake_session.execute.return_value = _execute_returning(row)
 
     record = await verify_api_key(fake_session, "chave")

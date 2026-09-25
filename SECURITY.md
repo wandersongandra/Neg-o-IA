@@ -65,6 +65,8 @@ Quando uma chave dedicada não é definida, a chave de aplicação é usada como
 
 A chave bootstrap de serviço fica desabilitada por padrão em produção. Para provisionamento inicial, habilite `SOPHIE_SERVICE_BOOTSTRAP_ENABLED=true` (ou alias `NEGAO_*`) apenas temporariamente, crie uma chave persistida e rotacionável e desabilite o bootstrap novamente.
 
+Chaves persistidas de serviço possuem expiração obrigatória. O prazo padrão e o máximo são controlados por `SOPHIE_SERVICE_API_KEY_DEFAULT_TTL_DAYS` e `SOPHIE_SERVICE_API_KEY_MAX_TTL_DAYS`. Chaves anteriores à migration `0007_service_api_key_expiry` recebem uma janela de transição, mas não permanecem sem validade. Criação, revogação e autenticação bem-sucedida de credenciais de serviço geram eventos de auditoria sem registrar o segredo da chave.
+
 Credenciais de APIs, chaves de modelo, tokens, arquivos `.env`, URLs privadas de banco, cookies, chaves de sessão e dados de produção não devem ser versionados.
 
 Variáveis de exemplo devem conter apenas placeholders fictícios.

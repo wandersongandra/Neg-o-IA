@@ -7,9 +7,10 @@ Nota: em produção, estes endpoints serão protegidos pelo módulo Security
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,11 +22,14 @@ from app.modules.database.application import (
     count_audit_events,
     create_api_key,
     get_config,
+    list_api_keys,
     list_audit_events,
+    register_audit_event,
     revoke_api_key,
     set_config,
 )
 from app.modules.database.domain import DatabaseStatus
+from app.modules.events.envelope import build_envelope
 
 router = APIRouter(prefix="/database", tags=["database"])
 
@@ -49,6 +53,7 @@ SessionDep = Annotated[AsyncSession, Depends(get_db_session)]
 class ApiKeyCreateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=128)
     scopes: list[str] = Field(default_factory=list, max_length=16)
+    expires_in_days: int | None = Field(default=None, ge=1, le=3650)
 
     @field_validator("scopes")
     @classmethod
@@ -61,10 +66,22 @@ class ApiKeyCreateRequest(BaseModel):
 
 
 class ApiKeyCreateResponse(BaseModel):
+    key_id: str
     api_key: str
     name: str
     scopes: list[str]
+    expires_at: datetime
     note: str = "Guarde esta chave agora; ela não será exibida novamente."
+
+
+class ApiKeyMetadataResponse(BaseModel):
+    key_id: str
+    name: str
+    scopes: list[str]
+    created_at: datetime
+    last_used_at: datetime | None = None
+    expires_at: datetime
+    revoked_at: datetime | None = None
 
 
 class ConfigItemResponse(BaseModel):
@@ -88,20 +105,85 @@ async def database_status(session: SessionDep) -> DatabaseStatus:
     )
 
 
+@router.get("/api-keys", response_model=list[ApiKeyMetadataResponse])
+async def list_api_keys_endpoint(session: SessionDep) -> list[ApiKeyMetadataResponse]:
+    records = await list_api_keys(session)
+    return [
+        ApiKeyMetadataResponse(
+            key_id=record.id,
+            name=record.name,
+            scopes=record.scopes,
+            created_at=record.created_at,
+            last_used_at=record.last_used_at,
+            expires_at=record.expires_at,
+            revoked_at=record.revoked_at,
+        )
+        for record in records
+    ]
+
+
 @router.post("/api-keys", response_model=ApiKeyCreateResponse)
 async def create_api_key_endpoint(
     request: ApiKeyCreateRequest,
+    http_request: Request,
     session: SessionDep,
 ) -> ApiKeyCreateResponse:
-    plain_key, _ = await create_api_key(session, request.name, request.scopes)
-    return ApiKeyCreateResponse(api_key=plain_key, name=request.name, scopes=request.scopes)
+    try:
+        plain_key, record = await create_api_key(
+            session,
+            request.name,
+            request.scopes,
+            ttl_days=request.expires_in_days,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    auth = getattr(http_request.state, "auth_result", None)
+    await register_audit_event(
+        session,
+        build_envelope(
+            "security.service_key.created",
+            "database",
+            {
+                "key_id": record.id,
+                "name": record.name,
+                "scopes": record.scopes,
+                "expires_at": record.expires_at.isoformat(),
+            },
+            user_id=getattr(auth, "effective_user_id", None),
+        ),
+    )
+    return ApiKeyCreateResponse(
+        key_id=record.id,
+        api_key=plain_key,
+        name=record.name,
+        scopes=record.scopes,
+        expires_at=record.expires_at,
+    )
 
 
 @router.delete("/api-keys/{key_id}", status_code=204, response_model=None)
-async def revoke_api_key_endpoint(key_id: str, session: SessionDep) -> None:
-    revoked = await revoke_api_key(session, key_id)
-    if not revoked:
+async def revoke_api_key_endpoint(
+    key_id: str,
+    http_request: Request,
+    session: SessionDep,
+) -> None:
+    record = await revoke_api_key(session, key_id)
+    if record is None:
         raise HTTPException(status_code=404, detail="api key not found")
+    auth = getattr(http_request.state, "auth_result", None)
+    await register_audit_event(
+        session,
+        build_envelope(
+            "security.service_key.revoked",
+            "database",
+            {
+                "key_id": record.id,
+                "name": record.name,
+                "scopes": record.scopes,
+            },
+            user_id=getattr(auth, "effective_user_id", None),
+        ),
+    )
 
 
 @router.get("/audit/integrity", tags=["internal"])
