@@ -17,6 +17,8 @@ from collections.abc import Awaitable, Callable
 import redis.asyncio as aioredis
 from fastapi import HTTPException, Request, status
 
+from app.modules.configuration.settings import get_settings
+
 _REDIS_RECHECK_SECONDS = 30.0
 _REDIS_PING_TIMEOUT = 0.5
 _DEFAULT_WINDOW_SECONDS = 60
@@ -113,10 +115,7 @@ class RateLimiter:
 def trusted_client_ip(request: Request) -> str:
     """Aceita IP encaminhado somente de um proxy interno autenticado."""
     direct_ip = request.client.host if request.client else "unknown"
-    settings = __import__(
-        "app.modules.configuration.settings",
-        fromlist=["get_settings"],
-    ).get_settings()
+    settings = get_settings()
     proxy_key = request.headers.get("x-sophie-internal-proxy", "")
     forwarded_ip = request.headers.get("x-real-ip", "").strip()
     if not settings.internal_proxy_key or not proxy_key or not forwarded_ip:
