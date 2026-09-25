@@ -6,8 +6,12 @@ import base64
 import time
 from typing import Any
 
-import httpx
-
+from app.infrastructure.provider_http import (
+    ProviderInvalidResponseError,
+    ProviderResponseTooLargeError,
+    new_provider_http_client,
+    post_json_limited,
+)
 from app.modules.configuration.settings import get_settings
 from app.modules.vision.domain import VisionAnalysis
 
@@ -97,22 +101,23 @@ class NvidiaVisionAdapter:
         }
         started = time.perf_counter()
         try:
-            async with httpx.AsyncClient(timeout=settings.vision_timeout_seconds) as client:
-                response = await client.post(
+            async with new_provider_http_client(settings.vision_timeout_seconds) as client:
+                response = await post_json_limited(
+                    client,
                     f"{settings.nvidia_base_url.rstrip('/')}/chat/completions",
                     headers={"Authorization": f"Bearer {settings.nvidia_api_key}"},
-                    json=payload,
+                    payload=payload,
+                    max_response_bytes=settings.provider_max_response_bytes,
                 )
-        except httpx.HTTPError as exc:
-            raise VisionProviderError("vision provider network error") from exc
-        if response.status_code >= 400:
-            raise VisionProviderError(f"vision provider HTTP {response.status_code}")
-        try:
-            body = response.json()
-        except ValueError as exc:
+        except ProviderResponseTooLargeError as exc:
+            raise VisionProviderError("vision provider response too large") from exc
+        except ProviderInvalidResponseError as exc:
             raise VisionProviderError("vision provider returned invalid JSON") from exc
-        if not isinstance(body, dict):
-            raise VisionProviderError("vision provider returned invalid payload")
+        except Exception as exc:
+            raise VisionProviderError("vision provider network error") from exc
+        if response.status_code >= 400 or response.payload is None:
+            raise VisionProviderError(f"vision provider HTTP {response.status_code}")
+        body = response.payload
         return VisionAnalysis(
             text=_extract_text(body),
             model=settings.brain_vision_model,
