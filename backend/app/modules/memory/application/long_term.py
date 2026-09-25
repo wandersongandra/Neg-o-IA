@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from app.core.sensitive_content import likely_secret_kind
 from app.modules.events.envelope import build_envelope
 from app.modules.memory.domain import LongTermMemoryEntry, MemoryPolicy, MemorySearchHit
 from app.modules.memory.infrastructure.long_term import PostgresLongTermMemory
@@ -99,6 +100,17 @@ class LongTermMemoryService:
             return None
         normalized = content.strip()
         if len(normalized) < 20:
+            return None
+        secret_kind = likely_secret_kind(normalized)
+        if secret_kind is not None:
+            await self._publish(
+                "memory.long_term.auto_capture_skipped_sensitive",
+                {
+                    "user_id": user_id,
+                    "reason": secret_kind,
+                },
+                session_id=session_id,
+            )
             return None
         return await self.remember(
             user_id,
