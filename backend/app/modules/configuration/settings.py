@@ -176,9 +176,7 @@ class Settings(BaseSettings):
                 "NEGAO_SERVICE_API_KEY_MAX_TTL_DAYS"
             )
         if not 1 <= self.service_api_key_max_ttl_days <= 3650:
-            problems.append(
-                "NEGAO_SERVICE_API_KEY_MAX_TTL_DAYS deve estar entre 1 e 3650"
-            )
+            problems.append("NEGAO_SERVICE_API_KEY_MAX_TTL_DAYS deve estar entre 1 e 3650")
         if self.auth_session_idle_seconds <= 0:
             problems.append("NEGAO_AUTH_SESSION_IDLE_SECONDS deve ser maior que zero")
         if self.auth_session_idle_seconds > self.auth_session_ttl_seconds:
