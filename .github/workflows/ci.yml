@@ -171,7 +171,66 @@ jobs:
         run: docker run --rm -e SOPHIE_HOST=sophie.example.test -e NGINX_ENVSUBST_FILTER='^SOPHIE_HOST$' --add-host backend:127.0.0.1 --add-host frontend:127.0.0.1 -v /tmp/sophie-tls/fullchain.pem:/etc/nginx/tls/fullchain.pem:ro -v /tmp/sophie-tls/privkey.pem:/etc/nginx/tls/privkey.pem:ro sophie-nginx-ci nginx -t
 
       - name: Verify Nginx host allowlist rendering
-        run: docker run --rm -e SOPHIE_HOST=sophie.example.test -e NGINX_ENVSUBST_FILTER='^SOPHIE_HOST$' --add-host backend:127.0.0.1 --add-host frontend:127.0.0.1 -v /tmp/sophie-tls/fullchain.pem:/etc/nginx/tls/fullchain.pem:ro -v /tmp/sophie-tls/privkey.pem:/etc/nginx/tls/privkey.pem:ro sophie-nginx-ci sh -ec 'nginx -T 2>&1 | grep -Eq "server_name[[:space:]]+sophie\\.example\\.test;"'
+        run: docker run --rm -e SOPHIE_HOST=sophie.example.test -e NGINX_ENVSUBST_FILTER='^SOPHIE_HOST
+  secret_scan:
+    name: Gitleaks Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Scan repository history with Gitleaks
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  osv_review:
+    name: OSV dependency review
+    if: github.event_name == 'pull_request'
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@c7c7bcb0773cc4678a674ada03a66cc5c4325476
+    with:
+      scan-args: |-
+        --include-git-root
+        -r
+        ./
+
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      packages: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language:
+          - javascript-typescript
+          - python
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@1190a975f95ce23525efb6a3fc21ea29567c1b52
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@1190a975f95ce23525efb6a3fc21ea29567c1b52
+ --add-host backend:127.0.0.1 --add-host frontend:127.0.0.1 -v /tmp/sophie-tls/fullchain.pem:/etc/nginx/tls/fullchain.pem:ro -v /tmp/sophie-tls/privkey.pem:/etc/nginx/tls/privkey.pem:ro sophie-nginx-ci nginx -T 2>&1 | grep -Eq 'server_name[[:space:]]+sophie\.example\.test;'
   secret_scan:
     name: Gitleaks Secret Scan
     runs-on: ubuntu-latest
