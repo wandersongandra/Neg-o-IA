@@ -168,6 +168,12 @@ def _validate_cookie_request_origin(request: Request) -> None:
         return
     if get_settings().env != "production":
         return
+    fetch_site = request.headers.get("sec-fetch-site")
+    if fetch_site and fetch_site != "same-origin":
+        raise HTTPException(status_code=403, detail="cross-site request blocked")
+    fetch_destination = request.headers.get("sec-fetch-dest")
+    if fetch_destination and fetch_destination != "empty":
+        raise HTTPException(status_code=403, detail="unexpected fetch destination")
     origin = request.headers.get("origin")
     if origin not in set(get_settings().cors_origins):
         raise HTTPException(status_code=403, detail="request origin not allowed")
