@@ -43,6 +43,8 @@ class Settings(BaseSettings):
     service_api_key: str = ""
     service_api_scopes: list[str] = ["database:admin", "metrics:read"]
     service_bootstrap_enabled: bool = False
+    service_api_key_default_ttl_days: int = 90
+    service_api_key_max_ttl_days: int = 365
     database_url: str = "postgresql+asyncpg://negao:negao@localhost:5432/negao"
     redis_url: str = "redis://localhost:6379/0"
     secret_key: str = "negao-dev-secret-key"
@@ -168,6 +170,15 @@ class Settings(BaseSettings):
             problems.append("NEGAO_CORS_ORIGINS deve conter apenas origens HTTPS válidas")
         if self.registration_enabled:
             problems.append("NEGAO_REGISTRATION_ENABLED deve ser false em produção")
+        if not 1 <= self.service_api_key_default_ttl_days <= self.service_api_key_max_ttl_days:
+            problems.append(
+                "NEGAO_SERVICE_API_KEY_DEFAULT_TTL_DAYS deve estar entre 1 e "
+                "NEGAO_SERVICE_API_KEY_MAX_TTL_DAYS"
+            )
+        if not 1 <= self.service_api_key_max_ttl_days <= 3650:
+            problems.append(
+                "NEGAO_SERVICE_API_KEY_MAX_TTL_DAYS deve estar entre 1 e 3650"
+            )
         if self.auth_session_idle_seconds <= 0:
             problems.append("NEGAO_AUTH_SESSION_IDLE_SECONDS deve ser maior que zero")
         if self.auth_session_idle_seconds > self.auth_session_ttl_seconds:
