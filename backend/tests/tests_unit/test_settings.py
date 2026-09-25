@@ -149,6 +149,7 @@ def test_producao_aceita_configuracao_forte() -> None:
         service_api_key="",
         service_bootstrap_enabled=False,
         secret_key="s" * 32,
+        internal_proxy_key="p" * 32,
         cors_origins=["https://sophie.example.com"],
         database_url="postgresql+asyncpg://sophie:strong-db-password@db:5432/sophie",
         redis_url="redis://:strong-redis-password@redis:6379/0",
