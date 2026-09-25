@@ -29,7 +29,6 @@ services:
           memory: 1g
           cpus: "1.0"
           pids: 256
-          pids: 256
 
   redis:
     image: redis:7.4.11-alpine
@@ -90,6 +89,7 @@ services:
         limits:
           memory: 1g
           cpus: "1.0"
+          pids: 256
 
   frontend:
     build:
