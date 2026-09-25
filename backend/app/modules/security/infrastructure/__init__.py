@@ -11,7 +11,10 @@ from app.infrastructure.db import create_engine, create_session_factory
 from app.modules.configuration.settings import Settings, get_settings
 from app.modules.security.application import SecurityService
 from app.modules.security.application.identity import (
+    ActiveSessionRecord,
     authenticate_session,
+    list_active_sessions,
+    revoke_other_sessions,
     revoke_session,
     validate_active_session,
 )
@@ -60,8 +63,9 @@ def create_security_service(settings: Settings) -> InMemorySecurityService:
     # fallback anterior permitia que uma credencial histórica continuasse
     # autenticando em desenvolvimento/teste quando a chave de serviço não
     # estava configurada.
+    bootstrap_allowed = settings.env != "production" or settings.service_bootstrap_enabled
     return InMemorySecurityService(
-        expected_api_key=settings.service_api_key,
+        expected_api_key=settings.service_api_key if bootstrap_allowed else "",
         scopes=frozenset(settings.service_api_scopes),
     )
 
@@ -134,6 +138,20 @@ async def revoke_bearer_session(user_id: str, session_id: str) -> bool:
     factory = create_session_factory(create_engine(get_settings().database_url))
     async with factory() as session:
         revoked = await revoke_session(session, session_id, user_id)
+        await session.commit()
+        return revoked
+
+
+async def list_bearer_sessions(user_id: str) -> list[ActiveSessionRecord]:
+    factory = create_session_factory(create_engine(get_settings().database_url))
+    async with factory() as session:
+        return await list_active_sessions(session, user_id, get_settings())
+
+
+async def revoke_other_bearer_sessions(user_id: str, current_session_id: str) -> int:
+    factory = create_session_factory(create_engine(get_settings().database_url))
+    async with factory() as session:
+        revoked = await revoke_other_sessions(session, user_id, current_session_id)
         await session.commit()
         return revoked
 

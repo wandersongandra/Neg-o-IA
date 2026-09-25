@@ -2,13 +2,32 @@ import { NextRequest, NextResponse } from "next/server";
 
 const SAFE_SEGMENT = /^[A-Za-z0-9_-]{1,128}$/;
 
+function enforceFetchMetadata(request: NextRequest): NextResponse | null {
+  if (process.env.NODE_ENV !== "production") return null;
+  const site = request.headers.get("sec-fetch-site");
+  if (site && site !== "same-origin") {
+    return NextResponse.json({ error: "cross_site_request_blocked" }, { status: 403 });
+  }
+  const destination = request.headers.get("sec-fetch-dest");
+  if (destination && destination !== "empty") {
+    return NextResponse.json({ error: "unexpected_fetch_destination" }, { status: 403 });
+  }
+  return null;
+}
+
 export function enforceSameOriginMutation(request: NextRequest): NextResponse | null {
+  const metadataBlock = enforceFetchMetadata(request);
+  if (metadataBlock) return metadataBlock;
   if (process.env.NODE_ENV !== "production") return null;
   const origin = request.headers.get("origin");
   if (!origin || origin !== request.nextUrl.origin) {
     return NextResponse.json({ error: "origin_not_allowed" }, { status: 403 });
   }
   return null;
+}
+
+export function enforceSensitiveSameOriginGet(request: NextRequest): NextResponse | null {
+  return enforceFetchMetadata(request);
 }
 
 export function isSafeDynamicSegment(value: string): boolean {

@@ -57,3 +57,32 @@ def test_get_security_service_retorna_mesma_instancia(monkeypatch_env: None) -> 
     first = get_security_service()
     second = get_security_service()
     assert first is second
+
+
+def test_bootstrap_service_key_disabled_by_default_in_production() -> None:
+    service = create_security_service(
+        Settings(
+            env="production",
+            service_api_key="k" * 40,
+            secret_key="s" * 40,
+            cors_origins=["https://sophie.example.com"],
+            database_url=("postgresql+asyncpg://sophie:database-password-strong@db:5432/sophie"),
+            redis_url="redis://:redis-password-strong@redis:6379/0",
+        )
+    )
+    assert service.authenticate_api_key("k" * 40).authenticated is False
+
+
+def test_bootstrap_service_key_requires_explicit_production_enablement() -> None:
+    service = create_security_service(
+        Settings(
+            env="production",
+            service_bootstrap_enabled=True,
+            service_api_key="k" * 40,
+            secret_key="s" * 40,
+            cors_origins=["https://sophie.example.com"],
+            database_url=("postgresql+asyncpg://sophie:database-password-strong@db:5432/sophie"),
+            redis_url="redis://:redis-password-strong@redis:6379/0",
+        )
+    )
+    assert service.authenticate_api_key("k" * 40).authenticated is True

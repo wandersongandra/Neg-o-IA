@@ -46,6 +46,17 @@ class IdentityRecord:
     device_id: str | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class ActiveSessionRecord:
+    session_id: str
+    device_id: str | None
+    device_name: str | None
+    device_type: str | None
+    created_at: datetime
+    last_seen_at: datetime
+    expires_at: datetime
+
+
 def hash_password(password: str) -> str:
     """Deriva senha com Argon2id; o salt aleatório é gerenciado pela biblioteca."""
     if len(password) < 12:
@@ -295,3 +306,69 @@ async def revoke_session(session: AsyncSession, session_id: str, user_id: str) -
     auth_session.revoked_at = datetime.now(UTC)
     await session.flush()
     return True
+
+
+async def list_active_sessions(
+    session: AsyncSession,
+    user_id: str,
+    settings: Settings,
+) -> list[ActiveSessionRecord]:
+    try:
+        user_uuid = uuid.UUID(user_id)
+    except (TypeError, ValueError):
+        return []
+
+    now = datetime.now(UTC)
+    idle_cutoff = now - timedelta(seconds=settings.auth_session_idle_seconds)
+    result = await session.execute(
+        select(AuthSessionORM, DeviceORM)
+        .outerjoin(DeviceORM, DeviceORM.id == AuthSessionORM.device_id)
+        .where(
+            AuthSessionORM.user_id == user_uuid,
+            AuthSessionORM.revoked_at.is_(None),
+            AuthSessionORM.expires_at > now,
+            AuthSessionORM.last_seen_at > idle_cutoff,
+        )
+        .order_by(AuthSessionORM.last_seen_at.desc(), AuthSessionORM.id.desc())
+    )
+    records: list[ActiveSessionRecord] = []
+    for auth_session, device in result.all():
+        records.append(
+            ActiveSessionRecord(
+                session_id=str(auth_session.id),
+                device_id=str(auth_session.device_id) if auth_session.device_id else None,
+                device_name=device.device_name if device is not None else None,
+                device_type=device.device_type if device is not None else None,
+                created_at=auth_session.created_at,
+                last_seen_at=auth_session.last_seen_at,
+                expires_at=auth_session.expires_at,
+            )
+        )
+    return records
+
+
+async def revoke_other_sessions(
+    session: AsyncSession,
+    user_id: str,
+    current_session_id: str,
+) -> int:
+    try:
+        user_uuid = uuid.UUID(user_id)
+        current_uuid = uuid.UUID(current_session_id)
+    except (TypeError, ValueError):
+        return 0
+
+    result = await session.execute(
+        select(AuthSessionORM).where(
+            AuthSessionORM.user_id == user_uuid,
+            AuthSessionORM.id != current_uuid,
+            AuthSessionORM.revoked_at.is_(None),
+        )
+    )
+    sessions = list(result.scalars().all())
+    now = datetime.now(UTC)
+    for auth_session in sessions:
+        auth_session.revoked_at = now
+    if sessions:
+        await session.flush()
+    return len(sessions)

@@ -35,7 +35,9 @@ from app.modules.security.infrastructure import (
     authenticate_bearer_token,
     get_security_service,
     issue_ws_ticket,
+    list_bearer_sessions,
     revoke_bearer_session,
+    revoke_other_bearer_sessions,
 )
 
 router = APIRouter(prefix="/security", tags=["security"])
@@ -108,6 +110,17 @@ class SessionResponse(BaseModel):
     display_name: str | None = None
 
 
+class ActiveSessionResponse(BaseModel):
+    session_id: str
+    current: bool
+    device_id: str | None = None
+    device_name: str | None = None
+    device_type: str | None = None
+    created_at: datetime
+    last_seen_at: datetime
+    expires_at: datetime
+
+
 def _set_auth_context(request: Request, result: AuthResult) -> None:
     request.state.auth_result = result
     context = get_request_context()
@@ -155,6 +168,12 @@ def _validate_cookie_request_origin(request: Request) -> None:
         return
     if get_settings().env != "production":
         return
+    fetch_site = request.headers.get("sec-fetch-site")
+    if fetch_site and fetch_site != "same-origin":
+        raise HTTPException(status_code=403, detail="cross-site request blocked")
+    fetch_destination = request.headers.get("sec-fetch-dest")
+    if fetch_destination and fetch_destination != "empty":
+        raise HTTPException(status_code=403, detail="unexpected fetch destination")
     origin = request.headers.get("origin")
     if origin not in set(get_settings().cors_origins):
         raise HTTPException(status_code=403, detail="request origin not allowed")
@@ -347,6 +366,67 @@ async def logout(
             raise HTTPException(status_code=503, detail="identity dependency unavailable") from exc
     response.delete_cookie(_DEV_SESSION_COOKIE, path="/")
     response.delete_cookie(_PROD_SESSION_COOKIE, path="/", secure=True, samesite="strict")
+
+
+@router.get("/sessions", response_model=list[ActiveSessionResponse])
+async def active_sessions(
+    auth: Annotated[AuthResult, Depends(require_authenticated_user)],
+) -> list[ActiveSessionResponse]:
+    if not auth.effective_user_id or not auth.session_id:
+        raise HTTPException(status_code=403, detail="user session required")
+    try:
+        records = await list_bearer_sessions(auth.effective_user_id)
+    except SQLAlchemyError as exc:
+        _logger.exception("session_inventory_database_unavailable")
+        raise HTTPException(status_code=503, detail="identity dependency unavailable") from exc
+    return [
+        ActiveSessionResponse(
+            session_id=record.session_id,
+            current=record.session_id == auth.session_id,
+            device_id=record.device_id,
+            device_name=record.device_name,
+            device_type=record.device_type,
+            created_at=record.created_at,
+            last_seen_at=record.last_seen_at,
+            expires_at=record.expires_at,
+        )
+        for record in records
+    ]
+
+
+@router.delete("/sessions/{session_id}", status_code=204, response_model=None)
+async def revoke_named_session(
+    session_id: str,
+    auth: Annotated[AuthResult, Depends(require_authenticated_user)],
+) -> None:
+    if not auth.effective_user_id or not auth.session_id:
+        raise HTTPException(status_code=403, detail="user session required")
+    if session_id == auth.session_id:
+        raise HTTPException(status_code=409, detail="use logout for the current session")
+    try:
+        revoked = await revoke_bearer_session(auth.effective_user_id, session_id)
+    except SQLAlchemyError as exc:
+        _logger.exception("session_revoke_database_unavailable")
+        raise HTTPException(status_code=503, detail="identity dependency unavailable") from exc
+    if not revoked:
+        raise HTTPException(status_code=404, detail="session not found")
+
+
+@router.post("/sessions/revoke-others")
+async def revoke_other_sessions_endpoint(
+    auth: Annotated[AuthResult, Depends(require_authenticated_user)],
+) -> dict[str, int]:
+    if not auth.effective_user_id or not auth.session_id:
+        raise HTTPException(status_code=403, detail="user session required")
+    try:
+        revoked = await revoke_other_bearer_sessions(
+            auth.effective_user_id,
+            auth.session_id,
+        )
+    except SQLAlchemyError as exc:
+        _logger.exception("session_bulk_revoke_database_unavailable")
+        raise HTTPException(status_code=503, detail="identity dependency unavailable") from exc
+    return {"revoked": revoked}
 
 
 @router.get("/status")

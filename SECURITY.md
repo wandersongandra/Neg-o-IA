@@ -23,6 +23,8 @@ Ao identificar uma possível falha, utilize um canal privado de contato com o ma
 - Sessões possuem expiração absoluta e expiração por inatividade.
 - O número de sessões simultâneas por usuário é limitado; sessões mais antigas são revogadas ao exceder o limite.
 - Requisições mutáveis autenticadas por cookie validam a origem em produção.
+- O BFF também valida Fetch Metadata (`Sec-Fetch-Site`/`Sec-Fetch-Dest`) em chamadas sensíveis.
+- O usuário pode listar sessões ativas, revogar sessões específicas e encerrar todas as outras sessões.
 - Hosts aceitos pelo FastAPI são allowlisted; em produção não é permitido wildcard.
 - Login aplica rate limit por IP e por conta. Em produção, indisponibilidade do Redis não degrada para um limiter local mais permissivo: a proteção falha fechada.
 
@@ -61,6 +63,8 @@ Quando uma chave dedicada não é definida, a chave de aplicação é usada como
 
 ## Segredos e integrações
 
+A chave bootstrap de serviço fica desabilitada por padrão em produção. Para provisionamento inicial, habilite `SOPHIE_SERVICE_BOOTSTRAP_ENABLED=true` (ou alias `NEGAO_*`) apenas temporariamente, crie uma chave persistida e rotacionável e desabilite o bootstrap novamente.
+
 Credenciais de APIs, chaves de modelo, tokens, arquivos `.env`, URLs privadas de banco, cookies, chaves de sessão e dados de produção não devem ser versionados.
 
 Variáveis de exemplo devem conter apenas placeholders fictícios.
@@ -74,7 +78,9 @@ O Compose de produção separa a rede de dados da rede da aplicação:
 - PostgreSQL e Redis ficam somente na rede interna `data`;
 - apenas o backend participa da rede `data`;
 - frontend e Nginx não possuem caminho direto para PostgreSQL ou Redis;
-- containers de aplicação utilizam `no-new-privileges`, limites de processos e capabilities reduzidas onde compatível.
+- containers de aplicação utilizam `no-new-privileges`, limites de processos e capabilities reduzidas onde compatível;
+- backend, frontend e Nginx usam filesystem raiz somente leitura em produção;
+- diretórios graváveis são limitados a `tmpfs` explícitos e com `nosuid`, `nodev` e `noexec` quando compatível.
 
 O Nginx aplica TLS 1.2/1.3, suites TLS 1.2 modernas, HSTS, limites de conexão/requisição, timeouts contra conexões lentas, proteção de dotfiles e headers de isolamento do navegador.
 

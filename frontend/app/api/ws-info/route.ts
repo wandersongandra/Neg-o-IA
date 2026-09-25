@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { resolveApiConfig, resolveWsUrl } from "@/lib/env";
 import { getSessionToken } from "@/lib/session-cookie";
 import {
+  enforceSensitiveSameOriginGet,
   isSafeDynamicSegment,
   resolvePublicWsBase,
   trustedClientIpHeaders,
@@ -10,6 +11,8 @@ import {
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
+  const metadataBlock = enforceSensitiveSameOriginGet(request);
+  if (metadataBlock) return metadataBlock;
   const { apiUrl } = resolveApiConfig();
   const purpose = request.nextUrl.searchParams.get("purpose") ?? "conversation";
   const sessionId = request.nextUrl.searchParams.get("session_id");
