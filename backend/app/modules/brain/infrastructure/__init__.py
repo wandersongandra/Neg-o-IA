@@ -15,17 +15,17 @@ import time
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-from app.modules.brain.domain import (
-    ModelRequest,
-    ModelResponse,
-)
-from app.modules.configuration.settings import Settings, get_settings
 from app.infrastructure.provider_http import (
     ProviderInvalidResponseError,
     ProviderResponseTooLargeError,
     new_provider_http_client,
     post_json_limited,
 )
+from app.modules.brain.domain import (
+    ModelRequest,
+    ModelResponse,
+)
+from app.modules.configuration.settings import Settings, get_settings
 
 _LOGGER = logging.getLogger("app.modules.brain.infrastructure")
 
