@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveApiConfig } from "@/lib/env";
 import { getSessionToken } from "@/lib/session-cookie";
-import { trustedClientIpHeaders } from "@/lib/request-security";
+import {
+  enforceSensitiveSameOriginGet,
+  trustedClientIpHeaders,
+} from "@/lib/request-security";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
+  const metadataBlock = enforceSensitiveSameOriginGet(request);
+  if (metadataBlock) return metadataBlock;
   const { apiUrl } = resolveApiConfig();
   const token = getSessionToken(request.cookies);
   if (!token) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
@@ -18,11 +23,14 @@ export async function GET(request: NextRequest) {
       cache: "no-store",
     });
     const payload = await upstream.json();
-    return NextResponse.json(payload, { status: upstream.status });
+    return NextResponse.json(payload, {
+      status: upstream.status,
+      headers: { "Cache-Control": "no-store, max-age=0" },
+    });
   } catch {
     return NextResponse.json(
       { error: "identity_dependency_unavailable" },
-      { status: 503 },
+      { status: 503, headers: { "Cache-Control": "no-store, max-age=0" } },
     );
   }
 }
