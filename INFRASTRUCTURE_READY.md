@@ -12,6 +12,16 @@ token, senha ou URL privada deve ser versionada aqui.
 | NVIDIA | `NEGAO_NVIDIA_API_KEY`/`SOPHIE_NVIDIA_API_KEY` | chamada autorizada, sem registrar a chave |
 | Frontend | `NEGAO_API_URL`/`SOPHIE_API_URL` | login BFF e build |
 
+## Produção: segredos de runtime
+
+O `infra/docker/compose/prod.yml` usa Docker Secrets para credenciais obrigatórias.
+Os valores reais ficam em arquivos ignorados sob `secrets/` (ou caminhos
+sobrescritos pelas variáveis `SOPHIE_*_FILE`) e são montados como
+`/run/secrets/*`. O backend e o BFF leem esses arquivos via suporte `*_FILE`;
+as credenciais não devem ser passadas como variáveis de ambiente do processo.
+
+Consulte `secrets/README.md` para a lista de arquivos e requisitos de permissão.
+
 ## Inicialização local
 
 1. Copie `.env.example` para um arquivo ignorado.
