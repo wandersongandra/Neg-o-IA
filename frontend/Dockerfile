@@ -20,7 +20,11 @@ ENV NODE_ENV=production
 COPY --from=builder --chown=node:node /app/.next/standalone ./
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 COPY --from=builder --chown=node:node /app/public ./public
-RUN mkdir -p .next/cache && chown -R node:node /app
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+    /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack \
+    /usr/local/bin/yarn /usr/local/bin/yarnpkg \
+    && mkdir -p .next/cache \
+    && chown -R node:node /app
 USER node
 EXPOSE 3000
 CMD ["node", "server.js"]

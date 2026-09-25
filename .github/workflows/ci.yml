@@ -127,6 +127,59 @@ jobs:
       - name: Dependency audit (produção)
         run: npm audit --omit=dev --audit-level=high
 
+      - name: Assert strict production CSP
+        run: |
+          grep -Fq "strict-dynamic" middleware.ts
+          grep -Fq "nonce-" middleware.ts
+          ! grep -E "script-src[^\n]*unsafe-inline" middleware.ts
+          ! grep -q "Content-Security-Policy" next.config.ts
+
+  container_scan:
+    name: Container images (Trivy)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Build production images
+        run: |
+          docker build -t sophie-backend:ci backend
+          docker build -t sophie-frontend:ci frontend
+          docker build -t sophie-nginx:ci infra/nginx
+
+      - name: Scan backend image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          image-ref: sophie-backend:ci
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+
+      - name: Scan frontend image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          image-ref: sophie-frontend:ci
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
+
+      - name: Scan nginx image
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          image-ref: sophie-nginx:ci
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: HIGH,CRITICAL
 
   sbom:
     name: SBOM (CycloneDX)
