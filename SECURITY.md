@@ -88,6 +88,8 @@ O Compose de produção separa a rede de dados da rede da aplicação:
 
 O Nginx aplica TLS 1.2/1.3, suites TLS 1.2 modernas, HSTS, limites de conexão/requisição, timeouts contra conexões lentas, proteção de dotfiles e headers de isolamento do navegador.
 
+A aplicação web usa CSP com nonce aleatório por requisição nas páginas renderizadas. Em produção, `script-src` não permite `unsafe-inline`; scripts do framework precisam do nonce emitido pelo middleware. A política estática do Nginx não sobrescreve essa CSP dinâmica.
+
 ## Dependências e supply chain
 
 O CI inclui:
@@ -106,7 +108,10 @@ O CI inclui:
 - validação do Nginx;
 - validação da topologia Docker Compose de produção;
 - geração de SBOM CycloneDX 1.6 reproduzível para backend Python e frontend npm;
-- validação estrutural dos SBOMs e publicação dos artefatos com `SHA256SUMS`.
+- validação estrutural dos SBOMs e publicação dos artefatos com `SHA256SUMS`;
+- build das imagens finais de backend, frontend e Nginx no CI;
+- varredura dessas imagens com Trivy para vulnerabilidades HIGH/CRITICAL corrigíveis em pacotes de SO e bibliotecas;
+- gate que impede regressão da CSP de scripts para `unsafe-inline`.
 
 Actions externas do GitHub devem permanecer pinadas por commit SHA. Checkouts do CI não persistem credenciais Git após o checkout. Imagens base e serviços de produção usam tag legível acompanhada de digest `sha256` imutável; o CI falha se os pins forem removidos.
 
