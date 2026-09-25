@@ -183,9 +183,8 @@ class Settings(BaseSettings):
                 "NEGAO_AUTH_SESSION_TOUCH_INTERVAL_SECONDS deve ficar entre 10 segundos "
                 "e o idle timeout"
             )
-        if (
-            len(self.internal_proxy_key) < _MIN_PRODUCTION_SECRET_LENGTH
-            or _looks_like_placeholder(self.internal_proxy_key)
+        if len(self.internal_proxy_key) < _MIN_PRODUCTION_SECRET_LENGTH or _looks_like_placeholder(
+            self.internal_proxy_key
         ):
             problems.append(
                 "NEGAO_INTERNAL_PROXY_KEY deve ser definida com um valor forte "
