@@ -200,25 +200,34 @@ jobs:
 
       - name: Validate production Compose topology
         env:
-          POSTGRES_PASSWORD: ci-postgres-password
-          REDIS_PASSWORD: ci-redis-password
-          SOPHIE_INTERNAL_PROXY_KEY: ci-internal-proxy-key-0123456789abcdef
           SOPHIE_PUBLIC_ORIGIN: https://sophie.example.test
           SOPHIE_HOST: sophie.example.test
           TLS_CERT_PATH: /tmp/sophie-tls/fullchain.pem
           TLS_KEY_PATH: /tmp/sophie-tls/privkey.pem
         run: |
           touch .env
+          install -d -m 700 secrets
+          printf '%s\n' 'ci-postgres-password-strong' > secrets/postgres_password
+          printf '%s\n' 'ci-redis-password-strong' > secrets/redis_password
+          printf '%s\n' 'postgresql+asyncpg://negao:ci-postgres-password-strong@db:5432/negao' > secrets/database_url
+          printf '%s\n' 'redis://:ci-redis-password-strong@redis:6379/0' > secrets/redis_url
+          printf '%s\n' 'ci-app-secret-key-0123456789abcdef0123456789' > secrets/app_secret_key
+          printf '%s\n' 'ci-internal-proxy-key-0123456789abcdef012345' > secrets/internal_proxy_key
+          chmod 600 secrets/*
           docker compose -f infra/docker/compose/prod.yml config > /tmp/sophie-prod-compose.yml
           test "$(grep -c 'read_only: true' /tmp/sophie-prod-compose.yml)" -ge 3
           grep -q '/app/.next/cache' /tmp/sophie-prod-compose.yml
           grep -q '/var/cache/nginx' /tmp/sophie-prod-compose.yml
           grep -q '/etc/nginx/conf.d' /tmp/sophie-prod-compose.yml
-          grep -q 'SOPHIE_INTERNAL_PROXY_KEY' /tmp/sophie-prod-compose.yml
+          grep -q '/run/secrets/internal_proxy_key' /tmp/sophie-prod-compose.yml
+          grep -q '/run/secrets/app_secret_key' /tmp/sophie-prod-compose.yml
+          grep -q '/run/secrets/database_url' /tmp/sophie-prod-compose.yml
+          grep -q '/run/secrets/redis_url' /tmp/sophie-prod-compose.yml
           grep -q 'SOPHIE_PUBLIC_ORIGIN' /tmp/sophie-prod-compose.yml
+          ! grep -q 'SOPHIE_INTERNAL_PROXY_KEY:' /tmp/sophie-prod-compose.yml
           grep -q 'SOPHIE_HOST' /tmp/sophie-prod-compose.yml
           grep -q '/tmp' /tmp/sophie-prod-compose.yml
-          rm -f .env
+          rm -rf .env secrets
 
       - name: Verify immutable image pins
         run: |
