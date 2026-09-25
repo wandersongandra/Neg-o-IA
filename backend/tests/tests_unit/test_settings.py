@@ -286,3 +286,33 @@ def test_external_ai_accepts_explicit_allowlisted_provider() -> None:
     settings = Settings.model_validate(kwargs)
 
     assert settings.nvidia_base_url == "https://provider.example.net/v1"
+
+
+def test_external_ai_rejects_localhost_allowlist() -> None:
+    kwargs = _strong_production_kwargs()
+    kwargs["external_ai_enabled"] = True
+    kwargs["nvidia_api_key"] = "n" * 40
+    kwargs["nvidia_base_url"] = "https://localhost/v1"
+    kwargs["external_ai_allowed_hosts"] = ["localhost"]
+
+    with pytest.raises(ValidationError, match="hostnames DNS públicos"):
+        Settings.model_validate(kwargs)
+
+
+def test_external_ai_rejects_ip_literal_allowlist() -> None:
+    kwargs = _strong_production_kwargs()
+    kwargs["external_ai_enabled"] = True
+    kwargs["nvidia_api_key"] = "n" * 40
+    kwargs["nvidia_base_url"] = "https://127.0.0.1/v1"
+    kwargs["external_ai_allowed_hosts"] = ["127.0.0.1"]
+
+    with pytest.raises(ValidationError, match="hostnames DNS públicos"):
+        Settings.model_validate(kwargs)
+
+
+def test_provider_response_budget_has_safe_bounds() -> None:
+    kwargs = _strong_production_kwargs()
+    kwargs["provider_max_response_bytes"] = 1024
+
+    with pytest.raises(ValidationError, match="PROVIDER_MAX_RESPONSE_BYTES"):
+        Settings.model_validate(kwargs)
