@@ -5,10 +5,12 @@ services:
     image: pgvector/pgvector:0.8.6-pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-negao}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
       POSTGRES_DB: ${POSTGRES_DB:-negao}
       PGDATA: ${PGDATA:-/var/lib/postgresql/data/pgdata}
       TZ: ${TZ:-America/Sao_Paulo}
+    secrets:
+      - postgres_password
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -32,16 +34,16 @@ services:
 
   redis:
     image: redis:7.4.11-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
-    environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD:?defina REDIS_PASSWORD}
     command:
       - sh
       - -ec
-      - exec redis-server --appendonly yes --requirepass "$REDIS_PASSWORD"
+      - exec redis-server --appendonly yes --requirepass "$(cat /run/secrets/redis_password)"
+    secrets:
+      - redis_password
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a \"$REDIS_PASSWORD\" ping | grep -q PONG"]
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a \"$(cat /run/secrets/redis_password)\" ping | grep -q PONG"]
       interval: 10s
       timeout: 3s
       retries: 10
@@ -61,12 +63,19 @@ services:
   backend:
     build:
       context: ../../../backend
-    env_file:
-      - ../../../.env
     environment:
       NEGAO_ENV: production
-      NEGAO_REDIS_URL: redis://:${REDIS_PASSWORD:?defina REDIS_PASSWORD}@redis:6379/0
-      SOPHIE_INTERNAL_PROXY_KEY: ${SOPHIE_INTERNAL_PROXY_KEY:?defina SOPHIE_INTERNAL_PROXY_KEY}
+      NEGAO_DEBUG: "false"
+      NEGAO_CORS_ORIGINS: ${SOPHIE_PUBLIC_ORIGIN:?defina SOPHIE_PUBLIC_ORIGIN}
+      SOPHIE_DATABASE_URL_FILE: /run/secrets/database_url
+      SOPHIE_REDIS_URL_FILE: /run/secrets/redis_url
+      SOPHIE_SECRET_KEY_FILE: /run/secrets/app_secret_key
+      SOPHIE_INTERNAL_PROXY_KEY_FILE: /run/secrets/internal_proxy_key
+    secrets:
+      - database_url
+      - redis_url
+      - app_secret_key
+      - internal_proxy_key
     depends_on:
       db:
         condition: service_healthy
@@ -97,8 +106,10 @@ services:
     restart: unless-stopped
     environment:
       NEGAO_API_URL: http://backend:8000
-      SOPHIE_INTERNAL_PROXY_KEY: ${SOPHIE_INTERNAL_PROXY_KEY:?defina SOPHIE_INTERNAL_PROXY_KEY}
+      SOPHIE_INTERNAL_PROXY_KEY_FILE: /run/secrets/internal_proxy_key
       SOPHIE_PUBLIC_ORIGIN: ${SOPHIE_PUBLIC_ORIGIN:?defina SOPHIE_PUBLIC_ORIGIN}
+    secrets:
+      - internal_proxy_key
     depends_on:
       - backend
     security_opt:
@@ -163,3 +174,17 @@ networks:
   app:
   data:
     internal: true
+
+secrets:
+  postgres_password:
+    file: ${SOPHIE_POSTGRES_PASSWORD_FILE:-../../../secrets/postgres_password}
+  redis_password:
+    file: ${SOPHIE_REDIS_PASSWORD_FILE:-../../../secrets/redis_password}
+  database_url:
+    file: ${SOPHIE_DATABASE_URL_FILE:-../../../secrets/database_url}
+  redis_url:
+    file: ${SOPHIE_REDIS_URL_FILE:-../../../secrets/redis_url}
+  app_secret_key:
+    file: ${SOPHIE_SECRET_KEY_FILE:-../../../secrets/app_secret_key}
+  internal_proxy_key:
+    file: ${SOPHIE_INTERNAL_PROXY_KEY_FILE:-../../../secrets/internal_proxy_key}
