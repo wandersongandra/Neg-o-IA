@@ -146,6 +146,10 @@ jobs:
         run: |
           touch .env
           docker compose -f infra/docker/compose/prod.yml config > /tmp/sophie-prod-compose.yml
+          test "$(grep -c 'read_only: true' /tmp/sophie-prod-compose.yml)" -ge 3
+          grep -q '/app/.next/cache' /tmp/sophie-prod-compose.yml
+          grep -q '/var/cache/nginx' /tmp/sophie-prod-compose.yml
+          grep -q '/tmp' /tmp/sophie-prod-compose.yml
           rm -f .env
 
       - name: Build Nginx image
