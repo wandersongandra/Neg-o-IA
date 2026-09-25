@@ -45,6 +45,8 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://negao:negao@localhost:5432/negao"
     redis_url: str = "redis://localhost:6379/0"
     secret_key: str = "negao-dev-secret-key"
+    audit_integrity_key: str = ""
+    audit_integrity_previous_keys: list[str] = []
     cors_origins: list[str] = ["*"]
     otel_exporter_otlp_endpoint: str = "http://localhost:4317"
     metrics_enabled: bool = True
@@ -52,6 +54,9 @@ class Settings(BaseSettings):
     rate_limit_burst: int = 5
     ws_max_connections: int = 100
     auth_session_ttl_seconds: int = 8 * 60 * 60
+    auth_session_idle_seconds: int = 30 * 60
+    auth_max_active_sessions: int = 5
+    trusted_hosts: list[str] = []
     registration_enabled: bool = False
 
     external_ai_enabled: bool = False
@@ -99,7 +104,13 @@ class Settings(BaseSettings):
     tool_circuit_failures: int = 3
     tool_circuit_cooldown_seconds: float = 30.0
 
-    @field_validator("cors_origins", "service_api_scopes", mode="before")
+    @field_validator(
+        "cors_origins",
+        "service_api_scopes",
+        "trusted_hosts",
+        "audit_integrity_previous_keys",
+        mode="before",
+    )
     @classmethod
     def _split_csv_list(cls, value: object) -> object:
         if isinstance(value, str):
@@ -129,6 +140,21 @@ class Settings(BaseSettings):
                 "NEGAO_SECRET_KEY deve ser definida com um valor forte "
                 f"(>= {_MIN_PRODUCTION_SECRET_LENGTH} caracteres) em produção"
             )
+        if self.audit_integrity_key and (
+            len(self.audit_integrity_key) < _MIN_PRODUCTION_SECRET_LENGTH
+            or _looks_like_placeholder(self.audit_integrity_key)
+        ):
+            problems.append(
+                "NEGAO_AUDIT_INTEGRITY_KEY deve ter pelo menos "
+                f"{_MIN_PRODUCTION_SECRET_LENGTH} caracteres quando definida"
+            )
+        invalid_previous_audit_keys = [
+            key
+            for key in self.audit_integrity_previous_keys
+            if len(key) < _MIN_PRODUCTION_SECRET_LENGTH or _looks_like_placeholder(key)
+        ]
+        if invalid_previous_audit_keys:
+            problems.append("NEGAO_AUDIT_INTEGRITY_PREVIOUS_KEYS contém chave inválida")
         if self.cors_origins == ["*"]:
             problems.append("NEGAO_CORS_ORIGINS não pode ser '*' em produção")
         invalid_origins = [
@@ -140,6 +166,16 @@ class Settings(BaseSettings):
             problems.append("NEGAO_CORS_ORIGINS deve conter apenas origens HTTPS válidas")
         if self.registration_enabled:
             problems.append("NEGAO_REGISTRATION_ENABLED deve ser false em produção")
+        if self.auth_session_idle_seconds <= 0:
+            problems.append("NEGAO_AUTH_SESSION_IDLE_SECONDS deve ser maior que zero")
+        if self.auth_session_idle_seconds > self.auth_session_ttl_seconds:
+            problems.append(
+                "NEGAO_AUTH_SESSION_IDLE_SECONDS não pode exceder NEGAO_AUTH_SESSION_TTL_SECONDS"
+            )
+        if not 1 <= self.auth_max_active_sessions <= 20:
+            problems.append("NEGAO_AUTH_MAX_ACTIVE_SESSIONS deve estar entre 1 e 20")
+        if "*" in self.trusted_hosts:
+            problems.append("NEGAO_TRUSTED_HOSTS não pode conter '*' em produção")
         if self.debug:
             problems.append("NEGAO_DEBUG deve ser false em produção")
         if not self.service_api_scopes:
@@ -189,6 +225,22 @@ class Settings(BaseSettings):
         if problems:
             raise ValueError("; ".join(problems))
         return self
+
+    def effective_audit_integrity_keys(self) -> list[str]:
+        primary = self.audit_integrity_key or self.secret_key
+        return [primary, *self.audit_integrity_previous_keys]
+
+    def effective_trusted_hosts(self) -> list[str]:
+        if self.env != "production":
+            return ["*"]
+        if self.trusted_hosts:
+            return self.trusted_hosts
+        hosts: list[str] = ["localhost", "127.0.0.1", "backend"]
+        for origin in self.cors_origins:
+            hostname = urlparse(origin).hostname
+            if hostname and hostname not in hosts:
+                hosts.append(hostname)
+        return hosts
 
 
 def _apply_legacy_env_aliases() -> None:

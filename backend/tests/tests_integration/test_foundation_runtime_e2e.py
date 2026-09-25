@@ -142,7 +142,7 @@ async def test_foundation_runtime_auth_ownership_and_revocation() -> None:
         cookie = login_a.headers["set-cookie"].lower()
         assert "sophie_session=" in cookie
         assert "httponly" in cookie
-        assert "samesite=lax" in cookie
+        assert "samesite=strict" in cookie
         token_a = login_a.json()["access_token"]
         token_b = login_b.json()["access_token"]
 

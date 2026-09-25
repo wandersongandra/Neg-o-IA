@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveApiConfig, resolveWsUrl } from "@/lib/env";
+import { getSessionToken } from "@/lib/session-cookie";
 import {
   isSafeDynamicSegment,
   resolvePublicWsBase,
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
   if (sessionId && !isSafeDynamicSegment(sessionId)) {
     return NextResponse.json({ error: "invalid_session_id" }, { status: 400 });
   }
-  const sessionToken = request.cookies.get("sophie_session")?.value;
+  const sessionToken = getSessionToken(request.cookies);
   if (!sessionToken) {
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
   }

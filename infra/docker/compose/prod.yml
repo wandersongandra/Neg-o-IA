@@ -18,11 +18,17 @@ services:
       retries: 10
       start_period: 15s
     restart: unless-stopped
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - data
     deploy:
       resources:
         limits:
           memory: 1g
           cpus: "1.0"
+          pids: 256
 
   redis:
     image: redis:7.4.11-alpine
@@ -40,11 +46,17 @@ services:
       timeout: 3s
       retries: 10
     restart: unless-stopped
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - data
     deploy:
       resources:
         limits:
           memory: 256m
           cpus: "0.5"
+          pids: 128
 
   backend:
     build:
@@ -64,6 +76,10 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    init: true
+    networks:
+      - app
+      - data
     deploy:
       resources:
         limits:
@@ -82,11 +98,15 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    init: true
+    networks:
+      - app
     deploy:
       resources:
         limits:
           memory: 512m
           cpus: "0.5"
+          pids: 128
 
   nginx:
     build:
@@ -101,12 +121,23 @@ services:
       - backend
       - frontend
     restart: unless-stopped
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - app
     deploy:
       resources:
         limits:
           memory: 128m
           cpus: "0.25"
+          pids: 128
 
 volumes:
   pgdata:
   redis-data:
+
+networks:
+  app:
+  data:
+    internal: true

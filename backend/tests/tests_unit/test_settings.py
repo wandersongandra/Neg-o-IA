@@ -135,3 +135,51 @@ def test_producao_aceita_configuracao_forte() -> None:
         redis_url="redis://:strong-redis-password@redis:6379/0",
     )
     assert settings.env == "production"
+
+
+def test_producao_rejeita_idle_timeout_maior_que_ttl() -> None:
+    kwargs = _strong_production_kwargs()
+    kwargs["auth_session_ttl_seconds"] = 600
+    kwargs["auth_session_idle_seconds"] = 601
+    with pytest.raises(ValidationError, match="AUTH_SESSION_IDLE_SECONDS"):
+        Settings.model_validate(kwargs)
+
+
+def test_producao_rejeita_limite_de_sessoes_invalido() -> None:
+    kwargs = _strong_production_kwargs()
+    kwargs["auth_max_active_sessions"] = 0
+    with pytest.raises(ValidationError, match="AUTH_MAX_ACTIVE_SESSIONS"):
+        Settings.model_validate(kwargs)
+
+
+def test_producao_rejeita_trusted_hosts_wildcard() -> None:
+    kwargs = _strong_production_kwargs()
+    kwargs["trusted_hosts"] = ["*"]
+    with pytest.raises(ValidationError, match="TRUSTED_HOSTS"):
+        Settings.model_validate(kwargs)
+
+
+def test_trusted_hosts_derivados_de_cors_em_producao() -> None:
+    settings = Settings.model_validate(_strong_production_kwargs())
+    assert settings.effective_trusted_hosts() == [
+        "localhost",
+        "127.0.0.1",
+        "backend",
+        "sophie.example.com",
+    ]
+
+
+def test_producao_rejeita_audit_integrity_key_fraca() -> None:
+    kwargs = _strong_production_kwargs()
+    kwargs["audit_integrity_key"] = "fraca"
+    with pytest.raises(ValidationError, match="AUDIT_INTEGRITY_KEY"):
+        Settings.model_validate(kwargs)
+
+
+def test_audit_integrity_keyring_preserva_chaves_anteriores() -> None:
+    settings = Settings(
+        secret_key="s" * 40,
+        audit_integrity_key="n" * 40,
+        audit_integrity_previous_keys=["o" * 40],
+    )
+    assert settings.effective_audit_integrity_keys() == ["n" * 40, "o" * 40]

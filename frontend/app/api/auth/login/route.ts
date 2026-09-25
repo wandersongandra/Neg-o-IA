@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { resolveApiConfig } from "@/lib/env";
+import { sessionCookieName } from "@/lib/session-cookie";
 import {
   enforceSameOriginMutation,
   trustedClientIpHeaders,
@@ -39,10 +40,10 @@ export async function POST(request: NextRequest) {
       { status: 200 },
     );
     if (typeof payload.access_token === "string") {
-      response.cookies.set("sophie_session", payload.access_token, {
+      response.cookies.set(sessionCookieName(), payload.access_token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        sameSite: "strict",
         maxAge: typeof payload.expires_in === "number" ? payload.expires_in : 28_800,
         path: "/",
       });

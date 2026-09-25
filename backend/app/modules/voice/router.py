@@ -87,7 +87,10 @@ class _WsVoiceSession:
 def _get_voice_ws_limiter() -> RateLimiter:
     global _voice_ws_limiter
     if _voice_ws_limiter is None:
-        _voice_ws_limiter = RateLimiter(limit=get_settings().rate_limit_burst)
+        _voice_ws_limiter = RateLimiter(
+            limit=get_settings().rate_limit_burst,
+            fail_closed=get_settings().env == "production",
+        )
     return _voice_ws_limiter
 
 

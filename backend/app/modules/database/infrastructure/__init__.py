@@ -168,6 +168,7 @@ class AuditEventORM(Base):
     payload: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, server_default=text("'{}'::jsonb")
     )
+    integrity_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
 class MemoryPolicyORM(Base):

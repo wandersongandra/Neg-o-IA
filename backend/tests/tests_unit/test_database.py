@@ -8,12 +8,14 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
+from app.modules.configuration.settings import Settings
 from app.modules.database.application import (
     create_api_key,
     generate_api_key,
     hash_api_key,
     register_audit_event,
     verify_api_key,
+    verify_audit_event_integrity,
 )
 from app.modules.database.infrastructure import ApiKeyORM
 from app.modules.events.envelope import build_envelope
@@ -93,3 +95,34 @@ async def test_register_audit_event_maps_envelope(fake_session: AsyncMock) -> No
     assert record.payload == {"text": "oi"}
     added = fake_session.add.call_args.args[0]
     assert added.event_type == envelope.type
+    assert isinstance(added.integrity_hash, str)
+    assert len(added.integrity_hash) == 64
+    assert verify_audit_event_integrity(added) is True
+
+    added.payload = {"text": "conteúdo adulterado"}
+    assert verify_audit_event_integrity(added) is False
+
+
+@pytest.mark.asyncio
+async def test_audit_integrity_accepts_previous_key_during_rotation(
+    fake_session: AsyncMock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    old_key = "a" * 40
+    new_key = "b" * 40
+    monkeypatch.setattr(
+        "app.modules.database.application.get_settings",
+        lambda: Settings(audit_integrity_key=old_key),
+    )
+    envelope = build_envelope("security.rotation.test", "tests", {"ok": True})
+    await register_audit_event(fake_session, envelope)
+    added = fake_session.add.call_args.args[0]
+
+    monkeypatch.setattr(
+        "app.modules.database.application.get_settings",
+        lambda: Settings(
+            audit_integrity_key=new_key,
+            audit_integrity_previous_keys=[old_key],
+        ),
+    )
+    assert verify_audit_event_integrity(added) is True

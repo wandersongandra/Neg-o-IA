@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app import __version__
 from app.core.context import get_request_context, request_context_middleware
@@ -185,7 +186,10 @@ async def rate_limit_middleware(request: Request, call_next: RequestResponseEndp
     global _rate_limiter
     if request.url.path not in _RATE_LIMIT_WHITELIST:
         if _rate_limiter is None:
-            _rate_limiter = RateLimiter(limit=get_settings().rate_limit_per_minute)
+            _rate_limiter = RateLimiter(
+                limit=get_settings().rate_limit_per_minute,
+                fail_closed=get_settings().env == "production",
+            )
         key = _rate_limit_key(request)
         allowed, limit, remaining, retry_after = await _rate_limiter.allow(key)
         if not allowed:
@@ -203,6 +207,11 @@ async def rate_limit_middleware(request: Request, call_next: RequestResponseEndp
 
 
 def _add_middlewares(app: FastAPI, settings: Settings) -> None:
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=settings.effective_trusted_hosts(),
+        www_redirect=False,
+    )
     app.add_middleware(BaseHTTPMiddleware, dispatch=rate_limit_middleware)
     app.add_middleware(
         CORSMiddleware,
