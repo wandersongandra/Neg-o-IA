@@ -18,6 +18,7 @@ def test_producao_aceita_bootstrap_desabilitado_sem_service_key() -> None:
     settings = Settings(
         env="production",
         secret_key="s" * 32,
+        internal_proxy_key="p" * 32,
         cors_origins=["https://sophie.example.com"],
         database_url="postgresql+asyncpg://sophie:strong-db-password@db:5432/sophie",
         redis_url="redis://:strong-redis-password@redis:6379/0",
@@ -90,6 +91,7 @@ def _strong_production_kwargs() -> dict[str, object]:
         "service_api_key": "",
         "service_bootstrap_enabled": False,
         "secret_key": "s" * 32,
+        "internal_proxy_key": "p" * 32,
         "cors_origins": ["https://sophie.example.com"],
         "database_url": "postgresql+asyncpg://sophie:database-password-strong@db:5432/sophie",
         "redis_url": "redis://:redis-password-strong@redis:6379/0",
@@ -147,6 +149,7 @@ def test_producao_aceita_configuracao_forte() -> None:
         service_api_key="",
         service_bootstrap_enabled=False,
         secret_key="s" * 32,
+        internal_proxy_key="p" * 32,
         cors_origins=["https://sophie.example.com"],
         database_url="postgresql+asyncpg://sophie:strong-db-password@db:5432/sophie",
         redis_url="redis://:strong-redis-password@redis:6379/0",
@@ -200,3 +203,25 @@ def test_audit_integrity_keyring_preserva_chaves_anteriores() -> None:
         audit_integrity_previous_keys=["o" * 40],
     )
     assert settings.effective_audit_integrity_keys() == ["n" * 40, "o" * 40]
+
+
+def test_producao_rejeita_internal_proxy_key_fraca() -> None:
+    kwargs = _strong_production_kwargs()
+    kwargs["internal_proxy_key"] = "fraca"
+    with pytest.raises(ValidationError, match="INTERNAL_PROXY_KEY"):
+        Settings.model_validate(kwargs)
+
+
+def test_producao_rejeita_reuso_da_internal_proxy_key() -> None:
+    kwargs = _strong_production_kwargs()
+    kwargs["internal_proxy_key"] = kwargs["secret_key"]
+    with pytest.raises(ValidationError, match="valores distintos"):
+        Settings.model_validate(kwargs)
+
+
+def test_producao_rejeita_touch_interval_maior_que_idle() -> None:
+    kwargs = _strong_production_kwargs()
+    kwargs["auth_session_idle_seconds"] = 120
+    kwargs["auth_session_touch_interval_seconds"] = 121
+    with pytest.raises(ValidationError, match="AUTH_SESSION_TOUCH_INTERVAL_SECONDS"):
+        Settings.model_validate(kwargs)

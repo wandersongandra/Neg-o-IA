@@ -20,7 +20,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.core.context import get_request_context
 from app.infrastructure.db import create_engine, create_session_factory
-from app.modules.api.rate_limit import RateLimiter
+from app.modules.api.rate_limit import RateLimiter, trusted_client_ip
 from app.modules.configuration.settings import get_settings
 from app.modules.database.application import PERSISTED_API_KEY_PREFIX, verify_api_key
 from app.modules.security.application.identity import (
@@ -66,7 +66,7 @@ def _get_login_limiter() -> RateLimiter:
 async def _enforce_login_rate_limit(request: Request, username: str) -> None:
     """Aplica buckets independentes por IP e por conta para reduzir brute force."""
     limiter = _get_login_limiter()
-    client_ip = request.client.host if request.client else "unknown"
+    client_ip = trusted_client_ip(request)
     normalized = username.strip().lower()
     user_bucket = hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:20]
     retry_after = 0

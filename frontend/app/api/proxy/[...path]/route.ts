@@ -3,6 +3,7 @@ import { resolveApiConfig } from "@/lib/env";
 import { getSessionToken } from "@/lib/session-cookie";
 import {
   enforceSameOriginMutation,
+  enforceSensitiveSameOriginGet,
   isSafeDynamicSegment,
   trustedClientIpHeaders,
 } from "@/lib/request-security";
@@ -105,9 +106,11 @@ function buildTarget(path: string[], search: string): string {
 }
 
 async function proxy(req: NextRequest, path: string[]): Promise<Response> {
-  const mutationBlock =
-    req.method === "GET" ? null : enforceSameOriginMutation(req);
-  if (mutationBlock) return mutationBlock;
+  const requestBlock =
+    req.method === "GET"
+      ? enforceSensitiveSameOriginGet(req)
+      : enforceSameOriginMutation(req);
+  if (requestBlock) return requestBlock;
 
   const joined = path.join("/");
   if (!matchAllowlist(joined, req.method)) {

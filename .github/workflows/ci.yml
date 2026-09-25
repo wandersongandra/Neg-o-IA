@@ -141,6 +141,9 @@ jobs:
         env:
           POSTGRES_PASSWORD: ci-postgres-password
           REDIS_PASSWORD: ci-redis-password
+          SOPHIE_INTERNAL_PROXY_KEY: ci-internal-proxy-key-0123456789abcdef
+          SOPHIE_PUBLIC_ORIGIN: https://sophie.example.test
+          SOPHIE_HOST: sophie.example.test
           TLS_CERT_PATH: /tmp/sophie-tls/fullchain.pem
           TLS_KEY_PATH: /tmp/sophie-tls/privkey.pem
         run: |
@@ -149,6 +152,10 @@ jobs:
           test "$(grep -c 'read_only: true' /tmp/sophie-prod-compose.yml)" -ge 3
           grep -q '/app/.next/cache' /tmp/sophie-prod-compose.yml
           grep -q '/var/cache/nginx' /tmp/sophie-prod-compose.yml
+          grep -q '/etc/nginx/conf.d' /tmp/sophie-prod-compose.yml
+          grep -q 'SOPHIE_INTERNAL_PROXY_KEY' /tmp/sophie-prod-compose.yml
+          grep -q 'SOPHIE_PUBLIC_ORIGIN' /tmp/sophie-prod-compose.yml
+          grep -q 'SOPHIE_HOST' /tmp/sophie-prod-compose.yml
           grep -q '/tmp' /tmp/sophie-prod-compose.yml
           rm -f .env
 
@@ -156,22 +163,13 @@ jobs:
         run: docker build -t sophie-nginx-ci infra/nginx
 
       - name: Generate ephemeral TLS certificate
-        run: |
-          mkdir -p /tmp/sophie-tls
-          openssl req -x509 -newkey rsa:2048 -nodes -days 1 \
-            -subj "/CN=localhost" \
-            -keyout /tmp/sophie-tls/privkey.pem \
-            -out /tmp/sophie-tls/fullchain.pem
+        run: openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj "/CN=localhost" -keyout /tmp/privkey.pem -out /tmp/fullchain.pem
 
       - name: Validate Nginx configuration
-        run: |
-          docker run --rm \
-            --add-host backend:127.0.0.1 \
-            --add-host frontend:127.0.0.1 \
-            -v /tmp/sophie-tls/fullchain.pem:/etc/nginx/tls/fullchain.pem:ro \
-            -v /tmp/sophie-tls/privkey.pem:/etc/nginx/tls/privkey.pem:ro \
-            sophie-nginx-ci nginx -t
+        run: docker run --rm -e SOPHIE_HOST=sophie.example.test --add-host backend:127.0.0.1 --add-host frontend:127.0.0.1 -v /tmp/fullchain.pem:/etc/nginx/tls/fullchain.pem:ro -v /tmp/privkey.pem:/etc/nginx/tls/privkey.pem:ro sophie-nginx-ci nginx -t
 
+      - name: Verify Nginx host allowlist rendering
+        run: docker run --rm -e SOPHIE_HOST=sophie.example.test --add-host backend:127.0.0.1 --add-host frontend:127.0.0.1 -v /tmp/fullchain.pem:/etc/nginx/tls/fullchain.pem:ro -v /tmp/privkey.pem:/etc/nginx/tls/privkey.pem:ro sophie-nginx-ci nginx -T 2>&1 | grep -Fq 'server_name sophie.example.test;'
   secret_scan:
     name: Gitleaks Secret Scan
     runs-on: ubuntu-latest

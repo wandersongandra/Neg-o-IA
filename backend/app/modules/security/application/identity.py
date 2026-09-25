@@ -195,6 +195,18 @@ async def persist_session(
     device_id: str | None = None,
 ) -> datetime:
     now = datetime.now(UTC)
+    if device_id:
+        same_device = await session.execute(
+            select(AuthSessionORM).where(
+                AuthSessionORM.user_id == identity.user_id,
+                AuthSessionORM.device_id == device_id,
+                AuthSessionORM.revoked_at.is_(None),
+                AuthSessionORM.expires_at > now,
+            )
+        )
+        for existing in same_device.scalars().all():
+            existing.revoked_at = now
+
     expires_at = now + timedelta(seconds=settings.auth_session_ttl_seconds)
     auth_session = AuthSessionORM(
         user_id=identity.user_id,
@@ -248,7 +260,10 @@ async def authenticate_session(
     if row is None:
         return None
     auth_session, user = row
-    auth_session.last_seen_at = now
+    touch_deadline = now - timedelta(seconds=settings.auth_session_touch_interval_seconds)
+    if auth_session.last_seen_at < touch_deadline:
+        auth_session.last_seen_at = now
+        await session.flush()
     return (
         IdentityRecord(
             str(user.id),
@@ -276,19 +291,25 @@ async def validate_active_session(
     now = datetime.now(UTC)
     idle_cutoff = now - timedelta(seconds=settings.auth_session_idle_seconds)
     result = await session.execute(
-        select(AuthSessionORM).where(
+        select(AuthSessionORM, UserORM)
+        .join(UserORM, UserORM.id == AuthSessionORM.user_id)
+        .where(
             AuthSessionORM.id == session_uuid,
             AuthSessionORM.user_id == user_uuid,
             AuthSessionORM.revoked_at.is_(None),
             AuthSessionORM.expires_at > now,
             AuthSessionORM.last_seen_at > idle_cutoff,
+            UserORM.status == "active",
         )
     )
-    auth_session = result.scalar_one_or_none()
-    if auth_session is None:
+    row = result.first()
+    if row is None:
         return False
-    auth_session.last_seen_at = now
-    await session.flush()
+    auth_session, _user = row
+    touch_deadline = now - timedelta(seconds=settings.auth_session_touch_interval_seconds)
+    if auth_session.last_seen_at < touch_deadline:
+        auth_session.last_seen_at = now
+        await session.flush()
     return True
 
 

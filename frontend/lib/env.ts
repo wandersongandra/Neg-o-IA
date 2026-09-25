@@ -8,11 +8,24 @@ function resolveEnv(newName: string, legacyName: string, fallback: string): stri
   return process.env[newName] ?? process.env[legacyName] ?? fallback;
 }
 
-export function resolveApiConfig(): { apiUrl: string; serviceApiKey: string } {
+export function resolveApiConfig(): {
+  apiUrl: string;
+  serviceApiKey: string;
+  internalProxyKey: string;
+} {
   return {
     apiUrl: resolveEnv("SOPHIE_API_URL", "NEGAO_API_URL", "http://localhost:8000"),
     serviceApiKey: resolveEnv("SOPHIE_SERVICE_API_KEY", "NEGAO_SERVICE_API_KEY", ""),
+    internalProxyKey: resolveEnv(
+      "SOPHIE_INTERNAL_PROXY_KEY",
+      "NEGAO_INTERNAL_PROXY_KEY",
+      "",
+    ),
   };
+}
+
+export function resolvePublicOrigin(): string {
+  return resolveEnv("SOPHIE_PUBLIC_ORIGIN", "NEGAO_PUBLIC_ORIGIN", "");
 }
 
 export function resolveWsUrl(): string {
