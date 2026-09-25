@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: pgvector/pgvector:0.8.6-pg17
+        image: pgvector/pgvector:0.8.6-pg17@sha256:cf134a767f474095eeba57e0117be8e568e011a63f33fbf252f14c9b760f8e6f
         env:
           POSTGRES_USER: negao
           POSTGRES_PASSWORD: negao-ci-password
@@ -32,7 +32,7 @@ jobs:
           --health-timeout 5s
           --health-retries 20
       redis:
-        image: redis:7.4.11-alpine
+        image: redis:7.4.11-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
         ports:
           - 6379:6379
         options: >-
@@ -128,6 +128,67 @@ jobs:
         run: npm audit --omit=dev --audit-level=high
 
 
+  sbom:
+    name: SBOM (CycloneDX)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Setup Python
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Generate backend SBOM
+        run: |
+          mkdir -p sbom
+          python -m venv /tmp/sophie-sbom-env
+          /tmp/sophie-sbom-env/bin/pip install -e "backend"
+          pip install "cyclonedx-bom==7.4.0"
+          cyclonedx-py environment /tmp/sophie-sbom-env/bin/python --spec-version 1.6 --output-format JSON --output-reproducible --pyproject backend/pyproject.toml --output-file sbom/backend.cdx.json
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Generate frontend SBOM
+        run: |
+          npm ci --prefix frontend
+          cd frontend
+          npx --yes @cyclonedx/cyclonedx-npm@6.0.1 --omit dev --ignore-npm-errors --output-reproducible --spec-version 1.6 --output-format JSON --output-file ../sbom/frontend.cdx.json
+
+      - name: Validate SBOM payloads
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          for name in ("backend.cdx.json", "frontend.cdx.json"):
+              path = Path("sbom") / name
+              payload = json.loads(path.read_text(encoding="utf-8"))
+              assert payload.get("bomFormat") == "CycloneDX", name
+              assert payload.get("specVersion") == "1.6", name
+              assert payload.get("components"), name
+          PY
+          sha256sum sbom/*.cdx.json > sbom/SHA256SUMS
+
+      - name: Upload SBOM artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: sophie-sbom
+          path: |
+            sbom/backend.cdx.json
+            sbom/frontend.cdx.json
+            sbom/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 30
   infrastructure:
     name: Infra (Nginx config)
     runs-on: ubuntu-latest
@@ -158,6 +219,25 @@ jobs:
           grep -q 'SOPHIE_HOST' /tmp/sophie-prod-compose.yml
           grep -q '/tmp' /tmp/sophie-prod-compose.yml
           rm -f .env
+
+      - name: Verify immutable image pins
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          compose = Path("/tmp/sophie-prod-compose.yml").read_text(encoding="utf-8")
+          assert compose.count("@sha256:") >= 2
+
+          expected = {
+              "backend/Dockerfile": 1,
+              "frontend/Dockerfile": 2,
+              "infra/nginx/Dockerfile": 1,
+          }
+          for file_name, count in expected.items():
+              lines = Path(file_name).read_text(encoding="utf-8").splitlines()
+              pinned = [line for line in lines if line.startswith("FROM ") and "@sha256:" in line]
+              assert len(pinned) == count, (file_name, pinned)
+          PY
 
       - name: Build Nginx image
         run: docker build -t sophie-nginx-ci infra/nginx

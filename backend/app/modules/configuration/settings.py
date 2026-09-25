@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 import os
 from functools import lru_cache
+from pathlib import Path
+from typing import Any
 from urllib.parse import urlparse
 
 from pydantic import field_validator, model_validator
@@ -12,6 +14,18 @@ _INSECURE_DEFAULT_SECRETS = {"", "negao-dev-api-key", "negao-dev-secret-key"}
 _MIN_PRODUCTION_SECRET_LENGTH = 32
 _ALLOWED_SERVICE_SCOPES = frozenset({"database:admin", "metrics:read"})
 _PLACEHOLDER_MARKERS = ("change_me", "changeme", "troque", "substitua", "example", "exemplo")
+_SECRET_FILE_FIELDS = frozenset(
+    {
+        "service_api_key",
+        "database_url",
+        "redis_url",
+        "secret_key",
+        "audit_integrity_key",
+        "internal_proxy_key",
+        "nvidia_api_key",
+    }
+)
+_MAX_SECRET_FILE_BYTES = 64 * 1024
 
 
 def _looks_like_placeholder(value: str | None) -> bool:
@@ -65,6 +79,7 @@ class Settings(BaseSettings):
     external_ai_enabled: bool = False
     nvidia_api_key: str = ""
     nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
+    external_ai_allowed_hosts: list[str] = ["integrate.api.nvidia.com"]
     brain_chat_model: str = "deepseek-ai/deepseek-v4-flash"
     brain_fallback_model: str = "meta/llama-3.1-8b-instruct"
     brain_stt_model: str = "nvidia/parakeet-tdt-0.6b-v2"
@@ -112,6 +127,7 @@ class Settings(BaseSettings):
         "service_api_scopes",
         "trusted_hosts",
         "audit_integrity_previous_keys",
+        "external_ai_allowed_hosts",
         mode="before",
     )
     @classmethod
@@ -227,9 +243,31 @@ class Settings(BaseSettings):
                     "NEGAO_NVIDIA_API_KEY deve ser definida quando IA externa estiver ativa"
                 )
             provider = urlparse(self.nvidia_base_url)
+            provider_host = (provider.hostname or "").lower().rstrip(".")
+            allowed_hosts = {
+                host.strip().lower().rstrip(".")
+                for host in self.external_ai_allowed_hosts
+                if host.strip()
+            }
             if provider.scheme != "https":
                 problems.append(
                     "NEGAO_NVIDIA_BASE_URL deve usar HTTPS quando IA externa estiver ativa"
+                )
+            if (
+                not provider_host
+                or provider.username is not None
+                or provider.password is not None
+                or provider.query
+                or provider.fragment
+                or provider.port not in {None, 443}
+            ):
+                problems.append(
+                    "NEGAO_NVIDIA_BASE_URL deve ser uma origem HTTPS limpa na porta 443"
+                )
+            if provider_host not in allowed_hosts:
+                problems.append(
+                    "NEGAO_NVIDIA_BASE_URL deve apontar para um host presente em "
+                    "NEGAO_EXTERNAL_AI_ALLOWED_HOSTS"
                 )
         credential_values = [
             self.secret_key,
@@ -263,6 +301,51 @@ class Settings(BaseSettings):
         return hosts
 
 
+def _read_secret_file(path_value: str, env_name: str) -> str:
+    path = Path(path_value)
+    if not path.is_absolute():
+        raise RuntimeError(f"{env_name} deve usar caminho absoluto")
+    try:
+        stat = path.stat()
+    except OSError as exc:
+        raise RuntimeError(f"{env_name} aponta para arquivo indisponível") from exc
+    if not path.is_file():
+        raise RuntimeError(f"{env_name} deve apontar para arquivo regular")
+    if stat.st_size <= 0 or stat.st_size > _MAX_SECRET_FILE_BYTES:
+        raise RuntimeError(f"{env_name} possui tamanho inválido")
+    try:
+        value = path.read_text(encoding="utf-8").strip()
+    except (OSError, UnicodeError) as exc:
+        raise RuntimeError(f"{env_name} não pôde ser lido com segurança") from exc
+    if not value or "\x00" in value:
+        raise RuntimeError(f"{env_name} contém segredo vazio ou inválido")
+    return value
+
+
+def _secret_file_overrides() -> dict[str, Any]:
+    overrides: dict[str, Any] = {}
+    for field_name in _SECRET_FILE_FIELDS:
+        suffix = field_name.upper()
+        new_direct = f"{_NEW_ENV_PREFIX}{suffix}"
+        legacy_direct = f"{_LEGACY_ENV_PREFIX}{suffix}"
+        new_file = f"{new_direct}_FILE"
+        legacy_file = f"{legacy_direct}_FILE"
+
+        new_file_value = os.environ.get(new_file, "").strip()
+        legacy_file_value = os.environ.get(legacy_file, "").strip()
+        if new_file_value and legacy_file_value and new_file_value != legacy_file_value:
+            raise RuntimeError(f"{new_file} e {legacy_file} apontam para arquivos diferentes")
+        file_value = new_file_value or legacy_file_value
+        if not file_value:
+            continue
+
+        if os.environ.get(new_direct) or os.environ.get(legacy_direct):
+            raise RuntimeError(f"{suffix}: não defina valor direto e *_FILE ao mesmo tempo")
+        source_name = new_file if new_file_value else legacy_file
+        overrides[field_name] = _read_secret_file(file_value, source_name)
+    return overrides
+
+
 def _apply_legacy_env_aliases() -> None:
     """Migração NEGAO_* → SOPHIE_*: SOPHIE_<CAMPO> tem precedência; se ausente,
     o valor de NEGAO_<CAMPO> (comportamento atual) é preservado sem mudanças.
@@ -293,5 +376,6 @@ def _apply_legacy_env_aliases() -> None:
 
 @lru_cache
 def get_settings() -> Settings:
+    secret_overrides = _secret_file_overrides()
     _apply_legacy_env_aliases()
-    return Settings()
+    return Settings(**secret_overrides)

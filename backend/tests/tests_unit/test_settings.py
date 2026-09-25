@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
-from app.modules.configuration.settings import Settings
+from app.modules.configuration.settings import Settings, _secret_file_overrides
 
 
 def test_default_settings_ok_fora_de_producao() -> None:
@@ -225,3 +227,62 @@ def test_producao_rejeita_touch_interval_maior_que_idle() -> None:
     kwargs["auth_session_touch_interval_seconds"] = 121
     with pytest.raises(ValidationError, match="AUTH_SESSION_TOUCH_INTERVAL_SECONDS"):
         Settings.model_validate(kwargs)
+
+
+def test_secret_file_override_reads_absolute_file(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    secret_path = tmp_path / "secret-key"
+    secret_path.write_text("s" * 40 + "\n", encoding="utf-8")
+    monkeypatch.setenv("SOPHIE_SECRET_KEY_FILE", str(secret_path))
+    monkeypatch.delenv("SOPHIE_SECRET_KEY", raising=False)
+    monkeypatch.delenv("NEGAO_SECRET_KEY", raising=False)
+
+    overrides = _secret_file_overrides()
+
+    assert overrides["secret_key"] == "s" * 40
+
+
+def test_secret_file_override_rejects_direct_value_and_file(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    secret_path = tmp_path / "secret-key"
+    secret_path.write_text("s" * 40, encoding="utf-8")
+    monkeypatch.setenv("SOPHIE_SECRET_KEY_FILE", str(secret_path))
+    monkeypatch.setenv("SOPHIE_SECRET_KEY", "x" * 40)
+
+    with pytest.raises(RuntimeError, match="não defina valor direto"):
+        _secret_file_overrides()
+
+
+def test_secret_file_override_rejects_relative_path(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("SOPHIE_SECRET_KEY_FILE", "relative/secret")
+
+    with pytest.raises(RuntimeError, match="caminho absoluto"):
+        _secret_file_overrides()
+
+
+def test_external_ai_rejects_provider_outside_allowlist() -> None:
+    kwargs = _strong_production_kwargs()
+    kwargs["external_ai_enabled"] = True
+    kwargs["nvidia_api_key"] = "n" * 40
+    kwargs["nvidia_base_url"] = "https://evil.example.net/v1"
+
+    with pytest.raises(ValidationError, match="EXTERNAL_AI_ALLOWED_HOSTS"):
+        Settings.model_validate(kwargs)
+
+
+def test_external_ai_accepts_explicit_allowlisted_provider() -> None:
+    kwargs = _strong_production_kwargs()
+    kwargs["external_ai_enabled"] = True
+    kwargs["nvidia_api_key"] = "n" * 40
+    kwargs["nvidia_base_url"] = "https://provider.example.net/v1"
+    kwargs["external_ai_allowed_hosts"] = ["provider.example.net"]
+
+    settings = Settings.model_validate(kwargs)
+
+    assert settings.nvidia_base_url == "https://provider.example.net/v1"
