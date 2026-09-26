@@ -233,7 +233,7 @@ jobs:
               assert payload.get("specVersion") == "1.6", name
               assert payload.get("components"), name
           PY
-          sha256sum sbom/*.cdx.json > sbom/SHA256SUMS
+          (cd sbom && sha256sum *.cdx.json > SHA256SUMS)
 
       - name: Upload SBOM artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
