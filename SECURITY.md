@@ -110,10 +110,32 @@ O CI inclui:
 - validação do Nginx;
 - validação da topologia Docker Compose de produção;
 - geração de SBOM CycloneDX 1.6 reproduzível para backend Python e frontend npm;
-- validação estrutural dos SBOMs e publicação dos artefatos com `SHA256SUMS`.
+- validação estrutural dos SBOMs e publicação dos artefatos com `SHA256SUMS`;
+- attestation criptográfica de proveniência dos SBOMs em pushes da `main`, usando GitHub OIDC, Sigstore e formato in-toto/SLSA.
 
 Actions externas do GitHub devem permanecer pinadas por commit SHA. Checkouts do CI não persistem credenciais Git após o checkout. Imagens base e serviços de produção usam tag legível acompanhada de digest `sha256` imutável; o CI falha se os pins forem removidos. Dependências Python diretas de runtime e desenvolvimento ficam fixadas em versões exatas no `pyproject.toml`; atualizações devem entrar por PR e atravessar novamente os gates de audit, testes e análise estática.
 
 ## Divulgação
 
 Detalhes técnicos de vulnerabilidades devem permanecer privados até que exista correção ou mitigação adequada.
+
+
+### Verificação de proveniência dos SBOMs
+
+Em pushes da `main`, os arquivos `backend.cdx.json`, `frontend.cdx.json` e
+`SHA256SUMS` recebem attestation assinada. A assinatura é emitida com
+identidade efêmera do workflow via OIDC; nenhuma chave privada persistente é
+armazenada no repositório ou no runner.
+
+Depois de baixar o artefato `sophie-sbom` de um workflow da `main`, a
+proveniência pode ser verificada com GitHub CLI:
+
+```bash
+gh attestation verify backend.cdx.json --repo wandersongandra/Neg-o-IA
+gh attestation verify frontend.cdx.json --repo wandersongandra/Neg-o-IA
+gh attestation verify SHA256SUMS --repo wandersongandra/Neg-o-IA
+```
+
+PRs continuam sem gerar attestations; os privilégios OIDC/attestation são usados
+somente pelo job de SBOM e a etapa de assinatura só executa após merge/push na
+`main`.
