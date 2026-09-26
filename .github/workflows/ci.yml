@@ -194,6 +194,11 @@ jobs:
           script_end = csp.index('].join(" ")', script_start)
           script_block = csp[script_start:script_end]
           assert "unsafe-inline" not in script_block
+
+          assert "style-src 'self' 'unsafe-inline'" not in csp
+          assert `style-src 'self' 'nonce-${nonce}'` in csp
+          assert `style-src-elem 'self' 'nonce-${nonce}'` in csp
+          assert "style-src-attr 'unsafe-inline'" in csp
           assert "Content-Security-Policy" not in next_config
           assert "add_header Content-Security-Policy" not in nginx
           PY
@@ -246,6 +251,33 @@ jobs:
           assert (
               f'nonce="{nonce}"' in html or f"nonce='{nonce}'" in html
           ), "rendered scripts are missing the response nonce"
+
+          style_src = next(
+              directive.strip()
+              for directive in csp.split(";")
+              if directive.strip().startswith("style-src ")
+          )
+          style_src_elem = next(
+              directive.strip()
+              for directive in csp.split(";")
+              if directive.strip().startswith("style-src-elem ")
+          )
+          style_src_attr = next(
+              directive.strip()
+              for directive in csp.split(";")
+              if directive.strip().startswith("style-src-attr ")
+          )
+          assert "'unsafe-inline'" not in style_src, style_src
+          assert f"'nonce-{nonce}'" in style_src, style_src
+          assert "'unsafe-inline'" not in style_src_elem, style_src_elem
+          assert f"'nonce-{nonce}'" in style_src_elem, style_src_elem
+          assert style_src_attr == "style-src-attr 'unsafe-inline'", style_src_attr
+
+          style_tags = re.findall(r"<style\\b[^>]*>", html, flags=re.IGNORECASE)
+          for tag in style_tags:
+              assert (
+                  f'nonce="{nonce}"' in tag or f"nonce='{nonce}'" in tag
+              ), f"style tag is missing nonce: {tag[:200]}"
           PY
 
       - name: Typecheck
