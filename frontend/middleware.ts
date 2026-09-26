@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { buildContentSecurityPolicy } from "@/lib/security-csp";
 
 export function middleware(request: NextRequest) {
-  const nonce = crypto.randomUUID();
+  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const contentSecurityPolicy = buildContentSecurityPolicy(
     nonce,
     process.env.NODE_ENV === "production",
