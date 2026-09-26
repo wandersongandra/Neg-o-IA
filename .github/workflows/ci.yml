@@ -201,6 +201,53 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Runtime CSP nonce smoke test
+        run: |
+          rm -rf .next/standalone/public .next/standalone/.next/static
+          cp -R public .next/standalone/public
+          mkdir -p .next/standalone/.next
+          cp -R .next/static .next/standalone/.next/static
+
+          PORT=3100 HOSTNAME=127.0.0.1 node .next/standalone/server.js >/tmp/sophie-next.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+
+          for _ in $(seq 1 30); do
+            if curl -fsS -D /tmp/sophie-csp-headers http://127.0.0.1:3100/ -o /tmp/sophie-csp-page.html; then
+              break
+            fi
+            sleep 1
+          done
+
+          python - <<'PY'
+          import re
+          from pathlib import Path
+
+          headers = Path("/tmp/sophie-csp-headers").read_text(encoding="utf-8", errors="replace")
+          html = Path("/tmp/sophie-csp-page.html").read_text(encoding="utf-8", errors="replace")
+
+          header = re.search(
+              r"(?im)^content-security-policy:\\s*(.+?)\\r?$",
+              headers,
+          )
+          assert header, headers
+          csp = header.group(1).strip()
+          nonce_match = re.search(r"'nonce-([^']+)'", csp)
+          assert nonce_match, csp
+          nonce = nonce_match.group(1)
+
+          script_src = next(
+              directive.strip()
+              for directive in csp.split(";")
+              if directive.strip().startswith("script-src ")
+          )
+          assert "'unsafe-inline'" not in script_src, script_src
+          assert "'strict-dynamic'" in script_src, script_src
+          assert (
+              f'nonce="{nonce}"' in html or f"nonce='{nonce}'" in html
+          ), "rendered scripts are missing the response nonce"
+          PY
+
       - name: Typecheck
         run: npm run typecheck
 
