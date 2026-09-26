@@ -152,6 +152,11 @@ jobs:
   sbom:
     name: SBOM (CycloneDX)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -210,6 +215,15 @@ jobs:
             sbom/SHA256SUMS
           if-no-files-found: error
           retention-days: 30
+
+      - name: Attest SBOM provenance
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/attest@a0eb68d51f3a5d373e107cfa9c8455ba800479cd
+        with:
+          subject-path: |
+            sbom/backend.cdx.json
+            sbom/frontend.cdx.json
+            sbom/SHA256SUMS
   infrastructure:
     name: Infra (Nginx config)
     runs-on: ubuntu-latest
