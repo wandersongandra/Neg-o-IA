@@ -5,8 +5,6 @@ import { fileURLToPath } from "node:url";
 
 const projectRoot = dirname(fileURLToPath(import.meta.url));
 
-const isProduction = process.env.NODE_ENV === "production";
-
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-DNS-Prefetch-Control", value: "off" },
@@ -19,27 +17,6 @@ const securityHeaders = [
   {
     key: "Permissions-Policy",
     value: "geolocation=(), camera=(self), microphone=(self)",
-  },
-  {
-    key: "Content-Security-Policy",
-    value: [
-      "default-src 'self'",
-      "base-uri 'self'",
-      "object-src 'none'",
-      "frame-ancestors 'none'",
-      "frame-src 'none'",
-      "form-action 'self'",
-      `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"}`,
-      "script-src-attr 'none'",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob:",
-      "font-src 'self' data:",
-      "media-src 'self' data: blob:",
-      isProduction ? "connect-src 'self' wss:" : "connect-src 'self' ws: wss:",
-      "worker-src 'self' blob:",
-      "manifest-src 'self'",
-      ...(isProduction ? ["upgrade-insecure-requests"] : []),
-    ].join("; "),
   },
 ];
 
