@@ -92,7 +92,9 @@ O Compose de produção separa a rede de dados da rede da aplicação:
 
 O Nginx aplica TLS 1.2/1.3, suites TLS 1.2 modernas, HSTS, limites de conexão/requisição, timeouts contra conexões lentas, proteção de dotfiles e headers de isolamento do navegador.
 
-A CSP de páginas HTML é emitida dinamicamente pelo Next.js com um nonce aleatório por resposta. Em produção, `script-src` não usa `'unsafe-inline'`; scripts legítimos do framework recebem nonce e a política inclui `'strict-dynamic'`. O Nginx não sobrescreve esse header dinâmico. `style-src 'unsafe-inline'` permanece temporariamente por compatibilidade com o pipeline atual de estilos e deve ser tratado separadamente.
+A CSP de páginas HTML é emitida dinamicamente pelo Next.js com um nonce aleatório por resposta. Em produção, `script-src` não usa `'unsafe-inline'`; scripts legítimos do framework recebem nonce e a política inclui `'strict-dynamic'`. O Nginx não sobrescreve esse header dinâmico.
+
+Elementos `<style>` também exigem o nonce da resposta por `style-src`/`style-src-elem`. A exceção restante fica isolada em `style-src-attr 'unsafe-inline'` porque alguns componentes React ainda usam atributos `style={...}` para valores dinâmicos (safe-area, cores, dimensões e delays). Isso reduz a superfície de CSS inline sem quebrar esses componentes; remover a exceção de atributos exige migrar esses estilos dinâmicos para classes/variáveis governadas.
 
 ## Dependências e supply chain
 
