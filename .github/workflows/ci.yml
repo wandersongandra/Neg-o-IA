@@ -190,10 +190,10 @@ jobs:
           assert "'nonce-" in csp
           assert "'strict-dynamic'" in csp
 
-          script_line = next(
-              line for line in csp.splitlines() if '"script-src"' in line
-          )
-          assert "unsafe-inline" not in script_line
+          script_start = csp.index('"script-src"')
+          script_end = csp.index('].join(" ")', script_start)
+          script_block = csp[script_start:script_end]
+          assert "unsafe-inline" not in script_block
           assert "Content-Security-Policy" not in next_config
           assert "add_header Content-Security-Policy" not in nginx
           PY
@@ -227,7 +227,7 @@ jobs:
           html = Path("/tmp/sophie-csp-page.html").read_text(encoding="utf-8", errors="replace")
 
           header = re.search(
-              r"(?im)^content-security-policy:\\s*(.+?)\\r?$",
+              r"(?im)^content-security-policy:\s*(.+?)\r?$",
               headers,
           )
           assert header, headers
