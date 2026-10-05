@@ -72,6 +72,12 @@ A rota administrativa `/database/audit/integrity` resume eventos verificados, in
 
 Quando uma chave dedicada não é definida, a chave de aplicação é usada como fallback compatível.
 
+## Planner, Tool Manager e confirmações
+
+O Tool Manager é a fonte de verdade para a política de risco de cada ferramenta. O Planner pode refletir `requires_confirmation` no plano para UX, mas nunca fabrica uma confirmação ao chamar uma ferramenta. O valor `confirmed=true` só é encaminhado quando o cliente autenticado confirmou explicitamente o identificador daquele passo.
+
+Isso evita que uma ferramenta futura, reclassificada como sensível no catálogo, seja executada apenas porque um plano antigo a marcou como leitura ou porque o Planner inferiu a política pelo nome.
+
 ## Segredos e integrações
 
 A chave bootstrap de serviço fica desabilitada por padrão em produção. Para provisionamento inicial, habilite `SOPHIE_SERVICE_BOOTSTRAP_ENABLED=true` (ou alias `NEGAO_*`) apenas temporariamente, crie uma chave persistida e rotacionável e desabilite o bootstrap novamente.
@@ -90,7 +96,9 @@ Em produção, `SOPHIE_NVIDIA_BASE_URL`/ `NEGAO_NVIDIA_BASE_URL` precisa usar HT
 
 Chat, Vision e STT usam o mesmo cliente HTTP endurecido: não herdam proxies do ambiente, não seguem redirects automaticamente, usam limites de conexão e impõem orçamento máximo de bytes antes de desserializar respostas JSON. `SOPHIE_PROVIDER_MAX_RESPONSE_BYTES`/ `NEGAO_PROVIDER_MAX_RESPONSE_BYTES` controla esse teto dentro de limites seguros.
 
-O TTS via `edge-tts` é uma integração externa separada. Em produção, permanece fail-closed até `SOPHIE_EXTERNAL_TTS_ENABLED=true` (ou alias legado `NEGAO_*`) ser definido explicitamente.
+O TTS via `edge-tts` é uma integração externa separada. Em produção, permanece fail-closed até `SOPHIE_EXTERNAL_TTS_ENABLED=true` (ou alias legado `NEGAO_*`) ser definido explicitamente. O bloqueio existe tanto no serviço de voz quanto no adapter, evitando que uma troca de implementação contorne o opt-in.
+
+Eventos de telemetria de STT não persistem o texto transcrito. Apenas metadados operacionais mínimos, como idioma, duração do áudio e quantidade de caracteres, são publicados no barramento de eventos. O conteúdo continua sendo entregue ao fluxo de conversa necessário ao turno, mas não é duplicado na trilha de eventos.
 
 ## Rede e containers
 
@@ -103,7 +111,7 @@ O Compose de produção separa a rede de dados da rede da aplicação:
 - backend, frontend e Nginx usam filesystem raiz somente leitura em produção;
 - diretórios graváveis são limitados a `tmpfs` explícitos e com `nosuid`, `nodev` e `noexec` quando compatível.
 
-O Nginx aplica TLS 1.2/1.3, suites TLS 1.2 modernas, HSTS, limites de conexão/requisição, timeouts contra conexões lentas, proteção de dotfiles e headers de isolamento do navegador.
+O Nginx aplica TLS 1.2/1.3, suites TLS 1.2 modernas, HSTS, limites de conexão/requisição, timeouts contra conexões lentas, proteção de dotfiles e headers de isolamento do navegador. O formato de access log usa `$uri`, nunca `$request_uri`/`$args`, para que tickets WebSocket de curta duração enviados na query string não sejam persistidos em logs de acesso. O Uvicorn roda com `--no-access-log` no container de produção; o Nginx é a fonte de access log HTTP, evitando que o backend volte a registrar a request line completa com query strings privadas.
 
 A CSP de páginas HTML é emitida dinamicamente pelo Next.js com um nonce aleatório por resposta. Em produção, `script-src` não usa `'unsafe-inline'`; scripts legítimos do framework recebem nonce e a política inclui `'strict-dynamic'`. O Nginx não sobrescreve esse header dinâmico.
 
