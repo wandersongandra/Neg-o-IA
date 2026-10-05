@@ -119,8 +119,9 @@ jobs:
 
       - name: Static security analysis (Semgrep)
         run: |
-          python -m pip install "semgrep==1.178.0"
-          semgrep scan --config p/python --error --metrics off backend/app
+          python -m venv /tmp/sophie-semgrep
+          /tmp/sophie-semgrep/bin/python -m pip install "semgrep==1.178.0"
+          /tmp/sophie-semgrep/bin/semgrep scan --config p/python --error --metrics off backend/app
 
       - name: Typecheck (mypy)
         run: mypy backend
