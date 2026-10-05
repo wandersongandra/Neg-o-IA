@@ -171,20 +171,35 @@ async def test_service_transcribe_publica_evento_e_retorna_texto(
     envelope = bus.envelopes[0]
     assert envelope.type == EVENT_VOICE_TRANSCRIPTION_COMPLETED
     assert envelope.producer == "voice"
-    assert envelope.payload["text"] == "texto"
+    assert "text" not in envelope.payload
+    assert envelope.payload["text_chars"] == len(result.text)
     assert envelope.payload["duration_seconds"] == 1.5
 
 
 @pytest.mark.asyncio
 async def test_service_synthesize_retorna_audio() -> None:
     service = VoiceService(
-        FakeSTTAdapter(), FakeTTSAdapter(), settings=Settings(external_ai_enabled=True)
+        FakeSTTAdapter(),
+        FakeTTSAdapter(),
+        settings=Settings(external_ai_enabled=True, external_tts_enabled=True),
     )
 
     result = await service.synthesize("oi")
 
     assert result.data == b"fake-mp3"
     assert result.content_type == "audio/mpeg"
+
+
+@pytest.mark.asyncio
+async def test_service_tts_requires_explicit_external_opt_in() -> None:
+    service = VoiceService(
+        FakeSTTAdapter(),
+        FakeTTSAdapter(),
+        settings=Settings(external_ai_enabled=True, external_tts_enabled=False),
+    )
+
+    with pytest.raises(VoiceUnavailableError, match="opt-in explícito"):
+        await service.synthesize("texto privado")
 
 
 @pytest.mark.asyncio

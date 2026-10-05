@@ -7,7 +7,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
-from sqlalchemy import or_, select
+from sqlalchemy import delete, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.embeddings import embed_text
@@ -46,6 +46,20 @@ class PostgresLongTermMemory:
         self._factory = session_factory or create_session_factory(
             create_engine(get_settings().database_url)
         )
+
+    async def purge_expired(self, user_id: str) -> int:
+        parsed_user = _user_uuid(user_id)
+        now = datetime.now(UTC)
+        async with self._factory() as session:
+            async with session.begin():
+                result = await session.execute(
+                    delete(MemoryEntryORM).where(
+                        MemoryEntryORM.user_id == parsed_user,
+                        MemoryEntryORM.expires_at.is_not(None),
+                        MemoryEntryORM.expires_at <= now,
+                    )
+                )
+                return int(result.rowcount or 0)
 
     async def remember(
         self,
