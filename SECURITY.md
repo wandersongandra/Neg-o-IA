@@ -43,6 +43,17 @@ Tickets WebSocket são:
 
 A chave de serviço via query string permanece permitida apenas fora de produção para compatibilidade de testes e scripts locais.
 
+
+## Memória e retenção
+
+A memória de longo prazo usa política por usuário e o auto-capture permanece desabilitado por padrão. Quando o usuário habilita captura automática, a Sophie aplica uma filtragem conservadora antes da persistência e recusa padrões de credenciais de alta confiança.
+
+Quando uma captura automática é recusada, a auditoria registra somente uma categoria genérica do motivo, nunca o valor detectado nem o conteúdo da mensagem.
+
+Entradas com `expires_at` vencido são removidas fisicamente do armazenamento durante operações de memória longa do usuário; não são apenas ocultadas dos resultados de busca.
+
+Memória manual continua sendo uma ação explícita do usuário e não passa pelo bloqueio automático de credenciais. A memória da Sophie não deve ser usada como cofre de senhas ou gerenciador de segredos. Conteúdo de memória e Knowledge Vault permanece persistido no banco conforme o modelo atual; criptografia de campo em repouso é uma camada separada de hardening.
+
 ## Auditoria tamper-evident
 
 Novos registros em `events.audit_events` recebem uma assinatura HMAC-SHA256 sobre os campos imutáveis do evento e seu payload canônico.
@@ -64,6 +75,8 @@ Quando uma chave dedicada não é definida, a chave de aplicação é usada como
 ## Segredos e integrações
 
 A chave bootstrap de serviço fica desabilitada por padrão em produção. Para provisionamento inicial, habilite `SOPHIE_SERVICE_BOOTSTRAP_ENABLED=true` (ou alias `NEGAO_*`) apenas temporariamente, crie uma chave persistida e rotacionável e desabilite o bootstrap novamente.
+
+Chaves persistidas de serviço possuem expiração obrigatória. O prazo padrão e o máximo são controlados por `SOPHIE_SERVICE_API_KEY_DEFAULT_TTL_DAYS` e `SOPHIE_SERVICE_API_KEY_MAX_TTL_DAYS`. Chaves anteriores à migration `0007_service_api_key_expiry` recebem uma janela de transição, mas não permanecem sem validade. Criação, revogação e autenticação bem-sucedida de credenciais de serviço geram eventos de auditoria sem registrar o segredo da chave.
 
 Credenciais de APIs, chaves de modelo, tokens, arquivos `.env`, URLs privadas de banco, cookies, chaves de sessão e dados de produção não devem ser versionados.
 
