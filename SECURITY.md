@@ -90,7 +90,7 @@ O Compose de produção separa a rede de dados da rede da aplicação:
 - backend, frontend e Nginx usam filesystem raiz somente leitura em produção;
 - diretórios graváveis são limitados a `tmpfs` explícitos e com `nosuid`, `nodev` e `noexec` quando compatível.
 
-O Nginx aplica TLS 1.2/1.3, suites TLS 1.2 modernas, HSTS, limites de conexão/requisição, timeouts contra conexões lentas, proteção de dotfiles e headers de isolamento do navegador. O formato de access log usa `$uri`, nunca `$request_uri`/`$args`, para que tickets WebSocket de curta duração enviados na query string não sejam persistidos em logs de acesso.
+O Nginx aplica TLS 1.2/1.3, suites TLS 1.2 modernas, HSTS, limites de conexão/requisição, timeouts contra conexões lentas, proteção de dotfiles e headers de isolamento do navegador. O formato de access log usa `$uri`, nunca `$request_uri`/`$args`, para que tickets WebSocket de curta duração enviados na query string não sejam persistidos em logs de acesso. O Uvicorn roda com `--no-access-log` no container de produção; o Nginx é a fonte de access log HTTP, evitando que o backend volte a registrar a request line completa com query strings privadas.
 
 A CSP de páginas HTML é emitida dinamicamente pelo Next.js com um nonce aleatório por resposta. Em produção, `script-src` não usa `'unsafe-inline'`; scripts legítimos do framework recebem nonce e a política inclui `'strict-dynamic'`. O Nginx não sobrescreve esse header dinâmico.
 
