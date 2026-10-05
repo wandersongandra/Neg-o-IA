@@ -77,7 +77,9 @@ Em produção, `SOPHIE_NVIDIA_BASE_URL`/ `NEGAO_NVIDIA_BASE_URL` precisa usar HT
 
 Chat, Vision e STT usam o mesmo cliente HTTP endurecido: não herdam proxies do ambiente, não seguem redirects automaticamente, usam limites de conexão e impõem orçamento máximo de bytes antes de desserializar respostas JSON. `SOPHIE_PROVIDER_MAX_RESPONSE_BYTES`/ `NEGAO_PROVIDER_MAX_RESPONSE_BYTES` controla esse teto dentro de limites seguros.
 
-O TTS via `edge-tts` é uma integração externa separada. Em produção, permanece fail-closed até `SOPHIE_EXTERNAL_TTS_ENABLED=true` (ou alias legado `NEGAO_*`) ser definido explicitamente.
+O TTS via `edge-tts` é uma integração externa separada. Em produção, permanece fail-closed até `SOPHIE_EXTERNAL_TTS_ENABLED=true` (ou alias legado `NEGAO_*`) ser definido explicitamente. O bloqueio existe tanto no serviço de voz quanto no adapter, evitando que uma troca de implementação contorne o opt-in.
+
+Eventos de telemetria de STT não persistem o texto transcrito. Apenas metadados operacionais mínimos, como idioma, duração do áudio e quantidade de caracteres, são publicados no barramento de eventos. O conteúdo continua sendo entregue ao fluxo de conversa necessário ao turno, mas não é duplicado na trilha de eventos.
 
 ## Rede e containers
 
