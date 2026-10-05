@@ -450,6 +450,9 @@ jobs:
           assert "$args" not in safe_block
           assert "$query_string" not in safe_block
           assert "access_log /var/log/nginx/access.log sophie_safe;" in nginx
+
+          backend_dockerfile = Path("backend/Dockerfile").read_text(encoding="utf-8")
+          assert '"--no-access-log"' in backend_dockerfile
           PY
 
       - name: Build Nginx image
