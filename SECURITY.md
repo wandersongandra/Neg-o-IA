@@ -61,6 +61,12 @@ A rota administrativa `/database/audit/integrity` resume eventos verificados, in
 
 Quando uma chave dedicada não é definida, a chave de aplicação é usada como fallback compatível.
 
+## Planner, Tool Manager e confirmações
+
+O Tool Manager é a fonte de verdade para a política de risco de cada ferramenta. O Planner pode refletir `requires_confirmation` no plano para UX, mas nunca fabrica uma confirmação ao chamar uma ferramenta. O valor `confirmed=true` só é encaminhado quando o cliente autenticado confirmou explicitamente o identificador daquele passo.
+
+Isso evita que uma ferramenta futura, reclassificada como sensível no catálogo, seja executada apenas porque um plano antigo a marcou como leitura ou porque o Planner inferiu a política pelo nome.
+
 ## Segredos e integrações
 
 A chave bootstrap de serviço fica desabilitada por padrão em produção. Para provisionamento inicial, habilite `SOPHIE_SERVICE_BOOTSTRAP_ENABLED=true` (ou alias `NEGAO_*`) apenas temporariamente, crie uma chave persistida e rotacionável e desabilite o bootstrap novamente.
