@@ -63,6 +63,10 @@ class PostgresKnowledgeStore:
             create_engine(get_settings().database_url)
         )
 
+    @staticmethod
+    async def _set_user_scope(session: AsyncSession, user_id: uuid.UUID) -> None:
+        await session.execute(select(func.set_config("app.user_id", str(user_id), True)))
+
     async def ingest(
         self,
         user_id: str,
@@ -77,6 +81,7 @@ class PostgresKnowledgeStore:
         chunks = chunk_text(content)
         async with self._factory() as session:
             async with session.begin():
+                await self._set_user_scope(session, parsed_user)
                 result = await session.execute(
                     select(KnowledgeDocumentORM).where(
                         KnowledgeDocumentORM.user_id == parsed_user,
@@ -144,59 +149,63 @@ class PostgresKnowledgeStore:
         query_embedding = embed_text(query)
         distance = cast(Any, KnowledgeChunkORM.embedding).cosine_distance(query_embedding)
         async with self._factory() as session:
-            result = await session.execute(
-                select(KnowledgeChunkORM, KnowledgeDocumentORM, distance.label("distance"))
-                .join(
-                    KnowledgeDocumentORM,
-                    KnowledgeDocumentORM.id == KnowledgeChunkORM.document_id,
+            async with session.begin():
+                await self._set_user_scope(session, parsed_user)
+                result = await session.execute(
+                    select(KnowledgeChunkORM, KnowledgeDocumentORM, distance.label("distance"))
+                    .join(
+                        KnowledgeDocumentORM,
+                        KnowledgeDocumentORM.id == KnowledgeChunkORM.document_id,
+                    )
+                    .where(KnowledgeChunkORM.user_id == parsed_user)
+                    .order_by(distance.asc())
+                    .limit(limit)
                 )
-                .where(KnowledgeChunkORM.user_id == parsed_user)
-                .order_by(distance.asc())
-                .limit(limit)
-            )
-            return [
-                KnowledgeSearchHit(
-                    document_id=str(document.id),
-                    chunk_id=str(chunk.id),
-                    title=document.title,
-                    source_type=document.source_type,
-                    source_uri=document.source_uri,
-                    chunk_index=chunk.chunk_index,
-                    content=chunk.content,
-                    score=max(0.0, min(1.0, 1.0 - float(raw_distance or 0.0))),
-                )
-                for chunk, document, raw_distance in result.all()
-            ]
+                return [
+                    KnowledgeSearchHit(
+                        document_id=str(document.id),
+                        chunk_id=str(chunk.id),
+                        title=document.title,
+                        source_type=document.source_type,
+                        source_uri=document.source_uri,
+                        chunk_index=chunk.chunk_index,
+                        content=chunk.content,
+                        score=max(0.0, min(1.0, 1.0 - float(raw_distance or 0.0))),
+                    )
+                    for chunk, document, raw_distance in result.all()
+                ]
 
     async def list_documents(self, user_id: str) -> list[KnowledgeDocument]:
         parsed_user = _user_uuid(user_id)
         async with self._factory() as session:
-            rows = await session.execute(
-                select(
-                    KnowledgeDocumentORM,
-                    func.count(KnowledgeChunkORM.id).label("chunk_count"),
+            async with session.begin():
+                await self._set_user_scope(session, parsed_user)
+                rows = await session.execute(
+                    select(
+                        KnowledgeDocumentORM,
+                        func.count(KnowledgeChunkORM.id).label("chunk_count"),
+                    )
+                    .outerjoin(
+                        KnowledgeChunkORM,
+                        KnowledgeChunkORM.document_id == KnowledgeDocumentORM.id,
+                    )
+                    .where(KnowledgeDocumentORM.user_id == parsed_user)
+                    .group_by(KnowledgeDocumentORM.id)
+                    .order_by(KnowledgeDocumentORM.updated_at.desc())
                 )
-                .outerjoin(
-                    KnowledgeChunkORM,
-                    KnowledgeChunkORM.document_id == KnowledgeDocumentORM.id,
-                )
-                .where(KnowledgeDocumentORM.user_id == parsed_user)
-                .group_by(KnowledgeDocumentORM.id)
-                .order_by(KnowledgeDocumentORM.updated_at.desc())
-            )
-            return [
-                KnowledgeDocument(
-                    id=str(document.id),
-                    user_id=user_id,
-                    title=document.title,
-                    source_type=document.source_type,
-                    source_uri=document.source_uri,
-                    chunk_count=int(chunk_count),
-                    created_at=document.created_at,
-                    updated_at=document.updated_at,
-                )
-                for document, chunk_count in rows.all()
-            ]
+                return [
+                    KnowledgeDocument(
+                        id=str(document.id),
+                        user_id=user_id,
+                        title=document.title,
+                        source_type=document.source_type,
+                        source_uri=document.source_uri,
+                        chunk_count=int(chunk_count),
+                        created_at=document.created_at,
+                        updated_at=document.updated_at,
+                    )
+                    for document, chunk_count in rows.all()
+                ]
 
     async def delete_document(self, user_id: str, document_id: str) -> bool:
         parsed_user = _user_uuid(user_id)
@@ -206,6 +215,7 @@ class PostgresKnowledgeStore:
             return False
         async with self._factory() as session:
             async with session.begin():
+                await self._set_user_scope(session, parsed_user)
                 row = await session.get(KnowledgeDocumentORM, parsed_document)
                 if row is None or row.user_id != parsed_user:
                     return False

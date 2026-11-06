@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from app.core.sensitive_content import likely_secret_kind
 from app.modules.events.envelope import build_envelope
 from app.modules.memory.domain import LongTermMemoryEntry, MemoryPolicy, MemorySearchHit
 from app.modules.memory.infrastructure.long_term import PostgresLongTermMemory
@@ -29,6 +30,7 @@ class LongTermMemoryService:
         retention_days: int | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> LongTermMemoryEntry:
+        await self._purge_expired(user_id)
         normalized = content.strip()
         if not normalized or len(normalized) > 4000:
             raise ValueError("memory content must contain 1..4000 characters")
@@ -51,6 +53,7 @@ class LongTermMemoryService:
         return entry
 
     async def search(self, user_id: str, query: str, *, limit: int = 5) -> list[MemorySearchHit]:
+        await self._purge_expired(user_id)
         normalized = query.strip()
         if not normalized:
             return []
@@ -71,6 +74,7 @@ class LongTermMemoryService:
         return removed
 
     async def get_policy(self, user_id: str) -> MemoryPolicy:
+        await self._purge_expired(user_id)
         return await self._store.get_policy(user_id)
 
     async def update_policy(
@@ -100,6 +104,17 @@ class LongTermMemoryService:
         normalized = content.strip()
         if len(normalized) < 20:
             return None
+        secret_kind = likely_secret_kind(normalized)
+        if secret_kind is not None:
+            await self._publish(
+                "memory.long_term.auto_capture_skipped_sensitive",
+                {
+                    "user_id": user_id,
+                    "reason": secret_kind,
+                },
+                session_id=session_id,
+            )
+            return None
         return await self.remember(
             user_id,
             normalized,
@@ -116,6 +131,14 @@ class LongTermMemoryService:
             return ""
         lines = [f"- [{hit.entry.source} {hit.score:.2f}] {hit.entry.content}" for hit in hits]
         return "\n".join(lines)
+
+    async def _purge_expired(self, user_id: str) -> None:
+        removed = await self._store.purge_expired(user_id)
+        if removed:
+            await self._publish(
+                "memory.long_term.expired_purged",
+                {"user_id": user_id, "removed": removed},
+            )
 
     async def _publish(
         self,

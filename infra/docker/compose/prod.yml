@@ -72,11 +72,13 @@ services:
       SOPHIE_DATABASE_URL_FILE: /run/secrets/database_url
       SOPHIE_REDIS_URL_FILE: /run/secrets/redis_url
       SOPHIE_SECRET_KEY_FILE: /run/secrets/app_secret_key
+      SOPHIE_OAUTH_CREDENTIAL_ENCRYPTION_KEY_FILE: /run/secrets/oauth_credential_encryption_key
       SOPHIE_INTERNAL_PROXY_KEY_FILE: /run/secrets/internal_proxy_key
     secrets:
       - database_url
       - redis_url
       - app_secret_key
+      - oauth_credential_encryption_key
       - internal_proxy_key
     depends_on:
       db:
@@ -188,5 +190,7 @@ secrets:
     file: ${SOPHIE_REDIS_URL_FILE:-../../../secrets/redis_url}
   app_secret_key:
     file: ${SOPHIE_SECRET_KEY_FILE:-../../../secrets/app_secret_key}
+  oauth_credential_encryption_key:
+    file: ${SOPHIE_OAUTH_CREDENTIAL_ENCRYPTION_KEY_FILE:-../../../secrets/oauth_credential_encryption_key}
   internal_proxy_key:
     file: ${SOPHIE_INTERNAL_PROXY_KEY_FILE:-../../../secrets/internal_proxy_key}

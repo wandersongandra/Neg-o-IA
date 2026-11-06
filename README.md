@@ -52,6 +52,10 @@ Voice V1 is exposed through `/ws/voice`. A session uses a short-lived, purpose-b
 
 The browser can select independent input and output devices when supported. Bluetooth pairing remains managed by the operating system.
 
+## ChatGPT plan and Ultron avatar
+
+An eligible ChatGPT Plus/Pro account can authorize the self-hosted agent through the official Sign in with ChatGPT flow. The OAuth setup, encryption key, migration and current API limits are described in [docs/CHATGPT-PLAN-INTEGRATION.md](docs/CHATGPT-PLAN-INTEGRATION.md). The interface includes an original articulated 3D sentinel avatar; it is not an extraction of a film asset.
+
 ## Security and compatibility
 
 User sessions are server-side. Service credentials are separate from user sessions. Secrets belong in ignored environment files or a secret manager.

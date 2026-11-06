@@ -43,7 +43,7 @@ export default function LoginPage() {
       <form onSubmit={submit} className="glass w-full max-w-md space-y-5 rounded-2xl p-6">
         <div>
           <p className="font-mono-data text-[10px] uppercase tracking-[0.3em] text-[var(--accent)]">
-            SOPHIE CORE — IDENTITY
+            ULTRON — IDENTIDADE
           </p>
           <h1 className="mt-2 text-2xl font-semibold text-[var(--text-primary)]">Entrar</h1>
           <p className="mt-1 text-sm text-[var(--text-secondary)]">
@@ -80,7 +80,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="interactive-control w-full rounded-xl bg-[var(--accent)] px-4 py-2.5 font-semibold text-black shadow-[0_10px_30px_-16px_var(--accent-glow)] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+          className="interactive-control w-full rounded-xl bg-[var(--accent)] px-4 py-2.5 font-semibold text-black hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {submitting ? "Validando…" : "Entrar"}
         </button>

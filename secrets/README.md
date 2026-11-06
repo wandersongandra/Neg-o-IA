@@ -11,6 +11,7 @@ Arquivos esperados pelo `infra/docker/compose/prod.yml`:
 - `database_url`: URL SQLAlchemy completa do backend, incluindo a senha.
 - `redis_url`: URL Redis completa do backend, incluindo a senha.
 - `app_secret_key`: segredo principal da Sophie, aleatório e independente.
+- `oauth_credential_encryption_key`: chave AES-256-GCM dedicada aos tokens ChatGPT armazenados no banco.
 - `internal_proxy_key`: segredo compartilhado apenas entre Next BFF e FastAPI.
 
 Exemplo de preparação no host:
@@ -20,7 +21,12 @@ install -d -m 700 secrets
 umask 077
 openssl rand -hex 32 > secrets/app_secret_key
 openssl rand -hex 32 > secrets/internal_proxy_key
+python -m app.cli generate-oauth-encryption-key > secrets/oauth_credential_encryption_key
+chmod 600 secrets/oauth_credential_encryption_key
 ```
+
+Guarde a chave OAuth em backup seguro junto dos demais segredos do host. Sem
+ela, os tokens cifrados não podem ser recuperados após uma restauração.
 
 As senhas/URLs de banco e Redis devem ser geradas pelo processo de
 provisionamento autorizado. Não copie valores de exemplo para produção.

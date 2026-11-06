@@ -1,3 +1,11 @@
+log_format sophie_safe '$remote_addr [$time_local] '
+                       '"$request_method $uri $server_protocol" $status $body_bytes_sent '
+                       '"$http_user_agent"';
+
+# Não registrar query strings: tickets WebSocket são curtos e de uso único,
+# mas nunca devem aparecer em access logs.
+access_log /var/log/nginx/access.log sophie_safe;
+
 upstream backend {
     server backend:8000;
 }

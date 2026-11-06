@@ -226,8 +226,8 @@ function Section({
   return (
     <section className="animate-fade-up space-y-4">
       <div className="flex items-center gap-2">
-        <Icon className="size-4 text-[#00D4FF]" />
-        <h2 className="font-mono-data text-[11px] font-semibold tracking-[0.3em] text-[#F8FAFC]">
+        <Icon className="size-4 text-[var(--accent)]" />
+        <h2 className="font-mono-data text-[11px] font-semibold tracking-[0.3em] text-[var(--text-primary)]">
           {title}
         </h2>
         <span className="h-px flex-1 bg-white/[0.06]" />
@@ -257,8 +257,8 @@ function Panel({
     <div className={`glass glass-hover rounded-2xl p-4 ${className}`}>
       <div className="mb-3 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Icon className="size-3.5 text-[#00D4FF]" />
-          <h3 className="font-mono-data text-[10px] font-semibold tracking-[0.25em] text-[#94A3B8]">
+          <Icon className="size-3.5 text-[var(--accent)]" />
+          <h3 className="font-mono-data text-[10px] font-semibold tracking-[0.25em] text-[var(--text-secondary)]">
             {title}
           </h3>
         </div>
@@ -295,9 +295,9 @@ function ModeBadge({ mode }: { mode: string }) {
   const cls = isLocal
     ? "text-[#22C55E] bg-[#22C55E]/10 ring-[#22C55E]/30"
     : isNvidia
-      ? "text-[#00D4FF] bg-[#00D4FF]/10 ring-[#00D4FF]/30"
-      : "text-[#94A3B8] bg-white/5 ring-white/10";
-  const dot = isLocal ? "bg-[#22C55E]" : isNvidia ? "bg-[#00D4FF]" : "bg-[#94A3B8]";
+      ? "text-[var(--accent)] bg-[var(--accent-muted)] ring-[var(--accent)]/30"
+      : "text-[var(--text-secondary)] bg-white/5 ring-white/10";
+  const dot = isLocal ? "bg-[#22C55E]" : isNvidia ? "bg-[var(--accent)]" : "bg-[#94A3B8]";
   return (
     <span
       className={`flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 font-mono-data text-[9px] font-semibold tracking-wider ring-1 ${cls}`}
@@ -322,10 +322,10 @@ function InfoRow({
       ? "text-[#EF4444]"
       : tone === "warn"
         ? "text-[#F59E0B]"
-        : "text-[#F8FAFC]";
+        : "text-[var(--text-primary)]";
   return (
     <div className="flex items-center justify-between gap-3">
-      <span className="shrink-0 font-mono-data text-[10px] tracking-wider text-[#94A3B8]">
+      <span className="shrink-0 font-mono-data text-[10px] tracking-wider text-[var(--text-secondary)]">
         {label}
       </span>
       <span title={value} className={`max-w-[60%] truncate font-mono-data text-[11px] font-semibold ${color}`}>
@@ -371,7 +371,7 @@ function BrainSection({ snapshot }: { snapshot: Snapshot }) {
         }
         error={modelError}
       >
-        <p className="truncate text-lg font-semibold text-[#F8FAFC]">{primary ?? "—"}</p>
+        <p className="truncate text-lg font-semibold text-[var(--text-primary)]">{primary ?? "—"}</p>
         <div className="mt-2.5 space-y-1.5">
           <InfoRow label="FALLBACK" value={fallback ?? "—"} />
           <InfoRow label="MODO" value={mode ? mode.toUpperCase() : "—"} />
@@ -441,8 +441,8 @@ function ConversationSection({ snapshot }: { snapshot: Snapshot }) {
         }
         error={snapshot.errors.convStatus}
       >
-        <p className="text-3xl font-bold text-[#F8FAFC]">{total === null ? "—" : total}</p>
-        <p className="mt-1 font-mono-data text-[9px] tracking-[0.25em] text-[#94A3B8]">
+        <p className="text-3xl font-bold text-[var(--text-primary)]">{total === null ? "—" : total}</p>
+        <p className="mt-1 font-mono-data text-[9px] tracking-[0.25em] text-[var(--text-secondary)]">
           SESSÕES ATIVAS
         </p>
         <div className="mt-3 border-t border-white/[0.05] pt-2.5">
@@ -462,14 +462,14 @@ function ConversationSection({ snapshot }: { snapshot: Snapshot }) {
       >
         {lastSession ? (
           <div className="space-y-1.5">
-            <p className="truncate font-mono-data text-[11px] font-semibold text-[#00D4FF]">
+            <p className="truncate font-mono-data text-[11px] font-semibold text-[var(--accent)]">
               {lastSession.name || lastSession.session_id.slice(0, 12)}
             </p>
             <InfoRow label="MENSAGENS" value={String(lastSession.message_count)} />
             <InfoRow label="ATUALIZADO" value={formatWhen(lastSession.updated_at)} />
             <Link
               href={`/conversa?session=${encodeURIComponent(lastSession.session_id)}`}
-              className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-[#3B82F6]/40 bg-[#3B82F6]/10 px-3 py-1.5 text-xs font-medium text-[#93C5FD] transition-colors hover:bg-[#3B82F6]/20 hover:text-[#DBEAFE]"
+              className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-[var(--border)] bg-[var(--bg-secondary)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--accent-muted)] hover:text-[var(--accent)]"
             >
               <MessageSquareText className="size-3.5" />
               Abrir no chat
@@ -509,16 +509,16 @@ function ConversationSection({ snapshot }: { snapshot: Snapshot }) {
                   .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
                   .map((s) => (
                     <tr key={s.session_id} className="border-t border-white/[0.04]">
-                      <td title={s.session_id} className="max-w-[240px] truncate py-2 pr-4 font-mono-data text-[10px] text-[#00D4FF]">
+                      <td title={s.session_id} className="max-w-[240px] truncate py-2 pr-4 font-mono-data text-[10px] text-[var(--accent)]">
                         {s.session_id}
                       </td>
-                      <td className="py-2 pr-4 font-mono-data text-[10px] text-[#94A3B8]">
+                      <td className="py-2 pr-4 font-mono-data text-[10px] text-[var(--text-secondary)]">
                         {s.user_id ?? "—"}
                       </td>
-                      <td className="py-2 pr-4 font-mono-data text-[10px] text-[#F8FAFC]">
+                      <td className="py-2 pr-4 font-mono-data text-[10px] text-[var(--text-primary)]">
                         {s.message_count}
                       </td>
-                      <td className="py-2 font-mono-data text-[10px] text-[#94A3B8]">
+                      <td className="py-2 font-mono-data text-[10px] text-[var(--text-secondary)]">
                         {formatWhen(s.updated_at)}
                       </td>
                     </tr>
@@ -705,7 +705,7 @@ function InfraSection({ snapshot }: { snapshot: Snapshot }) {
         ) : logs.length === 0 ? (
           <p className="font-mono-data text-[10px] text-[#64748B]">Nenhum log registrado.</p>
         ) : (
-          <pre className="max-h-64 overflow-auto rounded-xl bg-black/30 p-3 font-mono-data text-[10px] leading-relaxed text-[#94A3B8]">
+          <pre className="max-h-64 overflow-auto rounded-xl bg-black/30 p-3 font-mono-data text-[10px] leading-relaxed text-[var(--text-secondary)]">
             {logs.slice(-10).join("\n")}
           </pre>
         )}
@@ -806,19 +806,19 @@ export default function MonitorPage() {
     <main className="mx-auto min-h-dvh max-w-7xl space-y-6 p-5 md:p-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#3B82F6] to-[#00D4FF] shadow-[0_0_24px_-6px_rgba(0,212,255,0.7)]">
-            <Server className="size-5 text-[#05070B]" strokeWidth={2.2} />
+          <div className="flex size-9 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)]">
+            <Server className="size-5 text-[var(--accent)]" strokeWidth={2.2} />
           </div>
           <div className="leading-tight">
-            <p className="text-sm font-semibold tracking-wide text-[#F8FAFC]">
-              SOPHIE <span className="text-gradient glow-text">AI</span>
+            <p className="text-sm font-semibold tracking-wide text-[var(--text-primary)]">
+              ULTRON
             </p>
-            <p className="font-mono-data text-[10px] text-[#94A3B8]">MONITORAMENTO</p>
+            <p className="font-mono-data text-[10px] text-[var(--text-secondary)]">MONITORAMENTO</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div className="glass flex items-center gap-2 rounded-xl px-3 py-1.5 font-mono-data text-[10px] text-[#94A3B8]">
-            <RefreshCw className="size-3 animate-spin-slow text-[#00D4FF]" />
+          <div className="glass flex items-center gap-2 rounded-xl px-3 py-1.5 font-mono-data text-[10px] text-[var(--text-secondary)]">
+            <RefreshCw className="size-3 animate-spin-slow text-[var(--accent)]" />
             ATUALIZADO {lastSync}
             {failedCount > 0 ? (
               <span className="text-[#F59E0B]">· {failedCount} FALHA(S)</span>
@@ -826,7 +826,7 @@ export default function MonitorPage() {
           </div>
           <Link
             href="/"
-            className="glass glass-hover rounded-xl px-3 py-1.5 font-mono-data text-[10px] text-[#94A3B8] transition-colors hover:text-[#F8FAFC]"
+            className="glass glass-hover rounded-xl px-3 py-1.5 font-mono-data text-[10px] text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
           >
             ← DASHBOARD
           </Link>

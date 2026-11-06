@@ -75,11 +75,11 @@ export function InstallPrompt() {
       <div className="fixed bottom-4 left-4 right-4 md:bottom-6 md:left-auto md:right-6 md:w-[360px] z-50 animate-slide-up" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
         <div className="glass rounded-2xl border border-[var(--border)] p-4 shadow-2xl">
           <div className="flex items-start gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--color-prime)] to-[var(--accent)] shrink-0">
+            <div className="flex size-10 items-center justify-center rounded-xl bg-[var(--accent-muted)] shrink-0">
               <Download className="size-5 text-[var(--bg-primary)]" strokeWidth={2.2} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-[var(--text-primary)]">Instalar Sophie AI</p>
+              <p className="text-sm font-semibold text-[var(--text-primary)]">Instalar Ultron AI</p>
               <p className="text-xs text-[var(--text-secondary)] mt-0.5">
                 Toque em <strong>Compartilhar</strong> → <strong>Adicionar à Tela de Início</strong>
               </p>
@@ -102,11 +102,11 @@ export function InstallPrompt() {
     <div className="fixed bottom-4 left-4 right-4 md:bottom-6 md:left-auto md:right-6 md:w-[360px] z-50 animate-slide-up" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
       <div className="glass rounded-2xl border border-[var(--border)] p-4 shadow-2xl">
         <div className="flex items-start gap-3">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--color-prime)] to-[var(--accent)] shrink-0">
+          <div className="flex size-10 items-center justify-center rounded-xl bg-[var(--accent-muted)] shrink-0">
             <Download className="size-5 text-[var(--bg-primary)]" strokeWidth={2.2} />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-[var(--text-primary)]">Instalar Sophie AI</p>
+            <p className="text-sm font-semibold text-[var(--text-primary)]">Instalar Ultron AI</p>
             <p className="text-xs text-[var(--text-secondary)] mt-0.5">
               Acesse o centro de comando direto da tela inicial
             </p>
@@ -185,7 +185,7 @@ export function InstallButton({ onClick }: { onClick?: () => void }) {
       type="button"
       onClick={handleClick}
       className="glass glass-hover relative flex size-10 items-center justify-center rounded-xl text-[var(--text-secondary)]"
-      aria-label={isIOS ? "Instruções de instalação iOS" : "Instalar Sophie AI"}
+      aria-label={isIOS ? "Instruções de instalação iOS" : "Instalar Ultron AI"}
     >
       <Download className="size-4 transition-colors group-hover:text-[var(--accent)]" />
       {canInstall && !isIOS && (

@@ -37,6 +37,7 @@ from app.modules.conversation.router import (
 from app.modules.database.router import router as database_router
 from app.modules.events.router import router as events_router
 from app.modules.knowledge.router import router as knowledge_router
+from app.modules.learning.router import router as learning_router
 from app.modules.memory.router import router as memory_router
 from app.modules.monitoring.router import router as monitoring_router
 from app.modules.planner.router import router as planner_router
@@ -354,6 +355,7 @@ def create_app() -> FastAPI:
     application.include_router(monitoring_router)
     application.include_router(memory_router, dependencies=auth_required)
     application.include_router(knowledge_router, dependencies=auth_required)
+    application.include_router(learning_router, dependencies=auth_required)
     application.include_router(reasoning_router, dependencies=auth_required)
     application.include_router(planner_router, dependencies=auth_required)
     application.include_router(tool_manager_router, dependencies=auth_required)

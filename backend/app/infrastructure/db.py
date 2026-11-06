@@ -8,6 +8,7 @@ from functools import lru_cache
 
 from fastapi import HTTPException, status
 from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -48,7 +49,7 @@ async def get_db_session() -> AsyncIterator[AsyncSession]:
                 raise
     except HTTPException:
         raise
-    except Exception as exc:
+    except (SQLAlchemyError, ConnectionError, TimeoutError, OSError) as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="database dependency unavailable",

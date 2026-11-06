@@ -68,7 +68,7 @@ class VoiceService:
         await self._publish(
             EVENT_VOICE_TRANSCRIPTION_COMPLETED,
             {
-                "text": result.text,
+                "text_chars": len(result.text),
                 "language": result.language,
                 "duration_seconds": result.duration_seconds,
             },
@@ -76,9 +76,13 @@ class VoiceService:
         return result
 
     async def synthesize(self, text: str) -> AudioResult:
-        if not self._resolve_settings().external_ai_enabled:
+        settings = self._resolve_settings()
+        if not settings.external_ai_enabled:
             await self._publish(EVENT_VOICE_UNAVAILABLE, {"reason": "external_ai_disabled"})
             raise VoiceUnavailableError("TTS externo desativado por configuração de privacidade")
+        if not settings.external_tts_enabled:
+            await self._publish(EVENT_VOICE_UNAVAILABLE, {"reason": "external_tts_disabled"})
+            raise VoiceUnavailableError("TTS externo requer opt-in explícito")
         try:
             result = await asyncio.wait_for(
                 self._tts_adapter.synthesize(text),

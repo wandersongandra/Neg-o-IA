@@ -316,3 +316,19 @@ def test_provider_response_budget_has_safe_bounds() -> None:
 
     with pytest.raises(ValidationError, match="PROVIDER_MAX_RESPONSE_BYTES"):
         Settings.model_validate(kwargs)
+
+def test_producao_rejeita_ttl_padrao_maior_que_maximo() -> None:
+    kwargs = _strong_production_kwargs()
+    kwargs["service_api_key_default_ttl_days"] = 366
+    kwargs["service_api_key_max_ttl_days"] = 365
+    with pytest.raises(ValidationError, match="SERVICE_API_KEY_DEFAULT_TTL_DAYS"):
+        Settings.model_validate(kwargs)
+
+
+def test_producao_rejeita_ttl_maximo_excessivo() -> None:
+    kwargs = _strong_production_kwargs()
+    kwargs["service_api_key_default_ttl_days"] = 90
+    kwargs["service_api_key_max_ttl_days"] = 3651
+    with pytest.raises(ValidationError, match="SERVICE_API_KEY_MAX_TTL_DAYS"):
+        Settings.model_validate(kwargs)
+

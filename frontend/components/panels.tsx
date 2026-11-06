@@ -130,7 +130,7 @@ export function ModelCard({ brain }: { brain: BrainStatus | null }) {
   return (
     <Card title="MODELO" icon={Sparkles}>
       <div className="mb-3 flex items-center gap-3">
-        <div className="relative flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--color-prime)]/30 to-[var(--accent)]/20 ring-1 ring-[var(--accent)]/30">
+        <div className="relative flex size-9 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)]">
           <Brain className="size-4 text-[var(--accent)]" />
         </div>
         <div className="min-w-0 leading-tight">
@@ -266,11 +266,11 @@ export function Greeting({ data }: { data: DashboardData | null }) {
   return (
     <div className="animate-fade-up text-center">
       <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
-        {period}, <span className="text-gradient">Wanderson</span>.
+        {period}, <span className="text-[var(--accent)]">Wanderson</span>.
       </h1>
       <p className="mt-2 text-sm text-[var(--text-secondary)]">
         <span className={online ? "text-[var(--color-ok)]" : "text-[var(--color-danger)]"}>
-          Sophie está {online ? "online" : "offline"}.
+          Ultron está {online ? "online" : "offline"}.
         </span>{" "}
         {ready
           ? "Tudo funcionando normalmente."

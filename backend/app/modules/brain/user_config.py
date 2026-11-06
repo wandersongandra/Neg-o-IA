@@ -13,6 +13,14 @@ from app.modules.configuration.settings import get_settings
 _LOGGER = logging.getLogger("app.modules.brain.user_config")
 _KEY_PREFIX = "brain:user-config"
 _TTL_SECONDS = 30 * 24 * 60 * 60
+_LEGACY_DEFAULT_PROMPT = (
+    "Você é a Sophie, assistente pessoal de inteligência artificial do Wanderson. "
+    "Fala sempre em português brasileiro, com tom profissional, elegante e direto, "
+    "inspirado no JARVIS: nunca invente fatos, admita quando não souber, e use humor "
+    "sutil quando apropriado. Trate o usuário como 'chefe'. Seja conciso: prefira "
+    "respostas curtas e úteis, em vez de longas explicações. Nunca repita o que o "
+    "usuário acabou de dizer."
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -20,6 +28,8 @@ class UserBrainConfig:
     system_prompt: str
     temperature: float
     max_tokens: int
+    provider: str = "auto"
+    model: str = ""
 
 
 def default_user_config() -> UserBrainConfig:
@@ -44,18 +54,28 @@ def _validate_payload(payload: object) -> UserBrainConfig:
     prompt = payload.get("system_prompt")
     temperature = payload.get("temperature")
     max_tokens = payload.get("max_tokens")
+    provider = payload.get("provider")
+    model = payload.get("model")
 
     if not isinstance(prompt, str) or not 10 <= len(prompt) <= 8000:
+        prompt = defaults.system_prompt
+    elif prompt == _LEGACY_DEFAULT_PROMPT:
         prompt = defaults.system_prompt
     if not isinstance(temperature, int | float) or not 0.0 <= float(temperature) <= 2.0:
         temperature = defaults.temperature
     if not isinstance(max_tokens, int) or not 1 <= max_tokens <= 8192:
         max_tokens = defaults.max_tokens
+    if provider not in {"auto", "nvidia", "chatgpt_plan"}:
+        provider = defaults.provider
+    if not isinstance(model, str) or len(model) > 128:
+        model = defaults.model
 
     return UserBrainConfig(
         system_prompt=prompt,
         temperature=float(temperature),
         max_tokens=max_tokens,
+        provider=provider,
+        model=model,
     )
 
 
@@ -82,6 +102,8 @@ async def save_user_config(user_id: str, config: UserBrainConfig) -> None:
             "system_prompt": config.system_prompt,
             "temperature": config.temperature,
             "max_tokens": config.max_tokens,
+            "provider": config.provider,
+            "model": config.model,
         },
         ensure_ascii=False,
     )

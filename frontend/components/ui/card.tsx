@@ -30,7 +30,7 @@ interface CardFooterProps {
 
 const variantStyles: Record<CardVariant, string> = {
   elevated:
-    "glass glass-hover animate-fade-up rounded-2xl p-4 backdrop-blur-base bg-gradient-to-br from-white/[0.08] to-white/[0.02]",
+    "glass glass-hover animate-fade-up rounded-xl p-4",
   outlined:
     "rounded-2xl p-4 border border-[var(--border)] bg-transparent hover:border-[var(--accent-muted)] transition-colors duration-300",
   filled:

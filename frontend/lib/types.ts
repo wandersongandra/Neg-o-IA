@@ -106,6 +106,8 @@ export interface VoiceStatus {
   tts_available: boolean;
   stt_model: string;
   tts_voice: string;
+  tts_rate?: string;
+  tts_pitch?: string;
   protocol_version?: number;
   audio_format?: string;
   limits?: {

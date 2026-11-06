@@ -1,6 +1,16 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback, useImperativeHandle, forwardRef } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
+import Image from "next/image";
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 export type AvatarState = "idle" | "thinking" | "speaking" | "listening" | "error";
 
@@ -10,335 +20,217 @@ export interface AvatarCoreRef {
   stopSpeaking: () => void;
 }
 
-interface Particle {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  radius: number;
-  layer: number;
-  baseRadius: number;
-  angle: number;
-  orbitRadius: number;
-  orbitSpeed: number;
-  orbitAngle: number;
-}
-
-const LAYER_CONFIG = [
-  { count: 30, radius: 0.35, speed: 0.0008, size: 1.5 },
-  { count: 40, radius: 0.55, speed: 0.0005, size: 1.0 },
-  { count: 50, radius: 0.75, speed: 0.0003, size: 0.6 },
-];
-
-const STATE_COLORS = {
-  idle: { primary: "var(--accent)", glow: "var(--accent-glow)", particle: "var(--accent-glow)" },
-  thinking: { primary: "var(--color-warn)", glow: "var(--color-warn)", particle: "var(--color-warn)" },
-  speaking: { primary: "var(--accent)", glow: "var(--accent-glow)", particle: "var(--accent)" },
-  listening: { primary: "var(--color-ok)", glow: "var(--color-ok)", particle: "var(--color-ok)" },
-  error: { primary: "var(--color-danger)", glow: "var(--color-danger)", particle: "var(--color-danger)" },
+const STATE_COLOR: Record<AvatarState, number> = {
+  idle: 0xa84230,
+  thinking: 0xd6a04b,
+  speaking: 0xd85a3d,
+  listening: 0x65a885,
+  error: 0xbf4545,
 };
 
-export const AvatarCore = forwardRef<AvatarCoreRef, { className?: string; "aria-hidden"?: boolean | "true" | "false" }>((
-  (props, ref) => {
+export const AvatarCore = forwardRef<
+  AvatarCoreRef,
+  { className?: string; "aria-hidden"?: boolean | "true" | "false" }
+>((props, ref) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const animationRef = useRef<number>(-1);
-  const audioContextRef = useRef<AudioContext | null>(null);
+  const stateRef = useRef<AvatarState>("idle");
+  const jawRef = useRef<THREE.Object3D | null>(null);
+  const headRef = useRef<THREE.Object3D | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
-  const dataArrayRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
-  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
-  const reducedMotion = useRef(false);
+  const audioSourcesRef = useRef<WeakMap<HTMLAudioElement, MediaElementAudioSourceNode>>(new WeakMap());
+  const speakingRef = useRef(false);
+  const [state, setState] = useState<AvatarState>("idle");
+  const [failed, setFailed] = useState(false);
 
-  const [state, setStateInternal] = useState<AvatarState>("idle");
-  // Refs for animation loop to avoid re-subscribing effect on each animation tick
-  const mouthOpenRef = useRef<number>(0);
-  const pulsePhaseRef = useRef<number>(0);
-  const particlesRef = useRef<Particle[]>([]);
-  const setMouthOpenState = useCallback((v: number) => {
-    mouthOpenRef.current = v;
-  }, []);
-
-  useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    reducedMotion.current = mediaQuery.matches;
-    const handler = (e: MediaQueryListEvent) => { reducedMotion.current = e.matches; };
-    mediaQuery.addEventListener("change", handler);
-    return () => mediaQuery.removeEventListener("change", handler);
-  }, []);
-
-  const initParticles = useCallback(() => {
-    const newParticles: Particle[] = [];
-    LAYER_CONFIG.forEach((layer, layerIndex) => {
-      for (let i = 0; i < layer.count; i++) {
-        const angle = (i / layer.count) * Math.PI * 2;
-        newParticles.push({
-          x: 0, y: 0,
-          vx: 0, vy: 0,
-          radius: layer.size * (0.5 + Math.random() * 0.5),
-          baseRadius: layer.size * (0.5 + Math.random() * 0.5),
-          layer: layerIndex,
-          angle,
-          orbitRadius: layer.radius * (0.7 + Math.random() * 0.3),
-          orbitSpeed: layer.speed * (0.5 + Math.random() * 0.5),
-          orbitAngle: Math.random() * Math.PI * 2,
-        });
-      }
-    });
-    particlesRef.current = newParticles;
-  }, []);
-
-  useEffect(() => {
-    initParticles();
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d", { alpha: true, desynchronized: true });
-    if (!ctx) return;
-
-    const resize = () => {
-      const dpr = window.devicePixelRatio || 1;
-      const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      canvas.style.width = `${rect.width}px`;
-      canvas.style.height = `${rect.height}px`;
-      ctx.scale(dpr, dpr);
-    };
-    resize();
-    window.addEventListener("resize", resize);
-
-    let lastTime = performance.now();
-
-    const animate = (time: number) => {
-      if (reducedMotion.current) {
-        return;
-      }
-
-      const dt = time - lastTime;
-      lastTime = time;
-
-      const width = canvas.width / (window.devicePixelRatio || 1);
-      const height = canvas.height / (window.devicePixelRatio || 1);
-      const cx = width / 2;
-      const cy = height / 2;
-      const radius = Math.min(width, height) * 0.45;
-
-      ctx.clearRect(0, 0, width, height);
-
-      const colors = STATE_COLORS[state];
-      const primaryColor = getComputedStyle(document.documentElement).getPropertyValue(colors.primary.replace("var(", "").replace(")", "")).trim() || colors.primary;
-      const glowColor = getComputedStyle(document.documentElement).getPropertyValue(colors.glow.replace("var(", "").replace(")", "")).trim() || colors.glow;
-      const particleColor = getComputedStyle(document.documentElement).getPropertyValue(colors.particle.replace("var(", "").replace(")", "")).trim() || colors.particle;
-
-      pulsePhaseRef.current = (pulsePhaseRef.current + dt * 0.001) % (Math.PI * 2);
-
-      const pulse = Math.sin(pulsePhaseRef.current) * 0.15 + 0.85;
-      const coreRadius = radius * pulse;
-      const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, coreRadius * 1.5);
-      gradient.addColorStop(0, `${glowColor}60`);
-      gradient.addColorStop(0.5, `${primaryColor}20`);
-      gradient.addColorStop(1, "transparent");
-      ctx.fillStyle = gradient;
-      ctx.beginPath();
-      ctx.arc(cx, cy, coreRadius * 1.5, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.strokeStyle = `${primaryColor}80`;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(cx, cy, coreRadius, 0, Math.PI * 2);
-      ctx.stroke();
-
-      if (state === "speaking") {
-        const mouthHeight = mouthOpenRef.current * radius * 0.3;
-        ctx.strokeStyle = `${primaryColor}CC`;
-        ctx.lineWidth = 3;
-        ctx.lineCap = "round";
-        ctx.beginPath();
-        ctx.moveTo(cx - radius * 0.3, cy + radius * 0.1);
-        ctx.quadraticCurveTo(cx, cy + radius * 0.1 + mouthHeight, cx + radius * 0.3, cy + radius * 0.1);
-        ctx.stroke();
-      }
-
-      // Particles stay in a ref so the animation loop does not trigger React renders.
-      const particles = particlesRef.current;
-      for (const p of particles) {
-          let orbitRadius = p.orbitRadius * radius;
-          let orbitSpeed = p.orbitSpeed;
-
-          if (state === "thinking") {
-            orbitSpeed *= 3;
-            orbitRadius *= 0.6 + Math.sin(time * 0.002 + p.orbitAngle) * 0.2;
-          } else if (state === "speaking") {
-            orbitSpeed *= 1.5;
-            orbitRadius *= 1 + Math.sin(time * 0.005 + p.orbitAngle) * 0.15;
-          } else if (state === "listening") {
-            orbitSpeed *= 0.5;
-            orbitRadius *= 1 + Math.sin(time * 0.003 + p.orbitAngle) * 0.1;
-          } else if (state === "error") {
-            orbitSpeed *= 2;
-            orbitRadius *= 1 + Math.sin(time * 0.01 + p.orbitAngle) * 0.3;
-          }
-
-          p.orbitAngle += orbitSpeed * dt;
-          p.x = cx + Math.cos(p.orbitAngle) * orbitRadius;
-          p.y = cy + Math.sin(p.orbitAngle) * orbitRadius;
-
-          if (state === "thinking") {
-            const dx = cx - p.x;
-            const dy = cy - p.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist > 20) {
-              p.x += dx * 0.02;
-              p.y += dy * 0.02;
-            }
-          }
-
-          if (state === "error") {
-            const dx = p.x - cx;
-            const dy = p.y - cy;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < radius * 1.5) {
-              p.x += dx * 0.01;
-              p.y += dy * 0.01;
-            }
-          }
-
-          const particleGradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius * 2);
-          const particleHex = getComputedStyle(document.documentElement).getPropertyValue(colors.particle.replace("var(", "").replace(")", "")).trim() || particleColor;
-          particleGradient.addColorStop(0, `${particleHex}FF`);
-          particleGradient.addColorStop(1, `${particleHex}00`);
-          ctx.fillStyle = particleGradient;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-          ctx.fill();
-
-      }
-
-      if (state === "thinking") {
-        ctx.strokeStyle = `${particleColor}30`;
-        ctx.lineWidth = 0.5;
-        particlesRef.current.forEach((p1, i) => {
-          particlesRef.current.slice(i + 1).forEach(p2 => {
-            const dx = p1.x - p2.x;
-            const dy = p1.y - p2.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < 120) {
-              ctx.globalAlpha = 1 - dist / 120;
-              ctx.beginPath();
-              ctx.moveTo(p1.x, p1.y);
-              ctx.lineTo(p2.x, p2.y);
-              ctx.stroke();
-            }
-          });
-        });
-        ctx.globalAlpha = 1;
-      }
-
-      ctx.strokeStyle = `${primaryColor}40`;
-      ctx.lineWidth = 1;
-      ctx.setLineDash([10, 10]);
-      ctx.lineDashOffset = time * 0.02;
-      ctx.beginPath();
-      ctx.arc(cx, cy, radius * 1.1, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      animationRef.current = requestAnimationFrame(animate);
-    };
-
-    animationRef.current = requestAnimationFrame(animate);
-
-    return () => {
-      window.removeEventListener("resize", resize);
-      if (animationRef.current) cancelAnimationFrame(animationRef.current);
-    };
-  }, [state, initParticles, setMouthOpenState]);
-
-  const setState = useCallback((newState: AvatarState) => {
-    setStateInternal(newState);
+  const setAvatarState = useCallback((next: AvatarState) => {
+    stateRef.current = next;
+    setState(next);
   }, []);
 
   const speak = useCallback((audio: HTMLAudioElement) => {
     try {
-      currentAudioRef.current?.pause();
-      currentAudioRef.current = audio;
-      if (!audioContextRef.current) {
-        const AudioCtx = (window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext) as typeof AudioContext;
-        audioContextRef.current = new AudioCtx();
-      }
-      if (audioContextRef.current.state === "suspended") {
-        audioContextRef.current.resume();
-      }
-      if (sourceRef.current) {
-        sourceRef.current.disconnect();
-      }
-      sourceRef.current = audioContextRef.current.createMediaElementSource(audio);
-      analyserRef.current = audioContextRef.current.createAnalyser();
-      analyserRef.current.fftSize = 256;
-      analyserRef.current.smoothingTimeConstant = 0.8;
-      sourceRef.current.connect(analyserRef.current);
-      analyserRef.current.connect(audioContextRef.current.destination);
-      dataArrayRef.current = new Uint8Array(analyserRef.current.frequencyBinCount) as unknown as Uint8Array<ArrayBuffer>;
-
-      setStateInternal("speaking");
-
+      const Ctx = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!Ctx) throw new Error("Web Audio is not supported");
+      const context = audioContextRef.current ?? new Ctx();
+      audioContextRef.current = context;
+      const source = audioSourcesRef.current.get(audio) ?? context.createMediaElementSource(audio);
+      audioSourcesRef.current.set(audio, source);
+      sourceRef.current?.disconnect();
+      analyserRef.current?.disconnect();
+      sourceRef.current = source;
+      const analyser = context.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.78;
+      source.connect(analyser);
+      analyser.connect(context.destination);
+      analyserRef.current = analyser;
+      if (context.state === "suspended") void context.resume();
+      speakingRef.current = true;
+      setAvatarState("speaking");
       void audio.play().catch(() => {
-        setMouthOpenState(0);
-        setStateInternal("idle");
+        speakingRef.current = false;
+        setAvatarState("idle");
       });
-
-      const updateMouth = () => {
-        if (!analyserRef.current || !dataArrayRef.current) return;
-        analyserRef.current.getByteFrequencyData(dataArrayRef.current as Uint8Array<ArrayBuffer>);
-        let sum = 0;
-        for (let i = 0; i < 32; i++) sum += dataArrayRef.current[i];
-        const avg = sum / 32 / 255;
-        setMouthOpenState(Math.min(avg * 2, 1));
-        if (!audio.paused && !audio.ended) {
-          requestAnimationFrame(updateMouth);
-        } else {
-          setMouthOpenState(0);
-          setStateInternal("idle");
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      const update = () => {
+        if (!speakingRef.current) return;
+        analyser.getByteFrequencyData(data);
+        const mean = data.slice(0, 32).reduce((sum, value) => sum + value, 0) / 32 / 255;
+        if (jawRef.current) jawRef.current.rotation.x = -Math.min(mean * 0.27, 0.18);
+        if (!audio.paused && !audio.ended) requestAnimationFrame(update);
+        else {
+          speakingRef.current = false;
+          if (jawRef.current) jawRef.current.rotation.x = 0;
+          source.disconnect();
+          analyser.disconnect();
+          if (sourceRef.current === source) sourceRef.current = null;
+          if (analyserRef.current === analyser) analyserRef.current = null;
+          setAvatarState("idle");
         }
       };
-      updateMouth();
-    } catch (e) {
-      console.warn("Avatar lip-sync failed:", e);
+      update();
+    } catch (error) {
+      console.warn("Avatar speech animation unavailable:", error);
+      setAvatarState("speaking");
     }
-  }, [setMouthOpenState]);
+  }, [setAvatarState]);
 
   const stopSpeaking = useCallback(() => {
-    currentAudioRef.current?.pause();
-    currentAudioRef.current = null;
-    setMouthOpenState(0);
-    setStateInternal("idle");
-    if (sourceRef.current) {
-      sourceRef.current.disconnect();
-      sourceRef.current = null;
-    }
-    if (analyserRef.current) {
-      analyserRef.current.disconnect();
-      analyserRef.current = null;
-    }
-  }, [setMouthOpenState]);
+    speakingRef.current = false;
+    if (jawRef.current) jawRef.current.rotation.x = 0;
+    sourceRef.current?.disconnect();
+    analyserRef.current?.disconnect();
+    analyserRef.current = null;
+    setAvatarState("idle");
+  }, [setAvatarState]);
 
-  useImperativeHandle(ref, () => ({
-    setState,
-    speak,
-    stopSpeaking,
-  }));
+  useImperativeHandle(ref, () => ({ setState: setAvatarState, speak, stopSpeaking }), [setAvatarState, speak, stopSpeaking]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    let disposed = false;
+    let frame = 0;
+    let frameTimer: number | null = null;
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: "low-power" });
+    } catch {
+      setFailed(true);
+      return;
+    }
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
+    renderer.setClearColor(0x000000, 0);
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 30);
+    camera.position.set(0, 0.05, 4.5);
+    scene.add(new THREE.HemisphereLight(0xd8d5cd, 0x1c2021, 2.0));
+    const key = new THREE.DirectionalLight(0xffe9d0, 3.3);
+    key.position.set(-3, 4, 5);
+    scene.add(key);
+    const fill = new THREE.DirectionalLight(0x8f9b9d, 1.2);
+    fill.position.set(4, 0, 2);
+    scene.add(fill);
+    const rim = new THREE.DirectionalLight(0xc34b32, 1.8);
+    rim.position.set(0, 2, -3);
+    scene.add(rim);
+    const pointer = new THREE.Vector2();
+    const target = new THREE.Vector2();
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      renderer.setSize(rect.width, rect.height, false);
+      camera.aspect = rect.width / rect.height;
+      camera.updateProjectionMatrix();
+    };
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(canvas);
+    resize();
+    const onPointerMove = (event: PointerEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      target.x = ((event.clientX - rect.left) / rect.width - 0.5) * 0.35;
+      target.y = ((event.clientY - rect.top) / rect.height - 0.5) * 0.22;
+    };
+    const onPointerLeave = () => target.set(0, 0);
+    canvas.addEventListener("pointermove", onPointerMove, { passive: true });
+    canvas.addEventListener("pointerleave", onPointerLeave, { passive: true });
+
+    const loader = new GLTFLoader();
+    loader.load("/models/sentinel.glb", (gltf) => {
+      if (disposed) return;
+      const root = gltf.scene;
+      scene.add(root);
+      headRef.current = root.getObjectByName("HeadPivot") ?? root;
+      jawRef.current = root.getObjectByName("JawPivot") ?? null;
+      root.rotation.y = 0;
+      const bounds = new THREE.Box3().setFromObject(root);
+      const center = bounds.getCenter(new THREE.Vector3());
+      root.position.sub(center);
+      // Keep the neck visible but give the face most of the viewport.
+      root.scale.setScalar(1.12);
+    }, undefined, (error) => {
+      console.error("Could not load sentinel GLB:", error);
+      if (!disposed) setFailed(true);
+    });
+
+    const clock = new THREE.Clock();
+    const animate = () => {
+      if (disposed) return;
+      const elapsed = clock.getElapsedTime();
+      const active = stateRef.current;
+      const head = headRef.current;
+      if (head) {
+        pointer.lerp(target, 0.035);
+        const motion = reducedMotion.matches ? 0 : 1;
+        const amplitude = active === "thinking" ? 0.11 : active === "listening" ? 0.07 : 0.045;
+        head.rotation.y = pointer.x * motion + Math.sin(elapsed * 0.42) * amplitude * motion;
+        head.rotation.x = pointer.y * motion + Math.sin(elapsed * 0.7) * 0.018 * motion;
+        head.position.y = Math.sin(elapsed * 0.8) * 0.025 * motion;
+      }
+      const color = STATE_COLOR[active];
+      for (const light of [key, rim]) light.color.setHex(active === "idle" ? (light === key ? 0xffe9d0 : color) : color);
+      renderer.render(scene, camera);
+      frameTimer = window.setTimeout(
+        () => { frame = requestAnimationFrame(animate); },
+        reducedMotion.matches ? 80 : 33,
+      );
+    };
+    animate();
+
+    return () => {
+      disposed = true;
+      cancelAnimationFrame(frame);
+      if (frameTimer !== null) window.clearTimeout(frameTimer);
+      resizeObserver.disconnect();
+      canvas.removeEventListener("pointermove", onPointerMove);
+      canvas.removeEventListener("pointerleave", onPointerLeave);
+      scene.traverse((object) => {
+        const mesh = object as THREE.Mesh;
+        if (mesh.geometry) mesh.geometry.dispose();
+        if (mesh.material) {
+          const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+          materials.forEach((material) => material.dispose());
+        }
+      });
+      renderer.dispose();
+      headRef.current = null;
+      jawRef.current = null;
+    };
+  }, []);
 
   return (
-     <canvas
-      ref={canvasRef}
-      className={`w-full h-full max-w-[480px] max-h-[480px] ${props.className || ""}`}
-      aria-hidden={props["aria-hidden"]}
-      aria-label={`Avatar Sophie — estado: ${state}`}
-      role="img"
-    />
+    <div className="relative h-full w-full" aria-hidden={props["aria-hidden"] ?? true}>
+      <canvas ref={canvasRef} className={props.className ?? "h-full w-full"} aria-label={`Avatar mecânico — ${state}`} role="img" />
+      {failed ? <Image src="/models/sentinel.webp" alt="" fill sizes="(max-width: 640px) 90vw, 480px" className="object-contain" /> : null}
+    </div>
   );
-}));
+});
 
 AvatarCore.displayName = "AvatarCore";
-
 export default AvatarCore;

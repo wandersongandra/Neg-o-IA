@@ -15,7 +15,7 @@ EVENT_VOICE_UNAVAILABLE: Final[str] = "voice.unavailable"
 
 EVENT_CATALOG: Final[dict[str, str]] = {
     EVENT_VOICE_TRANSCRIPTION_COMPLETED: (
-        "Transcrição de fala concluída (STT) com o texto e a duração do áudio"
+        "Transcrição de fala concluída (STT) com metadados, sem persistir o texto transcrito"
     ),
     EVENT_VOICE_SYNTHESIS_COMPLETED: (
         "Síntese de fala concluída (TTS) com o content-type e o tamanho do áudio"

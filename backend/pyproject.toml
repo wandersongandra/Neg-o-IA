@@ -28,6 +28,7 @@ dependencies = [
     "prometheus-client==0.26.0",
     "edge-tts==7.2.8",
     "argon2-cffi==25.1.0",
+    "cryptography==50.0.0",
 ]
 
 [project.optional-dependencies]

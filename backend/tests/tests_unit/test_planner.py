@@ -152,3 +152,43 @@ async def test_plan_execution_runs_confirmed_write(
 
     assert result.status == "completed"
     assert tools.calls[0][3] is True
+
+@pytest.mark.asyncio
+async def test_planner_never_fabricates_tool_confirmation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from datetime import UTC, datetime
+
+    from app.modules.planner.domain import ExecutionPlan, PlanStep
+
+    plan = ExecutionPlan(
+        plan_id="plan-read",
+        user_id="user-1",
+        goal="consultar memória",
+        intent="memory.search",
+        steps=(
+            PlanStep(
+                step_id="1",
+                kind="tool",
+                description="buscar memória",
+                tool_name="memory.search",
+                arguments={"query": "abc"},
+                requires_confirmation=False,
+            ),
+        ),
+        revision=0,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
+    tools = _FakeToolManager()
+    monkeypatch.setattr(
+        "app.modules.tool_manager.application.get_tool_manager_service",
+        lambda: tools,
+    )
+    service = PlannerService(store=_FakePlanStore(plan))
+
+    result = await service.execute_plan("user-1", "plan-read")
+
+    assert result.status == "completed"
+    assert tools.calls[0][3] is False
+

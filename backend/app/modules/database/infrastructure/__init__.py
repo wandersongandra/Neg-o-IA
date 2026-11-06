@@ -12,8 +12,10 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
+    LargeBinary,
     MetaData,
     String,
     Text,
@@ -54,6 +56,7 @@ class ApiKeyORM(Base):
         DateTime(timezone=True), nullable=False, server_default=text("now()")
     )
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
@@ -74,6 +77,42 @@ class UserORM(Base):
         DateTime(timezone=True), nullable=False, server_default=text("now()")
     )
     updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=text("now()")
+    )
+
+
+class OpenAIPlanCredentialORM(Base):
+    __tablename__ = "openai_plan_credentials"
+    __table_args__ = {"schema": "ai"}
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("identity.users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    email: Mapped[str | None] = mapped_column(String(320), nullable=True)
+    client_id: Mapped[str] = mapped_column(String(256), nullable=False)
+    host_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    access_token_cipher: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    refresh_token_cipher: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    account_subject_cipher: Mapped[bytes] = mapped_column(LargeBinary, nullable=False)
+    scopes: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    connected_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=text("now()")
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=text("now()")
+    )
+
+
+class OpenAIPlanHostORM(Base):
+    __tablename__ = "openai_plan_host"
+    __table_args__ = {"schema": "ai"}
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    host_id: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=text("now()")
     )
 
@@ -238,6 +277,11 @@ class KnowledgeDocumentORM(Base):
             "content_hash",
             name="uq_knowledge_document_content",
         ),
+        UniqueConstraint(
+            "id",
+            "user_id",
+            name="uq_knowledge_documents_id_user",
+        ),
         {"schema": "knowledge"},
     )
 
@@ -273,6 +317,12 @@ class KnowledgeChunkORM(Base):
             "chunk_index",
             name="uq_knowledge_chunk_index",
         ),
+        ForeignKeyConstraint(
+            ("document_id", "user_id"),
+            ("knowledge.documents.id", "knowledge.documents.user_id"),
+            name="fk_knowledge_chunks_document_user",
+            ondelete="CASCADE",
+        ),
         Index("ix_knowledge_chunks_user", "user_id"),
         {"schema": "knowledge"},
     )
@@ -284,7 +334,6 @@ class KnowledgeChunkORM(Base):
     )
     document_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("knowledge.documents.id", ondelete="CASCADE"),
         nullable=False,
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
@@ -301,6 +350,33 @@ class KnowledgeChunkORM(Base):
         nullable=False,
         server_default=text("'{}'::jsonb"),
     )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=text("now()")
+    )
+
+
+class LearningExperienceORM(Base):
+    __tablename__ = "experiences"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id", "session_id", "message_ref", name="uq_learning_experience_message"
+        ),
+        Index("ix_learning_experiences_user_created", "user_id", "created_at"),
+        Index("ix_learning_experiences_user_session", "user_id", "session_id"),
+        {"schema": "learning"},
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("identity.users.id", ondelete="CASCADE"), nullable=False
+    )
+    session_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    message_ref: Mapped[str] = mapped_column(String(128), nullable=False)
+    rating: Mapped[int] = mapped_column(Integer, nullable=False)
+    lesson: Mapped[str | None] = mapped_column(Text, nullable=True)
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(384), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=text("now()")
     )
@@ -373,8 +449,11 @@ __all__ = [
     "DeviceORM",
     "KnowledgeChunkORM",
     "KnowledgeDocumentORM",
+    "LearningExperienceORM",
     "MemoryEntryORM",
     "MemoryPolicyORM",
+    "OpenAIPlanCredentialORM",
+    "OpenAIPlanHostORM",
     "DatabaseProvider",
     "UserORM",
     "create_provider",

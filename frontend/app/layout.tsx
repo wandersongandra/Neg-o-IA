@@ -32,7 +32,7 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export const viewport: Viewport = {
-  themeColor: "#00d4ff",
+  themeColor: "#b65b46",
   colorScheme: "dark",
 };
 
@@ -41,10 +41,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="pt-BR" className="dark">
       <head>
         <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" href="/icons/icon-192.svg" type="image/svg+xml" />
-        <meta name="theme-color" content="#00d4ff" media="(prefers-color-scheme: dark)" />
-        <meta name="theme-color" content="#00d4ff" media="(prefers-color-scheme: light)" />
-        <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
+        <link rel="icon" href="/icons/ultron-mark.svg" type="image/svg+xml" />
+        <meta name="theme-color" content="#b65b46" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#b65b46" media="(prefers-color-scheme: light)" />
+        <link rel="apple-touch-icon" href="/icons/ultron-mark.svg" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content={BRAND.displayName} />

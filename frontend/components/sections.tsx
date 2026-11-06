@@ -7,10 +7,18 @@ import {
   ListTodo,
   RefreshCw,
   Sparkles,
+  Trash2,
   TrendingUp,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { DashboardData } from "@/lib/types";
+
+interface LearningExperience {
+  id: string;
+  rating: number;
+  lesson: string | null;
+  created_at: string;
+}
 
 function SectionTitle({
   icon: Icon,
@@ -93,10 +101,74 @@ export function KnowledgeGraph() {
 }
 
 export function LearningsPanel() {
+  const [experiences, setExperiences] = useState<LearningExperience[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadExperiences = () => {
+      fetch("/api/proxy/learning/experiences", { cache: "no-store" })
+        .then(async (response) => {
+          if (!response.ok) throw new Error("learning experiences unavailable");
+          return (await response.json()) as { experiences?: LearningExperience[] };
+        })
+        .then((body) => {
+          if (!cancelled) setExperiences(body.experiences ?? []);
+        })
+        .catch(() => {
+          if (!cancelled) setExperiences([]);
+        });
+    };
+    loadExperiences();
+    window.addEventListener("ultron-learning-updated", loadExperiences);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("ultron-learning-updated", loadExperiences);
+    };
+  }, []);
+
+  const removeExperience = async (id: string) => {
+    const response = await fetch(
+      `/api/proxy/learning/experiences/${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    );
+    if (response.ok) setExperiences((items) => items.filter((item) => item.id !== id));
+  };
+
   return (
     <div className="glass glass-hover animate-fade-up rounded-2xl p-4">
-      <SectionTitle icon={Sparkles} title="Aprendizados Recentes" subtitle="SEM DADOS" />
-      <p className="px-2 py-4 text-xs text-[var(--text-secondary)]">Nenhum aprendizado foi sincronizado ainda.</p>
+      <SectionTitle icon={Sparkles} title="Aprendizados Recentes" subtitle="ENSINADOS POR VOCÊ" />
+      {experiences.length === 0 ? (
+        <p className="px-2 py-4 text-xs text-[var(--text-secondary)]">Avalie uma resposta e escreva uma correção para Ultron usar como referência pessoal.</p>
+      ) : (
+        <ul className="max-h-56 space-y-2 overflow-y-auto pr-1">
+          {experiences.slice(0, 8).map((item) => (
+            <li
+              key={item.id}
+              className="flex items-start gap-2 rounded-xl bg-white/[0.025] p-2.5"
+            >
+              <span className="mt-0.5 font-mono-data text-[10px] text-[#ff765e]">
+                {item.rating > 0 ? "+" : "−"}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="break-words text-xs text-[var(--text-primary)]">
+                  {item.lesson ?? "Avaliação registrada sem correção escrita."}
+                </p>
+                <p className="mt-1 font-mono-data text-[9px] text-[var(--text-secondary)]">
+                  {new Date(item.created_at).toLocaleDateString("pt-BR")}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void removeExperience(item.id)}
+                className="rounded p-1 text-[var(--text-secondary)] hover:text-[#ff765e]"
+                aria-label="Apagar este aprendizado"
+              >
+                <Trash2 className="size-3.5" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

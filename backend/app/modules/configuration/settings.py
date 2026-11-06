@@ -24,6 +24,7 @@ _SECRET_FILE_FIELDS = frozenset(
         "audit_integrity_key",
         "internal_proxy_key",
         "nvidia_api_key",
+        "oauth_credential_encryption_key",
     }
 )
 _MAX_SECRET_FILE_BYTES = 64 * 1024
@@ -58,6 +59,8 @@ class Settings(BaseSettings):
     service_api_key: str = ""
     service_api_scopes: list[str] = ["database:admin", "metrics:read"]
     service_bootstrap_enabled: bool = False
+    service_api_key_default_ttl_days: int = 90
+    service_api_key_max_ttl_days: int = 365
     database_url: str = "postgresql+asyncpg://negao:negao@localhost:5432/negao"
     redis_url: str = "redis://localhost:6379/0"
     secret_key: str = "negao-dev-secret-key"
@@ -79,6 +82,7 @@ class Settings(BaseSettings):
 
     external_ai_enabled: bool = False
     nvidia_api_key: str = ""
+    oauth_credential_encryption_key: str = ""
     nvidia_base_url: str = "https://integrate.api.nvidia.com/v1"
     external_ai_allowed_hosts: list[str] = ["integrate.api.nvidia.com"]
     brain_chat_model: str = "deepseek-ai/deepseek-v4-flash"
@@ -94,8 +98,11 @@ class Settings(BaseSettings):
     provider_max_response_bytes: int = 2 * 1024 * 1024
 
     external_tts_enabled: bool = False
-    tts_voice: str = "pt-BR-FranciscaNeural"
-    tts_rate: str = "+0%"
+    # Voz original: timbre masculino PT-BR com fala um pouco mais lenta e grave.
+    # Não replica voz de personagem ou intérprete específico.
+    tts_voice: str = "pt-BR-AntonioNeural"
+    tts_rate: str = "-5%"
+    tts_pitch: str = "-6Hz"
     voice_max_chunk_bytes: int = 256 * 1024
     voice_max_turn_bytes: int = 10 * 1024 * 1024
     voice_max_turn_seconds: float = 30.0
@@ -189,6 +196,13 @@ class Settings(BaseSettings):
             problems.append("NEGAO_CORS_ORIGINS deve conter apenas origens HTTPS válidas")
         if self.registration_enabled:
             problems.append("NEGAO_REGISTRATION_ENABLED deve ser false em produção")
+        if not 1 <= self.service_api_key_default_ttl_days <= self.service_api_key_max_ttl_days:
+            problems.append(
+                "NEGAO_SERVICE_API_KEY_DEFAULT_TTL_DAYS deve estar entre 1 e "
+                "NEGAO_SERVICE_API_KEY_MAX_TTL_DAYS"
+            )
+        if not 1 <= self.service_api_key_max_ttl_days <= 3650:
+            problems.append("NEGAO_SERVICE_API_KEY_MAX_TTL_DAYS deve estar entre 1 e 3650")
         if self.auth_session_idle_seconds <= 0:
             problems.append("NEGAO_AUTH_SESSION_IDLE_SECONDS deve ser maior que zero")
         if self.auth_session_idle_seconds > self.auth_session_ttl_seconds:

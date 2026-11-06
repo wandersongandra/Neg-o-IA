@@ -136,7 +136,10 @@ class PlannerService:
                     step.tool_name,
                     step.arguments,
                     user_id=user_id,
-                    confirmed=is_confirmed or not step.requires_confirmation,
+                    # O Planner nunca fabrica confirmação. Mesmo para etapas
+                    # atualmente read-only, a decisão final pertence ao
+                    # Tool Manager e à política atual da ferramenta.
+                    confirmed=is_confirmed,
                     idempotency_key=(f"plan:{plan.plan_id}:{plan.revision}:{step.step_id}"),
                 )
             except ToolConfirmationRequiredError:
@@ -211,6 +214,13 @@ class PlannerService:
         entities: dict[str, Any],
     ) -> list[PlanStep]:
         if suggested_tool:
+            from app.modules.tool_manager.application import get_tool_manager_service
+
+            spec = get_tool_manager_service().get_spec(suggested_tool)
+            # Fail closed se o Reasoning sugerir uma ferramenta desconhecida.
+            # A confirmação nunca é inferida a partir do nome da ferramenta.
+            requires_confirmation = spec is None or spec.requires_confirmation
+
             arguments: dict[str, Any]
             if suggested_tool == "memory.remember":
                 arguments = {"content": str(entities.get("content") or text)}
@@ -225,7 +235,7 @@ class PlannerService:
                     description=f"Executar {suggested_tool}",
                     tool_name=suggested_tool,
                     arguments=arguments,
-                    requires_confirmation=suggested_tool == "memory.remember",
+                    requires_confirmation=requires_confirmation,
                 ),
                 PlanStep(
                     step_id="2",

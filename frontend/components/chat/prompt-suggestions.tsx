@@ -13,7 +13,7 @@ const SUGGESTIONS: Suggestion[] = [
   {
     icon: Bot,
     title: "Apresente-se",
-    prompt: "Quem é você, Sophie? O que você pode fazer por mim?",
+    prompt: "Quem é você, Ultron? O que você pode fazer por mim?",
   },
   {
     icon: Brain,
@@ -58,7 +58,7 @@ export default function PromptSuggestions({
             key={s.title}
             type="button"
             onClick={() => onSelect(s.prompt)}
-            className="glass glass-hover group flex flex-col items-start gap-2 rounded-xl p-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_24px_-12px_var(--accent-glow)]"
+            className="glass glass-hover group flex flex-col items-start gap-2 rounded-xl p-3 text-left transition-colors duration-200"
           >
             <s.icon className="size-4 text-[var(--accent)] transition-transform group-hover:scale-110" />
             <span className="text-xs font-medium leading-tight text-[var(--text-primary)]">

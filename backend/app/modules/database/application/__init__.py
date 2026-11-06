@@ -7,7 +7,7 @@ import hmac
 import json
 import secrets
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import func, select
@@ -134,14 +134,25 @@ def generate_api_key() -> str:
 
 
 async def create_api_key(
-    session: AsyncSession, name: str, scopes: list[str] | None = None
+    session: AsyncSession,
+    name: str,
+    scopes: list[str] | None = None,
+    *,
+    ttl_days: int | None = None,
 ) -> tuple[str, ApiKeyRecord]:
-    """Cria uma API key; retorna (plain_key, record). A plain key só é mostrada uma vez."""
+    """Cria uma API key expirável; a plain key só é mostrada uma vez."""
+    settings = get_settings()
+    effective_ttl = ttl_days or settings.service_api_key_default_ttl_days
+    if not 1 <= effective_ttl <= settings.service_api_key_max_ttl_days:
+        raise ValueError("service api key ttl outside allowed range")
+
     plain_key = generate_api_key()
+    expires_at = datetime.now(UTC) + timedelta(days=effective_ttl)
     record = ApiKeyORM(
         key_hash=hash_api_key(plain_key),
         name=name,
         scopes=scopes or [],
+        expires_at=expires_at,
     )
     session.add(record)
     await session.flush()
@@ -149,6 +160,7 @@ async def create_api_key(
         id=str(record.id),
         key_hash=record.key_hash,
         name=record.name,
+        expires_at=record.expires_at,
         scopes=list(record.scopes),
         created_at=record.created_at,
         last_used_at=record.last_used_at,
@@ -157,37 +169,73 @@ async def create_api_key(
     return plain_key, domain
 
 
-async def revoke_api_key(session: AsyncSession, key_id: str) -> bool:
-    """Revoga uma chave persistida; nunca exige ou retorna o segredo original."""
+async def revoke_api_key(session: AsyncSession, key_id: str) -> ApiKeyRecord | None:
+    """Revoga uma chave persistida e retorna somente seus metadados."""
     try:
         parsed_id = uuid.UUID(key_id)
     except ValueError:
-        return False
+        return None
     record = await session.get(ApiKeyORM, parsed_id)
     if record is None or record.revoked_at is not None:
-        return False
-    record.revoked_at = datetime.now(UTC)
-    await session.flush()
-    return True
-
-
-async def verify_api_key(session: AsyncSession, key: str) -> ApiKeyRecord | None:
-    """Valida uma chave: hash, existência e não revogação. Atualiza last_used_at."""
-    result = await session.execute(select(ApiKeyORM).where(ApiKeyORM.key_hash == hash_api_key(key)))
-    record = result.scalar_one_or_none()
-    if record is None or record.revoked_at is not None:
         return None
-    record.last_used_at = datetime.now(UTC)
+    record.revoked_at = datetime.now(UTC)
     await session.flush()
     return ApiKeyRecord(
         id=str(record.id),
         key_hash=record.key_hash,
         name=record.name,
+        expires_at=record.expires_at,
         scopes=list(record.scopes),
         created_at=record.created_at,
         last_used_at=record.last_used_at,
         revoked_at=record.revoked_at,
     )
+
+
+async def verify_api_key(session: AsyncSession, key: str) -> ApiKeyRecord | None:
+    """Valida hash, revogação e expiração; atualiza last_used_at somente se válida."""
+    result = await session.execute(select(ApiKeyORM).where(ApiKeyORM.key_hash == hash_api_key(key)))
+    record = result.scalar_one_or_none()
+    now = datetime.now(UTC)
+    if (
+        record is None
+        or record.revoked_at is not None
+        or record.expires_at is None
+        or record.expires_at <= now
+    ):
+        return None
+    record.last_used_at = now
+    await session.flush()
+    return ApiKeyRecord(
+        id=str(record.id),
+        key_hash=record.key_hash,
+        name=record.name,
+        expires_at=record.expires_at,
+        scopes=list(record.scopes),
+        created_at=record.created_at,
+        last_used_at=record.last_used_at,
+        revoked_at=record.revoked_at,
+    )
+
+
+async def list_api_keys(session: AsyncSession) -> list[ApiKeyRecord]:
+    """Lista apenas metadados de credenciais persistidas; nunca retorna o segredo."""
+    result = await session.execute(
+        select(ApiKeyORM).order_by(ApiKeyORM.created_at.desc(), ApiKeyORM.id.desc())
+    )
+    return [
+        ApiKeyRecord(
+            id=str(record.id),
+            key_hash=record.key_hash,
+            name=record.name,
+            expires_at=record.expires_at,
+            scopes=list(record.scopes),
+            created_at=record.created_at,
+            last_used_at=record.last_used_at,
+            revoked_at=record.revoked_at,
+        )
+        for record in result.scalars()
+    ]
 
 
 async def register_audit_event(session: AsyncSession, envelope: EventEnvelope) -> AuditEventRecord:

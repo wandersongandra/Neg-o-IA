@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { Eye, ImagePlus } from "lucide-react";
 import WorkspaceShell from "@/components/workspace-shell";
 
@@ -117,7 +118,7 @@ export default function VisionPage() {
   return (
     <WorkspaceShell
       title="Visão"
-      description="Análise multimodal opt-in. A imagem é processada em memória e não é persistida pela Sophie."
+      description="Análise multimodal opt-in. A imagem é processada em memória e não é persistida pela Ultron."
     >
       <div className="grid gap-5 xl:grid-cols-[1fr_1fr]">
         <section className="glass rounded-2xl p-5">
@@ -150,9 +151,12 @@ export default function VisionPage() {
             />
           </label>
           {previewUrl ? (
-            <img
+            <Image
               src={previewUrl}
               alt="Pré-visualização da imagem selecionada"
+              width={1280}
+              height={720}
+              unoptimized
               className="mt-4 max-h-80 w-full rounded-xl object-contain"
             />
           ) : null}

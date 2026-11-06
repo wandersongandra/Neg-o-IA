@@ -10,40 +10,24 @@ interface CoreSphereProps {
   brain: BrainStatus | null;
 }
 
-const CHIP_POSITIONS = [
-  "left-0 top-[12%]",
-  "right-0 top-[6%]",
-  "left-[-4%] bottom-[22%]",
-  "right-[-2%] bottom-[16%]",
-  "left-[10%] bottom-[-2%]",
-  "right-[8%] top-[38%]",
-];
-
-const STATIC_DOTS = [
-  { top: "8%", left: "18%", delay: "0s" },
-  { top: "16%", left: "78%", delay: "0.8s" },
-  { top: "30%", left: "6%", delay: "1.6s" },
-  { top: "38%", left: "92%", delay: "0.4s" },
-  { top: "55%", left: "3%", delay: "2.1s" },
-  { top: "62%", left: "88%", delay: "1.2s" },
-  { top: "78%", left: "14%", delay: "2.6s" },
-  { top: "84%", left: "70%", delay: "0.2s" },
-  { top: "24%", left: "42%", delay: "1.9s" },
-  { top: "70%", left: "46%", delay: "1.1s" },
-  { top: "12%", left: "58%", delay: "2.4s" },
-  { top: "88%", left: "32%", delay: "0.6s" },
-];
-
 export interface CoreSphereRef {
   setState: (state: "idle" | "thinking" | "speaking" | "listening" | "error") => void;
   speak: (audio: HTMLAudioElement) => void;
   stopSpeaking: () => void;
 }
 
+const STATUS_COPY = {
+  idle: "SISTEMA EM ESPERA",
+  thinking: "PROCESSANDO ENTRADA",
+  speaking: "RESPOSTA EMITIDA",
+  listening: "CAPTURA DE VOZ",
+  error: "SINAL INTERROMPIDO",
+} as const;
+
 export const CoreSphere = forwardRef<CoreSphereRef, CoreSphereProps>(
   ({ data, brain }, ref) => {
     const avatarRef = useRef<AvatarCoreRef>(null);
-    const { registerRef } = useAvatar();
+    const { registerRef, state } = useAvatar();
 
     useEffect(() => {
       registerRef(avatarRef.current);
@@ -57,141 +41,30 @@ export const CoreSphere = forwardRef<CoreSphereRef, CoreSphereProps>(
     }));
 
     const online = data?.healthz?.status === "alive";
-    const latency = data?.latency_ms ?? null;
-    const brainKnown = typeof brain?.mode === "string" && typeof brain?.primary_model === "string";
-    const model = brain?.primary_model ?? "—";
-    const chips = [
-      { label: "MODELO ATIVO", value: model, tone: brainKnown ? "ok" as const : "warn" as const },
-      { label: "MEMÓRIA UTILIZADA", value: "SEM DADOS", tone: "warn" as const },
-      { label: "NÍVEL DE APRENDIZADO", value: "SEM DADOS", tone: "warn" as const },
-      { label: "ESTADO COGNITIVO", value: online ? "OPERACIONAL" : "OFFLINE", tone: online ? "ok" as const : "warn" as const },
-      { label: "CONFIANÇA", value: "SEM DADOS", tone: "warn" as const },
-      {
-        label: "PROCESSAMENTO",
-        value: latency === null ? "--" : `${latency}ms`,
-        tone: online ? "ok" as const : "warn" as const,
-      },
-    ];
-
+    const latency = data?.latency_ms;
     return (
-      <div className="relative mx-auto flex aspect-square w-full max-w-[480px] items-center justify-center" aria-label="Sophie Intelligence Core">
-        <div
-          className="animate-glow-pulse absolute size-2/3 rounded-full bg-[var(--color-prime)]/20 blur-3xl"
-          style={{ filter: "blur(60px)" }}
+      <div
+        className="ultron-core relative mx-auto flex aspect-square w-full max-w-[480px] items-center justify-center overflow-hidden"
+        aria-label={`Sentinel da Ultron — ${online ? "online" : "offline"}`}
+      >
+        <div className="absolute inset-x-[12%] bottom-[15%] h-[2px] rounded-full bg-white/10" aria-hidden="true" />
+        <AvatarCore
+          ref={avatarRef}
+          className="absolute inset-[4%] h-[92%] w-[92%]"
+          aria-hidden="true"
         />
-
-        <div
-          className="absolute size-[86%] rounded-full"
-          style={{
-            background:
-              "radial-gradient(circle at 50% 45%, var(--accent-muted) 0%, rgba(59,130,246,0.10) 30%, transparent 68%)",
-          }}
-        />
-
-        <div
-          className="animate-spin-slow absolute size-[86%] rounded-full border border-[rgba(0,212,255,0.10)]"
-          style={{ borderStyle: "dashed" }}
-        />
-
-        <div
-          className="animate-spin-reverse absolute size-[79%] rounded-full border border-[rgba(77,166,255,0.18)]"
-          style={{ borderStyle: "dotted", animationDuration: "27s" }}
-        />
-
-        <div
-          className="animate-spin-reverse absolute size-[64%] rounded-full border-t border-r border-[rgba(0,212,255,0.35)]"
-          style={{ transform: "rotateX(70deg)", borderRadius: "999px" }}
-        />
-
-        <div className="animate-orbit absolute size-[58%]">
-          <span className="absolute -top-1 left-1/2 size-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_10px_var(--accent)]" />
+        <div className="absolute bottom-[5%] left-1/2 z-30 -translate-x-1/2 text-center">
+          <p className="text-[11px] font-semibold tracking-[0.24em] text-[#e7e4dd]">ULTRON</p>
+          <p className="mt-1 text-[9px] tracking-[0.12em] text-white/55">{STATUS_COPY[state]}</p>
         </div>
-
-        <div className="animate-orbit-reverse absolute size-[74%]">
-          <span className="absolute -top-1 left-1/2 size-1 rounded-full bg-[var(--accent-glow)] shadow-[0_0_10px_var(--accent-glow)]" />
+        <div className="absolute left-[5%] top-[41%] z-30 text-[9px] tracking-[0.08em] text-white/55">
+          <span className="block font-medium text-[#ca6148]">NÚCLEO 01</span>
+          <span className="mt-1 block">{online ? "CONECTADO" : "OFFLINE"}</span>
         </div>
-
-        <div className="animate-orbit absolute size-[48%]" style={{ animationDuration: "10s" }}>
-          <span className="absolute -top-1 left-1/2 size-1 rounded-full bg-white shadow-[0_0_12px_var(--accent)]" />
+        <div className="absolute right-[5%] top-[41%] z-30 text-right text-[9px] tracking-[0.08em] text-white/55">
+          <span className="block max-w-24 truncate font-medium text-[#ca6148]">{brain?.primary_model ?? "NÚCLEO NEURAL"}</span>
+          <span className="mt-1 block">{latency == null ? "—" : `${latency} MS`}</span>
         </div>
-
-        <div
-          className="animate-spin-slow absolute size-[74%] rounded-full"
-          style={{
-            border: "1px solid transparent",
-            borderTopColor: "rgba(0,212,255,0.55)",
-            borderRightColor: "rgba(0,212,255,0.15)",
-          }}
-        />
-
-        <div
-          className="core-reactor core-noise relative flex size-[42%] items-center justify-center rounded-full"
-          style={{
-            background:
-              "radial-gradient(circle at 50% 35%, rgba(0,212,255,0.55) 0%, rgba(59,130,246,0.45) 35%, rgba(11,16,24,0.9) 75%)",
-            boxShadow:
-              "0 0 40px -4px rgba(0,212,255,0.6), 0 0 90px -20px rgba(77,166,255,0.8), inset 0 0 30px rgba(0,212,255,0.35)",
-          }}
-        >
-          <div className="absolute inset-3 rounded-full border border-white/10" />
-          <div className="absolute inset-6 rounded-full border border-[var(--accent)]/20" />
-          <div
-            className="absolute inset-0 rounded-full animate-glow-pulse"
-            style={{
-              background:
-                "radial-gradient(circle at 50% 45%, rgba(255,255,255,0.25) 0%, transparent 40%)",
-            }}
-          />
-          <div className="relative text-center leading-none">
-            <p className="text-3xl font-black tracking-[0.3em] text-[var(--text-primary)] drop-shadow-[0_0_14px_rgba(0,212,255,0.9)]">
-              Sophie
-            </p>
-            <p className="mt-2 font-mono-data text-[9px] tracking-[0.45em] text-[var(--accent)]">
-              INTELLIGENCE CORE
-            </p>
-          </div>
-        </div>
-
-        <AvatarCore ref={avatarRef} className="absolute inset-0 pointer-events-none" aria-hidden="true" />
-
-        {STATIC_DOTS.map((dot, i) => (
-          <span
-            key={i}
-            className="animate-float absolute size-1 rounded-full bg-[var(--accent-glow)]"
-            style={{
-              top: dot.top,
-              left: dot.left,
-              opacity: 0.7,
-              boxShadow: "0 0 8px var(--accent-glow)",
-              animationDelay: dot.delay,
-            }}
-          />
-        ))}
-
-        {chips.map((chip, i) => (
-          <div
-            key={chip.label}
-            className={`glass animate-float absolute ${CHIP_POSITIONS[i]}`}
-            style={{ animationDelay: `${i * 0.7}s` }}
-          >
-            <div className="flex items-center gap-2 rounded-lg px-3 py-2">
-              <span
-                className={`size-1.5 rounded-full ${
-                  chip.tone === "warn" ? "bg-[var(--color-warn)]" : "bg-[var(--color-ok)]"
-                }`}
-                style={{ boxShadow: "0 0 8px currentColor" }}
-              />
-              <div className="leading-tight">
-                <p className="font-mono-data text-[8px] tracking-[0.2em] text-[var(--text-secondary)]">
-                  {chip.label}
-                </p>
-                <p className="font-mono-data text-[11px] font-semibold text-[var(--text-primary)]">
-                  {chip.value}
-                </p>
-              </div>
-            </div>
-          </div>
-        ))}
       </div>
     );
   }
