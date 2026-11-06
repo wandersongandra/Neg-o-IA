@@ -7,7 +7,7 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
-from sqlalchemy import delete, or_, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.embeddings import embed_text
@@ -47,11 +47,16 @@ class PostgresLongTermMemory:
             create_engine(get_settings().database_url)
         )
 
+    @staticmethod
+    async def _set_user_scope(session: AsyncSession, user_id: uuid.UUID) -> None:
+        await session.execute(select(func.set_config("app.user_id", str(user_id), True)))
+
     async def purge_expired(self, user_id: str) -> int:
         parsed_user = _user_uuid(user_id)
         now = datetime.now(UTC)
         async with self._factory() as session:
             async with session.begin():
+                await self._set_user_scope(session, parsed_user)
                 result = await session.execute(
                     delete(MemoryEntryORM).where(
                         MemoryEntryORM.user_id == parsed_user,
@@ -116,25 +121,27 @@ class PostgresLongTermMemory:
         distance = cast(Any, MemoryEntryORM.embedding).cosine_distance(query_embedding)
         now = datetime.now(UTC)
         async with self._factory() as session:
-            result = await session.execute(
-                select(MemoryEntryORM, distance.label("distance"))
-                .where(
-                    MemoryEntryORM.user_id == parsed_user,
-                    or_(MemoryEntryORM.expires_at.is_(None), MemoryEntryORM.expires_at > now),
-                )
-                .order_by(distance.asc(), MemoryEntryORM.importance.desc())
-                .limit(limit)
-            )
-            hits: list[MemorySearchHit] = []
-            for row, raw_distance in result.all():
-                distance_value = float(raw_distance or 0.0)
-                hits.append(
-                    MemorySearchHit(
-                        entry=_domain(row),
-                        score=max(0.0, min(1.0, 1.0 - distance_value)),
+            async with session.begin():
+                await self._set_user_scope(session, parsed_user)
+                result = await session.execute(
+                    select(MemoryEntryORM, distance.label("distance"))
+                    .where(
+                        MemoryEntryORM.user_id == parsed_user,
+                        or_(MemoryEntryORM.expires_at.is_(None), MemoryEntryORM.expires_at > now),
                     )
+                    .order_by(distance.asc(), MemoryEntryORM.importance.desc())
+                    .limit(limit)
                 )
-            return hits
+                hits: list[MemorySearchHit] = []
+                for row, raw_distance in result.all():
+                    distance_value = float(raw_distance or 0.0)
+                    hits.append(
+                        MemorySearchHit(
+                            entry=_domain(row),
+                            score=max(0.0, min(1.0, 1.0 - distance_value)),
+                        )
+                    )
+                return hits
 
     async def delete(self, user_id: str, memory_id: str) -> bool:
         parsed_user = _user_uuid(user_id)
@@ -144,6 +151,7 @@ class PostgresLongTermMemory:
             return False
         async with self._factory() as session:
             async with session.begin():
+                await self._set_user_scope(session, parsed_user)
                 row = await session.get(MemoryEntryORM, parsed_memory)
                 if row is None or row.user_id != parsed_user:
                     return False
@@ -153,18 +161,20 @@ class PostgresLongTermMemory:
     async def get_policy(self, user_id: str) -> MemoryPolicy:
         parsed_user = _user_uuid(user_id)
         async with self._factory() as session:
-            row = await session.get(MemoryPolicyORM, parsed_user)
-            if row is None:
+            async with session.begin():
+                await self._set_user_scope(session, parsed_user)
+                row = await session.get(MemoryPolicyORM, parsed_user)
+                if row is None:
+                    return MemoryPolicy(
+                        user_id=user_id,
+                        auto_capture_enabled=False,
+                        retention_days=90,
+                    )
                 return MemoryPolicy(
                     user_id=user_id,
-                    auto_capture_enabled=False,
-                    retention_days=90,
+                    auto_capture_enabled=row.auto_capture_enabled,
+                    retention_days=row.retention_days,
                 )
-            return MemoryPolicy(
-                user_id=user_id,
-                auto_capture_enabled=row.auto_capture_enabled,
-                retention_days=row.retention_days,
-            )
 
     async def set_policy(
         self,
@@ -176,6 +186,7 @@ class PostgresLongTermMemory:
         parsed_user = _user_uuid(user_id)
         async with self._factory() as session:
             async with session.begin():
+                await self._set_user_scope(session, parsed_user)
                 row = await session.get(MemoryPolicyORM, parsed_user)
                 if row is None:
                     row = MemoryPolicyORM(

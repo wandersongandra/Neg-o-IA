@@ -90,7 +90,7 @@ function SectionHeader({
 }) {
   return (
     <div className="mb-4 flex items-center gap-3">
-      <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#3B82F6]/30 to-[#00D4FF]/20 ring-1 ring-[#00D4FF]/30">
+      <div className="flex size-9 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)]">
         <Icon className="size-4 text-[var(--accent)]" />
       </div>
       <div className="leading-tight">
@@ -106,7 +106,7 @@ function StateChip({ state }: { state: VoiceState }) {
   const tone = state === "ERROR" ? "text-[#EF4444]" : "text-[var(--accent)]";
   return (
     <span className={`flex items-center gap-2 font-mono-data text-[10px] tracking-widest ${tone}`}>
-      <span className={`size-1.5 rounded-full ${active ? "animate-pulse bg-[#EF4444]" : state === "ERROR" ? "bg-[#EF4444]" : "bg-[#00D4FF]"}`} />
+      <span className={`size-1.5 rounded-full ${active ? "animate-pulse bg-[#EF4444]" : state === "ERROR" ? "bg-[#EF4444]" : "bg-[var(--accent)]"}`} />
       {state}
     </span>
   );
@@ -118,7 +118,7 @@ export default function VoicePanel() {
   const [statusError, setStatusError] = useState<string | null>(null);
   const [voiceState, setVoiceState] = useState<VoiceState>("IDLE");
   const [connectionLabel, setConnectionLabel] = useState("Desconectada");
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [, setSessionId] = useState<string | null>(null);
   const [sessionReady, setSessionReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [transcript, setTranscript] = useState<string | null>(null);
@@ -189,6 +189,8 @@ export default function VoicePanel() {
             tts_available: data.tts_available ?? false,
             stt_model: data.stt_model || "—",
             tts_voice: data.tts_voice || "—",
+            tts_rate: data.tts_rate || undefined,
+            tts_pitch: data.tts_pitch || undefined,
             protocol_version: data.protocol_version,
             audio_format: data.audio_format,
             limits: data.limits,
@@ -498,7 +500,19 @@ export default function VoicePanel() {
       {statusError || error ? <p className="flex items-center gap-2 rounded-xl border border-[#EF4444]/30 bg-[#EF4444]/10 p-3 text-sm text-[#FCA5A5]"><TriangleAlert className="size-4 shrink-0" />{error || statusError}</p> : null}
 
       <section className="glass glass-hover animate-fade-up rounded-2xl p-5">
-        <SectionHeader icon={Bluetooth} title="SOPHIE VOICE V1" subtitle="O sistema operacional gerencia o pareamento Bluetooth" />
+        <SectionHeader icon={Bluetooth} title="ULTRON VOICE V1" subtitle="O sistema operacional gerencia o pareamento Bluetooth" />
+        <div className="mb-4 rounded-xl border border-[var(--accent)]/20 bg-[var(--accent-muted)]/30 p-3" aria-live="polite">
+          <p className="font-mono-data text-[10px] tracking-widest text-[var(--accent)]">PERFIL DE VOZ ORIGINAL</p>
+          <p className="mt-1 text-sm text-[var(--text-primary)]">
+            {status?.tts_voice || "Voz configurada no servidor"}
+            {status?.tts_rate || status?.tts_pitch
+              ? " · ritmo " + (status.tts_rate || "padrão") + " · tom " + (status.tts_pitch || "padrão")
+              : ""}
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-[var(--text-secondary)]">
+            Timbre sintético grave e cadenciado, criado para a Ultron. Ao falar, o texto da resposta é enviado ao provedor TTS externo quando esse recurso está habilitado.
+          </p>
+        </div>
         <div className="grid gap-4 md:grid-cols-2">
           <label className="space-y-2 text-sm text-[var(--text-primary)]">
             <span className="flex items-center gap-2 font-mono-data text-[10px] tracking-widest text-[var(--text-secondary)]"><Mic className="size-3.5 text-[var(--accent)]" /> ENTRADA / MICROFONE</span>
@@ -528,10 +542,10 @@ export default function VoicePanel() {
 
       <section className="grid gap-4 md:grid-cols-2">
         <div className="glass rounded-2xl p-5"><p className="font-mono-data text-[10px] tracking-[0.25em] text-[var(--accent)]">TRANSCRIÇÃO</p><p className="mt-3 min-h-16 text-sm leading-relaxed text-[var(--text-primary)]">{transcript || "A fala reconhecida aparecerá aqui."}</p></div>
-        <div className="glass rounded-2xl p-5"><p className="font-mono-data text-[10px] tracking-[0.25em] text-[var(--accent)]">SOPHIE</p><p className="mt-3 min-h-16 text-sm leading-relaxed text-[var(--text-primary)]">{responseText || "A resposta da Sophie aparecerá aqui."}</p>{audioUrl ? <audio ref={audioRef} controls src={audioUrl} className="mt-4 w-full" onEnded={() => { if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current); audioUrlRef.current = null; setAudioUrl(null); setVoiceState("IDLE"); setAvatarState("idle"); }} onError={() => { setError("Não foi possível reproduzir o áudio da Sophie."); setVoiceState("ERROR"); setAvatarState("error"); }} /> : <p className="mt-4 text-xs text-[var(--text-secondary)]">O áudio da Sophie aparecerá aqui quando uma resposta estiver disponível.</p>}</div>
+        <div className="glass rounded-2xl p-5"><p className="font-mono-data text-[10px] tracking-[0.25em] text-[var(--accent)]">ULTRON</p><p className="mt-3 min-h-16 text-sm leading-relaxed text-[var(--text-primary)]">{responseText || "A resposta da Ultron aparecerá aqui."}</p>{audioUrl ? <audio ref={audioRef} controls src={audioUrl} className="mt-4 w-full" onEnded={() => { if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current); audioUrlRef.current = null; setAudioUrl(null); setVoiceState("IDLE"); setAvatarState("idle"); }} onError={() => { setError("Não foi possível reproduzir o áudio da Ultron."); setVoiceState("ERROR"); setAvatarState("error"); }} /> : <p className="mt-4 text-xs text-[var(--text-secondary)]">O áudio da Ultron aparecerá aqui quando uma resposta estiver disponível.</p>}</div>
       </section>
 
-      <p className="text-xs leading-relaxed text-[var(--text-secondary)]">Bluetooth é tratado pelo sistema operacional como entrada e saída de áudio. A V1 usa WebSocket autenticado por ticket de curta duração, mantém o contexto da sessão e descarta o áudio bruto após o STT. <Link href="/conversa" className="text-[#93C5FD] hover:text-[#DBEAFE]">Abrir conversa textual</Link></p>
+      <p className="text-xs leading-relaxed text-[var(--text-secondary)]">Bluetooth é tratado pelo sistema operacional como entrada e saída de áudio. A V1 usa WebSocket autenticado por ticket de curta duração, mantém o contexto da sessão, envia o áudio ao provedor STT e descarta o áudio bruto após a transcrição. <Link href="/conversa" className="text-[#93C5FD] hover:text-[#DBEAFE]">Abrir conversa textual</Link></p>
     </div>
   );
 }

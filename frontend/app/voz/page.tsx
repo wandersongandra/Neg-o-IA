@@ -3,8 +3,8 @@ import Link from "next/link";
 import VoicePanel from "@/components/voice/voice-panel";
 
 export const metadata: Metadata = {
-  title: "Voz — Sophie AI",
-  description: "Fale com a Sophie e ouça as respostas dela em voz alta.",
+  title: "Voz — Ultron AI",
+  description: "Fale com a Ultron e ouça as respostas dela em voz alta.",
 };
 
 export default function VozPage() {
@@ -18,13 +18,13 @@ export default function VozPage() {
           ← Voltar ao painel
         </Link>
         <p className="font-mono-data text-[10px] font-semibold tracking-[0.3em] text-[var(--accent)]">
-          Sophie AI — interface de voz
+          Ultron AI — interface de voz
         </p>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
-          Fale com a <span className="glow-text text-gradient">Sophie</span>
+          Fale com a <span className="text-[var(--accent)]">Ultron</span>
         </h1>
         <p className="mt-1 text-sm text-[var(--text-secondary)]">
-          Grave sua pergunta para transcrição ou faça a Sophie falar um texto em
+          Grave sua pergunta para transcrição ou faça a Ultron falar um texto em
           voz alta.
         </p>
       </header>

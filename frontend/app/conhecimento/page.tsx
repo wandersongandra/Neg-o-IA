@@ -116,7 +116,7 @@ export default function KnowledgePage() {
             onChange={(event) => setContent(event.target.value)}
             maxLength={200000}
             rows={9}
-            placeholder="Cole aqui documentação, notas ou conhecimento que a Sophie deve consultar."
+            placeholder="Cole aqui documentação, notas ou conhecimento que a Ultron deve consultar."
             className="mt-3 w-full resize-y rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] p-3 text-sm outline-none"
           />
           <button

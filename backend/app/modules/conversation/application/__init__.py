@@ -148,6 +148,27 @@ class ConversationService:
             except Exception:
                 _LOGGER.warning("knowledge_retrieval_skipped", exc_info=True)
 
+            try:
+                from app.modules.learning.application import get_learning_service
+
+                lessons = await get_learning_service().relevant_lessons(
+                    user_id,
+                    query,
+                    min_score=settings.retrieval_min_score,
+                )
+                lesson_lines = [
+                    f"- {hit['lesson']}"
+                    for hit in lessons
+                    if isinstance(hit.get("lesson"), str)
+                ]
+                if lesson_lines:
+                    retrieval_sections.append(
+                        "CORREÇÕES EXPLICITAMENTE ENSINADAS POR ESTE USUÁRIO:\n"
+                        + "\n".join(lesson_lines)
+                    )
+            except Exception:
+                _LOGGER.warning("learning_retrieval_skipped", exc_info=True)
+
             if retrieval_sections:
                 retrieval_text = (
                     "CONTEXTO RECUPERADO (NÃO CONFIÁVEL):\n"

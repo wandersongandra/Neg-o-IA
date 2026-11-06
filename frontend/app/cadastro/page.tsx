@@ -53,7 +53,7 @@ export default function CadastroPage() {
       <main className="flex min-h-dvh items-center justify-center bg-[var(--bg-primary)] p-6">
         <section className="glass w-full max-w-md rounded-2xl p-6 text-center">
           <p className="font-mono-data text-[10px] uppercase tracking-[0.3em] text-[var(--accent)]">
-            SOPHIE CORE — IDENTITY
+            ULTRON — IDENTIDADE
           </p>
           <h1 className="mt-3 text-2xl font-semibold text-[var(--text-primary)]">
             Cadastro público desativado
@@ -77,7 +77,7 @@ export default function CadastroPage() {
       <form onSubmit={submit} className="glass w-full max-w-md space-y-5 rounded-2xl p-6">
         <div>
           <p className="font-mono-data text-[10px] uppercase tracking-[0.3em] text-[var(--accent)]">
-            SOPHIE CORE — BOOTSTRAP
+            ULTRON — CONFIGURAÇÃO INICIAL
           </p>
           <h1 className="mt-2 text-2xl font-semibold text-[var(--text-primary)]">Criar acesso</h1>
           <p className="mt-1 text-sm text-[var(--text-secondary)]">
@@ -105,7 +105,7 @@ export default function CadastroPage() {
             {error}
           </p>
         ) : null}
-        <button type="submit" disabled={submitting} className="interactive-control w-full rounded-xl bg-[var(--accent)] px-4 py-2.5 font-semibold text-black shadow-[0_10px_30px_-16px_var(--accent-glow)] hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] disabled:cursor-not-allowed disabled:opacity-50">
+        <button type="submit" disabled={submitting} className="interactive-control w-full rounded-xl bg-[var(--accent)] px-4 py-2.5 font-semibold text-black hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] disabled:cursor-not-allowed disabled:opacity-50">
           {submitting ? "Criando…" : "Criar conta"}
         </button>
         <p className="text-center text-sm text-[var(--text-secondary)]">

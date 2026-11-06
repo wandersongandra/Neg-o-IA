@@ -15,6 +15,8 @@ import time
 from collections.abc import Awaitable, Callable
 from typing import Any
 
+import httpx
+
 from app.infrastructure.provider_http import (
     ProviderInvalidResponseError,
     ProviderResponseTooLargeError,
@@ -128,6 +130,8 @@ def _cache_key(request: ModelRequest) -> str:
             "temperature": request.temperature,
             "max_tokens": request.max_tokens,
             "cache_namespace": request.cache_namespace,
+            "provider": request.provider,
+            "model": request.model,
         },
         sort_keys=True,
     )
@@ -278,6 +282,133 @@ def _get_mock_adapter() -> MockLLMAdapter:
     return _mock_adapter
 
 
+async def _complete_chatgpt_plan(
+    request: ModelRequest,
+    *,
+    settings: Settings,
+) -> ModelResponse:
+    from app.modules.brain.chatgpt_plan import ChatGPTPlanError, get_chatgpt_plan_store
+
+    if not request.cache_namespace:
+        raise ProviderError("ChatGPT plan requests require an authenticated user session")
+    store = get_chatgpt_plan_store()
+    try:
+        token = await store.access_token(request.cache_namespace)
+        model = request.model
+        if not model:
+            models = await store.models(request.cache_namespace)
+            if not models:
+                raise ChatGPTPlanError(
+                    "A conta não retornou modelos disponíveis para Responses API."
+                )
+            model = models[0]["id"]
+    except ChatGPTPlanError as exc:
+        raise ProviderError(str(exc)) from exc
+
+    instructions = "\n\n".join(
+        message.content for message in request.messages if message.role == "system"
+    )
+    input_items = [
+        {
+            "type": "message",
+            "role": message.role,
+            "content": [{"type": "input_text", "text": message.content}],
+        }
+        for message in request.messages
+        if message.role in {"user", "assistant"}
+    ]
+    payload: dict[str, Any] = {
+        "model": model,
+        "input": input_items,
+        "store": False,
+        "stream": True,
+    }
+    if instructions:
+        payload["instructions"] = instructions
+
+    started = time.perf_counter()
+    output: list[str] = []
+    response_size = 0
+    usage: dict[str, int] | None = None
+    client = new_provider_http_client(90.0)
+    try:
+        async with client.stream(
+            "POST",
+            "https://api.openai.com/v1/responses",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": "text/event-stream",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+        ) as response:
+            if response.status_code in {408, 429, 500, 502, 503, 504}:
+                raise RetryableProviderError(
+                    f"ChatGPT plan returned HTTP {response.status_code}"
+                )
+            if response.status_code != 200:
+                raise ProviderError(
+                    f"ChatGPT plan denied inference (HTTP {response.status_code})"
+                )
+            async for line in response.aiter_lines():
+                response_size += len(line.encode("utf-8")) + 1
+                if response_size > settings.provider_max_response_bytes:
+                    raise ProviderError("ChatGPT plan stream exceeded configured response limit")
+                if not line.startswith("data:"):
+                    continue
+                raw = line[5:].strip()
+                if not raw or raw == "[DONE]":
+                    continue
+                try:
+                    event = json.loads(raw)
+                except json.JSONDecodeError as exc:
+                    raise ProviderError("ChatGPT plan returned malformed stream data") from exc
+                if not isinstance(event, dict):
+                    continue
+                event_type = event.get("type")
+                if event_type == "response.output_text.delta":
+                    delta = event.get("delta")
+                    if isinstance(delta, str):
+                        output.append(delta)
+                elif event_type in {"error", "response.failed"}:
+                    error = event.get("error")
+                    if isinstance(error, dict) and error.get("code") in {
+                        "subscription_sharing_usage_unavailable",
+                        "subscription_sharing_user_unavailable",
+                    }:
+                        raise RetryableProviderError("ChatGPT plan temporarily unavailable")
+                    raise ProviderError("ChatGPT plan could not complete this request")
+                elif event_type == "response.completed":
+                    result = event.get("response")
+                    if isinstance(result, dict) and isinstance(result.get("usage"), dict):
+                        raw_usage = result["usage"]
+                        usage = {
+                            target: int(raw_usage[source])
+                            for target, source in (
+                                ("prompt_tokens", "input_tokens"),
+                                ("completion_tokens", "output_tokens"),
+                                ("total_tokens", "total_tokens"),
+                            )
+                            if isinstance(raw_usage.get(source), int)
+                        }
+    except httpx.TimeoutException as exc:
+        raise RetryableProviderError("ChatGPT plan request timed out") from exc
+    except httpx.HTTPError as exc:
+        raise RetryableProviderError("ChatGPT plan network request failed") from exc
+    finally:
+        await client.aclose()
+
+    text = "".join(output).strip()
+    if not text:
+        raise ProviderError("ChatGPT plan completed without a text response")
+    return ModelResponse(
+        text=text,
+        model=model,
+        latency_ms=int((time.perf_counter() - started) * 1000),
+        usage=usage or None,
+    )
+
+
 class ModelRouter:
     """Roteia a requisição: primário → fallback, com resiliência e cache."""
 
@@ -295,6 +426,18 @@ class ModelRouter:
 
     async def complete(self, request: ModelRequest) -> ModelResponse:
         settings = self._settings
+        if request.provider == "chatgpt_plan":
+            key = _cache_key(request)
+            cached = await _cache_get(key)
+            if cached is not None:
+                return cached
+            response = await _complete_chatgpt_plan(request, settings=settings)
+            await _cache_set(key, response, settings.brain_cache_ttl_seconds)
+            return response
+        if request.provider == "nvidia" and (
+            not settings.external_ai_enabled or not settings.nvidia_api_key
+        ):
+            raise ModelError("NVIDIA is not configured for this installation")
         if not settings.external_ai_enabled or not settings.nvidia_api_key:
             return await _get_mock_adapter().complete(request)
 
@@ -325,6 +468,8 @@ class ModelRouter:
             temperature=request.temperature,
             max_tokens=request.max_tokens,
             cache_namespace=request.cache_namespace,
+            provider=request.provider,
+            model=request.model,
         )
         if await self._fallback_breaker.can_execute():
             try:

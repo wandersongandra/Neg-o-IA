@@ -20,6 +20,8 @@ import {
   Trash2,
   Edit3,
   X,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react";
 import Markdown from "@/components/chat/markdown";
 import PromptSuggestions from "@/components/chat/prompt-suggestions";
@@ -67,6 +69,8 @@ export default function ChatPanel() {
   const [regenMessageId, setRegenMessageId] = useState<string | null>(null);
   const [thinking, setThinking] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [feedbackRatings, setFeedbackRatings] = useState<Record<string, number>>({});
+  const [feedbackDrafts, setFeedbackDrafts] = useState<Record<string, string>>({});
 
   const wsRef = useRef<WebSocket | null>(null);
   const sessionIdRef = useRef<string | null>(null);
@@ -479,7 +483,7 @@ export default function ChatPanel() {
                   ...m,
                   status: "error",
                   content:
-                    "A Sophie demorou para responder. Tente novamente.",
+                    "A Ultron demorou para responder. Tente novamente.",
                 }
               : m
           )
@@ -645,6 +649,32 @@ export default function ChatPanel() {
     setTtsMuted((prev) => !prev);
   }, []);
 
+  const submitFeedback = useCallback(async (messageRef: string, rating: number, lesson?: string) => {
+    const currentSession = sessionIdRef.current;
+    if (!currentSession) {
+      toast({ title: "Abra uma sessão antes de avaliar a resposta", variant: "destructive" });
+      return;
+    }
+    try {
+      const response = await fetch("/api/proxy/learning/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: currentSession,
+          message_ref: messageRef,
+          rating,
+          lesson: lesson?.trim() || null,
+        }),
+      });
+      if (!response.ok) throw new Error("Não foi possível registrar o feedback");
+      setFeedbackRatings((previous) => ({ ...previous, [messageRef]: rating }));
+      window.dispatchEvent(new Event("ultron-learning-updated"));
+      toast({ title: lesson?.trim() ? "Correção guardada para próximas respostas" : "Avaliação registrada", variant: "success" });
+    } catch (error) {
+      toast({ title: "Falha ao guardar o aprendizado", description: error instanceof Error ? error.message : undefined, variant: "destructive" });
+    }
+  }, [toast]);
+
   const stopGeneration = useCallback(() => {
     clearGenTimer();
     sendingRef.current = false;
@@ -727,12 +757,12 @@ export default function ChatPanel() {
   return (
     <div className="glass flex h-[calc(100dvh-16rem)] min-h-0 flex-col overflow-hidden rounded-2xl sm:min-h-[480px]">
       <header className="flex items-center gap-2 border-b border-white/[0.06] px-3 py-3 sm:gap-3 sm:px-5">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#3B82F6] to-[#00D4FF] shadow-[0_0_24px_-6px_rgba(0,212,255,0.7)]">
-          <MessageSquare className="size-4 text-[#05070B]" strokeWidth={2.2} />
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)]">
+          <MessageSquare className="size-4 text-[var(--accent)]" strokeWidth={2.2} />
         </div>
         <div className="min-w-0 leading-tight">
           <h2 className="truncate text-sm font-semibold tracking-wide text-[#F8FAFC]">
-            Conversa com a Sophie
+            Conversa com Ultron
           </h2>
           <p className="truncate font-mono-data text-[10px] uppercase tracking-widest text-[var(--text-secondary)]">
             {thinking
@@ -772,7 +802,7 @@ export default function ChatPanel() {
           type="button"
           onClick={toggleTtsMuted}
           className="glass glass-hover flex size-9 shrink-0 items-center justify-center rounded-lg text-[var(--accent)] hover:bg-[var(--accent-muted)]"
-          aria-label={ttsMuted ? "Ativar voz da Sophie" : "Mutar voz da Sophie"}
+          aria-label={ttsMuted ? "Ativar voz da Ultron" : "Mutar voz da Ultron"}
           title={ttsMuted ? "Ativar voz" : "Mutar voz"}
         >
           {ttsMuted ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
@@ -916,7 +946,7 @@ export default function ChatPanel() {
           >
             {messages.length === 0 && (
               <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
-                <div className="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#3B82F6]/20 to-[#00D4FF]/20 ring-1 ring-white/10">
+                <div className="flex size-14 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--accent-muted)]">
                   <MessageSquare className="size-6 text-[var(--accent)]" />
                 </div>
                 <div>
@@ -938,14 +968,14 @@ export default function ChatPanel() {
             {messages.map((m) =>
               m.role === "user" ? (
                 <div key={m.id} className="flex justify-end">
-                  <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-[#3B82F6]/15 px-4 py-2.5 text-sm text-[var(--text-primary)] shadow-[0_0_20px_-8px_rgba(59,130,246,0.5)] ring-1 ring-[#3B82F6]/25">
+                  <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-[var(--accent-muted)] px-4 py-2.5 text-sm text-[var(--text-primary)] ring-1 ring-[var(--accent)]/25">
                     {m.content}
                   </div>
                 </div>
               ) : (
                 <div key={m.id} className="group/message flex items-start gap-3">
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#3B82F6] to-[#00D4FF] text-xs font-bold text-[#05070B] shadow-[0_0_16px_-4px_rgba(0,212,255,0.6)]">
-                    N
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-xs font-semibold text-[var(--accent)]">
+                    U
                   </div>
                   <div className="glass max-w-[85%] rounded-2xl rounded-tl-md px-4 py-2.5">
                     {m.status === "streaming" ? (
@@ -976,7 +1006,21 @@ export default function ChatPanel() {
                             )}
                           </div>
                         )}
-                        <div className="mt-2 flex items-center gap-1 opacity-0 transition-opacity group-hover/message:opacity-100">
+                        <div className="mt-2 flex items-center gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover/message:opacity-100 sm:group-focus-within/message:opacity-100">
+                          <button
+                            type="button"
+                            onClick={() => void submitFeedback(m.id, 1)}
+                            className={`rounded-md px-1.5 py-1 transition-colors hover:bg-white/[0.04] ${feedbackRatings[m.id] === 1 ? "text-[var(--accent)]" : "text-[var(--text-secondary)] hover:text-[var(--accent)]"}`}
+                            aria-label="Marcar resposta como útil"
+                            title="Resposta útil"
+                          ><ThumbsUp className="size-3" /></button>
+                          <button
+                            type="button"
+                            onClick={() => setFeedbackRatings((previous) => ({ ...previous, [m.id]: -1 }))}
+                            className={`rounded-md px-1.5 py-1 transition-colors hover:bg-white/[0.04] ${feedbackRatings[m.id] === -1 ? "text-[var(--accent)]" : "text-[var(--text-secondary)] hover:text-[var(--accent)]"}`}
+                            aria-label="Corrigir esta resposta"
+                            title="Ensinar uma correção"
+                          ><ThumbsDown className="size-3" /></button>
                           <button
                             type="button"
                             onClick={() => void copyMessage(m.id, m.content)}
@@ -1005,6 +1049,27 @@ export default function ChatPanel() {
                             regerar
                           </button>
                         </div>
+                        {feedbackRatings[m.id] === -1 && (
+                          <div className="mt-2 space-y-2 border-t border-white/[0.06] pt-2">
+                            <label className="block text-xs text-[var(--text-secondary)]" htmlFor={`lesson-${m.id}`}>
+                              O que devo lembrar para responder melhor na próxima vez?
+                            </label>
+                            <textarea
+                              id={`lesson-${m.id}`}
+                              value={feedbackDrafts[m.id] ?? ""}
+                              onChange={(event) => setFeedbackDrafts((previous) => ({ ...previous, [m.id]: event.target.value.slice(0, 2000) }))}
+                              maxLength={2000}
+                              rows={2}
+                              className="w-full resize-y rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-xs text-[var(--text-primary)] outline-none focus:border-[var(--accent)]/60"
+                              placeholder="Escreva a correção (opcional)"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => void submitFeedback(m.id, -1, feedbackDrafts[m.id])}
+                              className="rounded-lg bg-[var(--accent-muted)] px-2.5 py-1.5 text-xs font-medium text-[var(--accent)] hover:bg-[var(--accent-muted)]"
+                            >Guardar avaliação</button>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>

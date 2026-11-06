@@ -57,7 +57,11 @@ class BrainService:
             user_config = await load_user_config(user_id)
             effective_messages = [
                 ChatMessage(role="system", content=user_config.system_prompt),
-                *[message for message in messages if message.role != "system"],
+                *[
+                    message
+                    for message in messages
+                    if message.role != "system"
+                ],
             ]
             response = await get_model_router().complete(
                 ModelRequest(
@@ -66,6 +70,8 @@ class BrainService:
                     temperature=user_config.temperature,
                     max_tokens=user_config.max_tokens,
                     cache_namespace=user_id,
+                    provider=user_config.provider,
+                    model=user_config.model or None,
                 )
             )
         except Exception as exc:

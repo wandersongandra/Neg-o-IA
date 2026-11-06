@@ -183,7 +183,7 @@ export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: S
               <div className="flex items-center gap-2">
                 <Brain className="size-4 text-[var(--accent)]" />
                 <span className="font-mono-data text-[11px] font-semibold tracking-widest text-[var(--text-primary)]">
-                  SOPHIE CORE
+                  ULTRON CORE
                 </span>
               </div>
               <span className="relative flex size-2">

@@ -619,6 +619,8 @@ async def voice_status(
         "tts_available": bool(settings.external_ai_enabled and settings.external_tts_enabled),
         "stt_model": settings.brain_stt_model,
         "tts_voice": settings.tts_voice,
+        "tts_rate": settings.tts_rate,
+        "tts_pitch": settings.tts_pitch,
         "protocol_version": VOICE_PROTOCOL_VERSION,
         "audio_format": VOICE_AUDIO_FORMAT,
         "limits": {

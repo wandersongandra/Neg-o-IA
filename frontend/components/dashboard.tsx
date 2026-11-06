@@ -57,11 +57,11 @@ interface Command {
 }
 
 const COMMANDS: Command[] = [
-  { label: "Abrir conversa com a Sophie", icon: MessageSquareText, href: "/conversa" },
+  { label: "Abrir conversa com a Ultron", icon: MessageSquareText, href: "/conversa" },
   { label: "Voz", icon: Mic, href: "/voz" },
   { label: "Monitor", icon: Activity, href: "/monitor" },
   { label: "Consultar memória", icon: Brain },
-  { label: "Buscar conhecimento", icon: GitBranch },
+  { label: "Buscar conhecimento", icon: GitBranch, href: "/conhecimento" },
   { label: "Acessar banco de dados", icon: Database },
   { label: "Gerenciar ferramentas", icon: Wrench },
   { label: "Iniciar automação", icon: Play },
@@ -267,7 +267,7 @@ export default function Dashboard() {
                 id="command-palette-title"
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
-                placeholder="Comando para a Sophie…"
+                placeholder="Comando para a Ultron…"
                 className="flex-1 bg-transparent text-base text-[var(--text-primary)] outline-none placeholder:text-[var(--text-secondary)] sm:text-sm"
                 aria-label="Pesquisa de comandos"
                 role="combobox"

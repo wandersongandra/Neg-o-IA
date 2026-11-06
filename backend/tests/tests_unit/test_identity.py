@@ -1,4 +1,4 @@
-"""Testes unitários da identidade centralizada da Sophie (Fase 1 — rebrand)."""
+"""Testes unitários da identidade centralizada da Ultron."""
 
 from __future__ import annotations
 
@@ -14,12 +14,12 @@ from app.modules.security.application.identity import (
 )
 
 
-def test_assistant_name_is_sophie() -> None:
-    assert ASSISTANT_NAME == "Sophie"
+def test_assistant_name_is_ultron() -> None:
+    assert ASSISTANT_NAME == "Ultron"
 
 
-def test_system_prompt_mentions_sophie_not_legacy_name() -> None:
-    assert "Sophie" in SYSTEM_PROMPT
+def test_system_prompt_mentions_ultron_not_legacy_name() -> None:
+    assert "Ultron" in SYSTEM_PROMPT
     assert "NEGÃO" not in SYSTEM_PROMPT
     assert "NEGAO" not in SYSTEM_PROMPT
 

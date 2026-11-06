@@ -82,7 +82,10 @@ class EdgeTTSAdapter:
         buffer = bytearray()
         try:
             communicate = Communicate(
-                text, voice=self._settings.tts_voice, rate=self._settings.tts_rate
+                text,
+                voice=self._settings.tts_voice,
+                rate=self._settings.tts_rate,
+                pitch=self._settings.tts_pitch,
             )
             async for chunk in communicate.stream():
                 data = chunk.get("data")

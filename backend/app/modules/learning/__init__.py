@@ -1,10 +1,5 @@
-"""Módulo learning — aprendizado contínuo da Sophie.
+"""Aprendizado personalizado por feedback explícito do usuário."""
 
-v0: esqueleto de contrato. Implementação efetiva em v2+ (Cérebro que Aprende).
-"""
+from app.modules.learning.application import LearningService, get_learning_service
 
-from __future__ import annotations
-
-from app.modules.learning.domain import LearningPort
-
-__all__ = ["LearningPort"]
+__all__ = ["LearningService", "get_learning_service"]

@@ -1,7 +1,7 @@
 export const BRAND = {
-  name: "Sophie",
-  displayName: "Sophie AI",
-  shortName: "Sophie",
-  assistantName: "Sophie",
-  description: "Centro de comando da inteligência artificial Sophie",
+  name: "Ultron",
+  displayName: "Ultron",
+  shortName: "Ultron",
+  assistantName: "Ultron",
+  description: "Centro de comando da inteligência artificial Ultron",
 } as const;

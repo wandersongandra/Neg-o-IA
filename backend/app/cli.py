@@ -1,15 +1,18 @@
-"""CLI administrativa da Sophie para operações de bootstrap seguras."""
+"""CLI administrativa da Ultron para operações de bootstrap seguras."""
 
 from __future__ import annotations
 
 import argparse
 import asyncio
+import base64
 import getpass
+import secrets
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from app.infrastructure.db import create_engine, create_session_factory
+from app.modules.brain.siwc_client import SiwcError, connect_chatgpt_plan
 from app.modules.configuration.settings import get_settings
 from app.modules.database.infrastructure import UserORM
 from app.modules.security.application.identity import create_user
@@ -59,7 +62,7 @@ async def _create_user(username: str, display_name: str | None, password: str) -
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Administração segura da Sophie")
+    parser = argparse.ArgumentParser(description="Administração segura da Ultron")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     create = subparsers.add_parser(
@@ -69,9 +72,28 @@ def main() -> int:
     create.add_argument("--username", required=True)
     create.add_argument("--display-name", default=None)
 
+    chatgpt = subparsers.add_parser(
+        "connect-chatgpt-plan",
+        help="Autoriza um plano ChatGPT elegível por OAuth e envia os tokens cifrados ao agente.",
+    )
+    chatgpt.add_argument("--api-url", required=True, help="URL raiz da API do agente.")
+    chatgpt.add_argument("--username", default=None, help="Usuário local da Ultron.")
+
+    subparsers.add_parser(
+        "generate-oauth-encryption-key",
+        help="Gera uma chave aleatória de 256 bits para cifrar tokens OAuth no banco.",
+    )
+
     args = parser.parse_args()
-    if args.command != "create-user":
-        parser.error("comando inválido")
+    if args.command == "connect-chatgpt-plan":
+        try:
+            return connect_chatgpt_plan(api_url=str(args.api_url), username=args.username)
+        except SiwcError as exc:
+            print(f"ERRO: {exc}")
+            return 5
+    if args.command == "generate-oauth-encryption-key":
+        print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode("ascii").rstrip("="))
+        return 0
 
     try:
         password = _read_password()
