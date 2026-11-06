@@ -21,12 +21,27 @@ def material(name, color, metallic=0.0, roughness=0.35, emission=None, strength=
     if emission:
         bsdf.inputs["Emission Color"].default_value = (*emission, 1)
         bsdf.inputs["Emission Strength"].default_value = strength
+    if metallic > 0.4:
+        nodes = mat.node_tree.nodes
+        links = mat.node_tree.links
+        noise = nodes.new("ShaderNodeTexNoise")
+        noise.inputs["Scale"].default_value = 72.0
+        noise.inputs["Detail"].default_value = 2.5
+        noise.inputs["Roughness"].default_value = .72
+        bump = nodes.new("ShaderNodeBump")
+        bump.inputs["Strength"].default_value = .12
+        bump.inputs["Distance"].default_value = .009
+        links.new(noise.outputs["Fac"], bump.inputs["Height"])
+        links.new(bump.outputs["Normal"], bsdf.inputs["Normal"])
+        bsdf.inputs["Coat Weight"].default_value = .22
+        bsdf.inputs["Coat Roughness"].default_value = .24
     return mat
 
-steel = material("Graphite titanium", (0.11, 0.13, 0.14), .68, .34)
-light_steel = material("Brushed titanium", (0.31, 0.33, 0.32), .64, .34)
-dark = material("Recessed ceramic", (0.015, 0.020, 0.021), .42, .43)
-red = material("Optical crimson", (0.24, 0.008, 0.004), .18, .28, (.8, .012, .002), 1.3)
+steel = material("Graphite titanium", (0.075, 0.088, 0.095), .82, .27)
+light_steel = material("Brushed titanium", (0.34, 0.36, 0.35), .88, .23)
+dark = material("Recessed ceramic", (0.009, 0.012, 0.014), .52, .32)
+red = material("Optical crimson", (0.18, 0.006, 0.003), .35, .22, (.8, .008, .001), 2.5)
+black_glass = material("Optic glass", (0.008, 0.004, 0.004), .28, .16, (.18, .001, .001), .8)
 
 head = bpy.data.objects.new("HeadPivot", None)
 bpy.context.collection.objects.link(head)
@@ -106,18 +121,27 @@ for side in (-1, 1):
     cheek.rotation_euler[1] = side * -0.17
     cube("Jaw hinge", (side*.37, -.5, -.58), (.16, .18, .16), dark, .035)
     # multi-piece eye surrounds and optics facing front (-Y)
-    cube("Optical socket", (side*.24, -.575, .18), (.34, .08, .13), dark, .055)
-    cube("Crimson optical lens", (side*.24, -.625, .18), (.235, .027, .018), red, .008)
+    cube("Optical socket", (side*.24, -.575, .18), (.35, .095, .17), dark, .065)
+    cube("Optic glass lens", (side*.24, -.635, .18), (.252, .035, .065), black_glass, .028)
+    cube("Crimson optical core", (side*.24, -.659, .18), (.218, .018, .026), red, .012)
     brow = cube("Brow ridge", (side*.24, -.55, .30), (.40, .12, .075), steel, .03)
     brow.rotation_euler[1] = side * -0.12
     cyl("Audio sensor", (side*.70, -.08, .05), .10, .10, dark)
     cyl("Sensor rim", (side*.75, -.08, .05), .067, .10, steel)
     for z in (-.22, -.34, -.46):
         cube("Jaw vent", (side*.18, -.574, z), (.09, .025, .025), light_steel, .01)
+    # Layered cheek armor and recessed fasteners break up the broad face planes.
+    cheek_panel = cube("Layered cheek armor", (side*.34, -.535, -.20), (.14, .045, .15), steel, .025)
+    cheek_panel.rotation_euler[1] = side * .24
+    uv("Cheek fastener", (side*.31, -.568, -.16), (.018, .012, .018), light_steel, segments=12)
 
 # Nose bridge and articulated lower jaw: jaw mesh is driven around its hinge in the UI.
 cube("Central brow bridge", (0, -.535, .12), (.105, .09, .27), light_steel, .025)
 cube("Nasal plate", (0, -.57, -.14), (.13, .10, .18), steel, .045)
+# A recessed mouth cavity remains visible while the lower jaw articulates.
+cube("Mouth recess", (0, -.575, -.405), (.43, .055, .105), dark, .025)
+for tooth_x in (-.15, -.05, .05, .15):
+    cube("Machined mouth grille", (tooth_x, -.614, -.405), (.024, .018, .064), light_steel, .009)
 jaw = cube("JawPivot", (0, -.38, -.51), (.69, .20, .27), steel, .07)
 jaw.name = "JawPivot"
 # Put hinge origin on bottom rear of the jaw to allow natural opening.
@@ -129,6 +153,10 @@ jaw.select_set(False)
 for side in (-1, 1):
     vent = cube("Jaw grille", (side*.11, -.50, -.52), (.07, .03, .14), dark, .015)
     vent.parent = jaw
+    vent.matrix_parent_inverse = jaw.matrix_world.inverted()
+    jaw_bolt = uv("Jaw actuator cap", (side*.30, -.50, -.51), (.042, .024, .042), light_steel, segments=16)
+    jaw_bolt.parent = jaw
+    jaw_bolt.matrix_parent_inverse = jaw.matrix_world.inverted()
 # Neck and a small visible clavicle base.
 cyl("Neck coupling", (0, .0, -.88), .29, .24, light_steel, rotation=(0, 0, 0))
 cube("Neck column", (0, .03, -1.06), (.33, .34, .35), steel, .05)
