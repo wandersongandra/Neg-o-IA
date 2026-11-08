@@ -10,6 +10,7 @@ export interface Env {
   BOOTSTRAP_SECRET?: string;
   INTERNAL_PROXY_KEY?: string;
   CHATGPT_PLAN_ENCRYPTION_KEY?: string;
+  CHATGPT_PLAN_CLIENT_ID?: string;
 }
 
 type Variables = { user: { id: string; username: string; displayName: string | null; sessionId: string } };
@@ -827,13 +828,15 @@ app.post("/brain/chatgpt-plan/authorize", authMiddleware(), async (c) => {
     const user = c.get("user");
     const hostId = await getChatGPTHostId(c.env);
     const existing = await c.env.DB.prepare("SELECT client_id FROM openai_plan_credentials WHERE user_id=?").bind(user.id).first<{ client_id: string }>();
-    const clientId = existing?.client_id && existing.client_id.startsWith("oaiapp_") ? existing.client_id : "dynamic_agent_client";
+    const configuredClientId = c.env.CHATGPT_PLAN_CLIENT_ID?.trim() ?? "";
+    if (!configuredClientId && !existing?.client_id) return jsonError(c, "chatgpt_plan_web_oauth_not_configured", 409);
+    const clientId = existing?.client_id && existing.client_id.startsWith("oaiapp_") ? existing.client_id : configuredClientId;
+    if (!clientId.startsWith("oaiapp_")) return jsonError(c, "chatgpt_plan_web_oauth_not_configured", 409);
     const state = randomId();
     const createdAt = isoNow();
     const expiresAt = new Date(Date.now() + 5 * 60_000).toISOString();
     await c.env.DB.prepare("INSERT INTO openai_plan_authorizations(state,user_id,host_id,client_id,nonce,code_challenge,redirect_uri,created_at,expires_at) VALUES(?,?,?,?,?,?,?,?,?)").bind(state, user.id, hostId, clientId, body.nonce, body.code_challenge, body.redirect_uri, createdAt, expiresAt).run();
     const params = new URLSearchParams({ client_id: clientId, ext_agent_host_id: hostId, response_type: "code", redirect_uri: body.redirect_uri, scope: CHATGPT_PLAN_SCOPES, resource: CHATGPT_PLAN_RESOURCE, state, nonce: body.nonce, code_challenge_method: "S256", code_challenge: body.code_challenge });
-    if (clientId === "dynamic_agent_client") params.set("agent_name_hint", "Ultron — Neg-o-IA");
     return c.json({ authorization_url: `https://auth.openai.com/api/accounts/authorize?${params.toString()}`, state, expires_at: expiresAt });
   } catch (error) {
     console.warn("chatgpt_plan_authorization_start_failed", error instanceof Error ? error.message : "unknown");
@@ -873,10 +876,10 @@ app.post("/brain/chatgpt-plan/oauth/callback", authMiddleware(), async (c) => {
 app.get("/brain/chatgpt-plan/status", authMiddleware(), async (c) => {
   const user = c.get("user");
   let hostId: string;
-  try { hostId = await getChatGPTHostId(c.env); } catch { return c.json({ connected: false, available: false, configured: false, provider: "cloudflare-workers-ai", detail: "Configure CHATGPT_PLAN_ENCRYPTION_KEY no Worker." }); }
+  try { hostId = await getChatGPTHostId(c.env); } catch { return c.json({ connected: false, available: false, configured: false, web_oauth_available: false, provider: "cloudflare-workers-ai", detail: "Configure CHATGPT_PLAN_ENCRYPTION_KEY no Worker." }); }
   const row = await c.env.DB.prepare("SELECT client_id,email,expires_at,connected_at,scopes FROM openai_plan_credentials WHERE user_id=?").bind(user.id).first<{ client_id: string; email: string | null; expires_at: string; connected_at: string; scopes: string }>();
   const connected = Boolean(row);
-  return c.json({ connected, available: true, configured: true, provider: connected ? "chatgpt-plan" : "cloudflare-workers-ai", detail: connected ? "Plano ChatGPT conectado." : "Nenhuma conta ChatGPT conectada.", host_id: hostId, ...(connected ? { client_id: row?.client_id, email: row?.email, expires_at: row?.expires_at, connected_at: row?.connected_at, plan_usage_enabled: String(row?.scopes ?? "").split(" ").includes("chatgpt.tokens.use.direct") } : {}) });
+  return c.json({ connected, available: true, configured: true, web_oauth_available: Boolean(c.env.CHATGPT_PLAN_CLIENT_ID?.trim() || row?.client_id), provider: connected ? "chatgpt-plan" : "cloudflare-workers-ai", detail: connected ? "Plano ChatGPT conectado." : "Nenhuma conta ChatGPT conectada.", host_id: hostId, ...(connected ? { client_id: row?.client_id, email: row?.email, expires_at: row?.expires_at, connected_at: row?.connected_at, plan_usage_enabled: String(row?.scopes ?? "").split(" ").includes("chatgpt.tokens.use.direct") } : {}) });
 });
 
 app.get("/brain/chatgpt-plan/models", authMiddleware(), async (c) => {
