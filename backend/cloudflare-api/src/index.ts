@@ -246,8 +246,19 @@ app.post("/security/register", async (c) => {
       c.env.DB.prepare("INSERT INTO memory_policies(user_id,updated_at) VALUES(?,?)").bind(id, now),
     );
     await c.env.DB.batch(statements);
-  } catch {
-    return jsonError(c, firstUser ? "bootstrap_already_claimed" : "username_unavailable", 409);
+  } catch (error) {
+    // Never log credentials or request bodies. The database error is needed to
+    // distinguish a uniqueness conflict from a real storage/schema failure.
+    const message = error instanceof Error ? error.message.slice(0, 180) : "unknown database error";
+    console.error("registration_persistence_failed", message);
+    if (message.includes("UNIQUE constraint failed: users.username_normalized") ||
+        message.includes("UNIQUE constraint failed: users.username")) {
+      return jsonError(c, "username_unavailable", 409);
+    }
+    if (message.includes("bootstrap_claim")) {
+      return jsonError(c, "bootstrap_already_claimed", 409);
+    }
+    return jsonError(c, "registration_persistence_failed", 500);
   }
   return c.json({ user_id: id, username, display_name: displayName }, 201);
 });
