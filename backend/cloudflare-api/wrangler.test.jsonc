@@ -1,0 +1,32 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sophie-ultron-api-tests",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-08",
+  "workers_dev": false,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "sophie-ultron-free-test",
+      "database_id": "00000000-0000-0000-0000-000000000001",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      { "name": "CHAT_SESSIONS", "class_name": "ChatSession" },
+      { "name": "RATE_LIMITER", "class_name": "RateLimiter" },
+      { "name": "AUTH_CRYPTO", "class_name": "PasswordHasher" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["ChatSession", "RateLimiter"] },
+    { "tag": "v2", "new_sqlite_classes": ["PasswordHasher"] }
+  ],
+  "vars": {
+    "APP_ORIGIN": "https://sophie-ultron-free-test.gandratecnologia.workers.dev",
+    "MODEL_ID": "@cf/zai-org/glm-4.7-flash",
+    "ALLOW_PUBLIC_REGISTRATION": "false",
+    "BOOTSTRAP_SECRET": "test-bootstrap-secret"
+  }
+}

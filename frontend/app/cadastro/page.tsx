@@ -6,7 +6,9 @@ import { useState, type FormEvent } from "react";
 
 export default function CadastroPage() {
   const router = useRouter();
-  const registrationAvailable = process.env.NODE_ENV !== "production";
+  // The backend allows exactly one bootstrap account and closes registration
+  // after it is created. The form must remain reachable for the first deploy.
+  const registrationAvailable = true;
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");

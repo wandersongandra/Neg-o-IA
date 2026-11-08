@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-import withPWA from "next-pwa";
+import withSerwistInit from "@serwist/next";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -34,24 +34,11 @@ const nextConfig: NextConfig = {
   },
 };
 
-const withPWAConfig = withPWA({
-  dest: "public",
+const withSerwist = withSerwistInit({
+  swSrc: "app/sw.ts",
+  swDest: "public/sw.js",
   register: true,
-  skipWaiting: true,
   disable: process.env.NODE_ENV === "development",
-  runtimeCaching: [
-    {
-      urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico|woff|woff2|ttf|eot)$/,
-      handler: "CacheFirst",
-      options: {
-        cacheName: "static-assets",
-        expiration: {
-          maxEntries: 200,
-          maxAgeSeconds: 60 * 60 * 24 * 30,
-        },
-      },
-    },
-  ],
 });
 
-export default withPWAConfig(nextConfig);
+export default withSerwist(nextConfig);

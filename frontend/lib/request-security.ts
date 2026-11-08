@@ -87,7 +87,7 @@ export function trustedClientIpHeadersFromHeaders(
   headers: Pick<Headers, "get">,
 ): Record<string, string> {
   if (process.env.NODE_ENV !== "production") return {};
-  const realIp = headers.get("x-real-ip")?.trim() ?? "";
+  const realIp = (headers.get("cf-connecting-ip") ?? headers.get("x-real-ip"))?.trim() ?? "";
   if (!IP_LITERAL.test(realIp)) return {};
   const { internalProxyKey } = resolveApiConfig();
   if (!internalProxyKey) return {};

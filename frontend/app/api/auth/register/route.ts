@@ -22,6 +22,9 @@ export async function POST(request: NextRequest) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(process.env.SOPHIE_BOOTSTRAP_SECRET
+          ? { "X-Ultron-Bootstrap-Secret": process.env.SOPHIE_BOOTSTRAP_SECRET }
+          : {}),
         ...trustedClientIpHeaders(request),
       },
       body: JSON.stringify(body),

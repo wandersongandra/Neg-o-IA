@@ -1,0 +1,22 @@
+{
+  "name": "sophie-ultron-cloudflare-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "wrangler types && tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "hono": "4.13.17"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.6.0",
+    "@types/node": "^22.15.17",
+    "typescript": "5.9.3",
+    "vitest": "4.1.12",
+    "wrangler": "4.158.0"
+  }
+}
