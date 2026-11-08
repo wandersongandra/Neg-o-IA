@@ -492,7 +492,7 @@ export default function ConfigPage() {
               <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
                 Conecte sua conta diretamente pelo navegador. A senha do ChatGPT não é compartilhada com a Ultron.
               </p>
-              {planStatus.web_oauth_available === false ? (
+              {planStatus.web_oauth_available !== true ? (
                 <p className="rounded-lg border border-[#F59E0B]/40 bg-[#F59E0B]/10 p-3 text-sm leading-relaxed text-[#F59E0B]">
                   A conexão pelo navegador ainda precisa de um Client ID OAuth web registrado na OpenAI. O fluxo dinâmico é aceito somente por uma instalação local com callback em 127.0.0.1.
                 </p>
