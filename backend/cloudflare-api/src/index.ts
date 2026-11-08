@@ -26,7 +26,7 @@ const app = new Hono<AppEnv>();
 const SESSION_COOKIE = "__Host-sophie_session";
 const SESSION_SECONDS = 8 * 60 * 60;
 const SESSION_IDLE_SECONDS = 30 * 60;
-const PASSWORD_ITERATIONS = 600_000;
+const PASSWORD_ITERATIONS = 100_000;
 const MAX_BODY_BYTES = 256_000;
 const MAX_VOICE_BYTES = 10 * 1024 * 1024;
 const MAX_VOICE_SECONDS = 30;
@@ -277,7 +277,7 @@ app.post("/security/login", async (c) => {
   const salt = user ? fromBase64url(user.password_salt) : new Uint8Array(16);
   const expected = user?.password_hash ?? "invalid-password-placeholder";
   const storedIterations = Number(user?.password_iterations ?? PASSWORD_ITERATIONS);
-  const validIterations = Number.isInteger(storedIterations) && storedIterations >= 100_000 && storedIterations <= 1_000_000;
+  const validIterations = Number.isInteger(storedIterations) && storedIterations >= 100_000 && storedIterations <= 100_000;
   const actual = await derivePassword(c.env, body.password, salt, validIterations ? storedIterations : PASSWORD_ITERATIONS);
   if (!user || user.status !== "active" || !validIterations || !safeEqual(actual, expected)) return jsonError(c, "invalid_credentials", 401);
   const accessToken = await issueSession(c.env, user, c);
@@ -854,7 +854,7 @@ export class PasswordHasher implements DurableObject {
     try { body = await request.json() as typeof body; } catch { return new Response("bad request", { status: 400 }); }
     if (typeof body.password !== "string" || body.password.length > 128 || typeof body.salt !== "string" || body.salt.length > 128) return new Response("bad request", { status: 400 });
     const iterations = Number(body.iterations);
-    if (!Number.isInteger(iterations) || iterations < 100_000 || iterations > 1_000_000) return new Response("bad request", { status: 400 });
+    if (!Number.isInteger(iterations) || iterations < 100_000 || iterations > 100_000) return new Response("bad request", { status: 400 });
     let salt: Uint8Array;
     try { salt = fromBase64url(body.salt); } catch { return new Response("bad request", { status: 400 }); }
     if (salt.byteLength < 16 || salt.byteLength > 64) return new Response("bad request", { status: 400 });
