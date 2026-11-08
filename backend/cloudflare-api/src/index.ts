@@ -140,6 +140,17 @@ async function getChatGPTAccessToken(env: Env, userId: string): Promise<{ token:
   return { token: await refreshChatGPTAccessToken(env, userId, row), model: "" };
 }
 
+type BrainSettings = { system_prompt: string; temperature: number; max_tokens: number; provider: string; model: string | null };
+
+async function readBrainSettings(env: Env, userId: string): Promise<BrainSettings | null> {
+  try {
+    return await env.DB.prepare("SELECT system_prompt,temperature,max_tokens,provider,model FROM settings WHERE user_id=?").bind(userId).first<BrainSettings>();
+  } catch {
+    const legacy = await env.DB.prepare("SELECT system_prompt,temperature,max_tokens FROM settings WHERE user_id=?").bind(userId).first<Omit<BrainSettings, "provider" | "model">>();
+    return legacy ? { ...legacy, provider: "auto", model: null } : null;
+  }
+}
+
 async function digest(value: string | Uint8Array): Promise<string> {
   const bytes = typeof value === "string" ? new TextEncoder().encode(value) : value;
   return base64url(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)));
@@ -403,7 +414,8 @@ app.post("/security/sessions/revoke-others", authMiddleware(), async (c) => {
 });
 
 app.get("/brain/status", authMiddleware(), async (c) => {
-  const row = await c.env.DB.prepare("SELECT provider,model FROM settings WHERE user_id=?").bind(c.get("user").id).first<{ provider: string; model: string | null }>();
+  const settings = await readBrainSettings(c.env, c.get("user").id);
+  const row = settings;
   const provider = row?.provider === "chatgpt_plan" ? "ChatGPT plan" : "Cloudflare Workers AI";
   return c.json({ mode: row?.provider === "chatgpt_plan" ? "chatgpt-plan" : "cloudflare-workers-ai", model: row?.model || c.env.MODEL_ID, primary_model: row?.model || c.env.MODEL_ID, fallback_model: c.env.MODEL_ID, cache_ttl_seconds: 0, retry_attempts: 0, circuit_failures: 0, provider });
 });
@@ -411,7 +423,7 @@ app.get("/brain/router", authMiddleware(), (c) => c.json({ mode: "cloudflare-wor
 
 app.get("/brain/config", authMiddleware(), async (c) => {
   const user = c.get("user");
-  const row = await c.env.DB.prepare("SELECT system_prompt,temperature,max_tokens,provider,model FROM settings WHERE user_id = ?").bind(user.id).first<{ system_prompt: string; temperature: number; max_tokens: number; provider: string; model: string | null }>();
+  const row = await readBrainSettings(c.env, user.id);
   return c.json({ system_prompt: row?.system_prompt ?? "Você é Ultron, um assistente prestativo, claro e confiável.", temperature: row?.temperature ?? 0.3, max_tokens: row?.max_tokens ?? 1024, provider: row?.provider === "chatgpt_plan" ? "chatgpt_plan" : "auto", runtime_target:"cloudflare-workers", model: row?.model ?? "", primary_model: row?.model || c.env.MODEL_ID, fallback_model: c.env.MODEL_ID, tools_enabled: [], voice: { tts_enabled: true, stt_enabled: true, managed_by_environment: true } });
 });
 
@@ -419,14 +431,19 @@ app.patch("/brain/config", authMiddleware(), async (c) => {
   const user = c.get("user");
   const body = await jsonBody<{ system_prompt?: unknown; temperature?: unknown; max_tokens?: unknown; provider?: unknown; model?: unknown }>(c);
   if (!body || (body.system_prompt !== undefined && (typeof body.system_prompt !== "string" || body.system_prompt.length > 4000)) || (body.temperature !== undefined && (typeof body.temperature !== "number" || body.temperature < 0 || body.temperature > 2)) || (body.max_tokens !== undefined && (typeof body.max_tokens !== "number" || !Number.isInteger(body.max_tokens) || body.max_tokens < 32 || body.max_tokens > 2048)) || (body.provider !== undefined && body.provider !== "auto" && body.provider !== "nvidia" && body.provider !== "chatgpt_plan") || (body.model !== undefined && body.model !== "" && (typeof body.model !== "string" || body.model.length > 128))) return jsonError(c, "invalid_configuration", 400);
-  const prior = await c.env.DB.prepare("SELECT system_prompt,temperature,max_tokens,provider,model FROM settings WHERE user_id = ?").bind(user.id).first<{ system_prompt: string; temperature: number; max_tokens: number; provider: string; model: string | null }>();
+  const prior = await readBrainSettings(c.env, user.id);
   const provider = body.provider === "chatgpt_plan" ? "chatgpt_plan" : body.provider === "nvidia" ? "nvidia" : prior?.provider === "chatgpt_plan" ? "chatgpt_plan" : "auto";
   if (provider === "chatgpt_plan") {
     const connected = await c.env.DB.prepare("SELECT user_id FROM openai_plan_credentials WHERE user_id=?").bind(user.id).first();
     if (!connected) return jsonError(c, "chatgpt_plan_not_connected", 409);
   }
   const next = { system_prompt: body.system_prompt ?? prior?.system_prompt ?? "Você é Ultron, um assistente prestativo, claro e confiável.", temperature: body.temperature ?? prior?.temperature ?? 0.3, max_tokens: body.max_tokens ?? prior?.max_tokens ?? 1024, provider, model: typeof body.model === "string" ? body.model : prior?.model ?? "" };
-  await c.env.DB.prepare("INSERT INTO settings(user_id,system_prompt,temperature,max_tokens,provider,model,updated_at) VALUES(?,?,?,?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET system_prompt=excluded.system_prompt,temperature=excluded.temperature,max_tokens=excluded.max_tokens,provider=excluded.provider,model=excluded.model,updated_at=excluded.updated_at").bind(user.id, next.system_prompt, next.temperature, next.max_tokens, next.provider, next.model || null, isoNow()).run();
+  try {
+    await c.env.DB.prepare("INSERT INTO settings(user_id,system_prompt,temperature,max_tokens,provider,model,updated_at) VALUES(?,?,?,?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET system_prompt=excluded.system_prompt,temperature=excluded.temperature,max_tokens=excluded.max_tokens,provider=excluded.provider,model=excluded.model,updated_at=excluded.updated_at").bind(user.id, next.system_prompt, next.temperature, next.max_tokens, next.provider, next.model || null, isoNow()).run();
+  } catch {
+    if (next.provider !== "auto" || next.model) return jsonError(c, "cloudflare_schema_migration_required", 503);
+    await c.env.DB.prepare("UPDATE settings SET system_prompt=?,temperature=?,max_tokens=?,updated_at=? WHERE user_id=?").bind(next.system_prompt, next.temperature, next.max_tokens, isoNow(), user.id).run();
+  }
   return c.json({ ...next, runtime_target:"cloudflare-workers", primary_model: next.model || c.env.MODEL_ID, fallback_model: c.env.MODEL_ID });
 });
 
@@ -466,7 +483,7 @@ async function generateReply(env: Env, userId: string, conversationId: string, t
   const started = Date.now();
   const owned = await env.DB.prepare("SELECT id FROM conversations WHERE id = ? AND user_id = ?").bind(conversationId, userId).first();
   if (!owned) throw new Error("conversation_not_found");
-  const settings = await env.DB.prepare("SELECT system_prompt,temperature,max_tokens,provider,model FROM settings WHERE user_id = ?").bind(userId).first<{ system_prompt: string; temperature: number; max_tokens: number; provider: string; model: string | null }>();
+  const settings = await readBrainSettings(env, userId);
   const history = await env.DB.prepare("SELECT role,content FROM messages WHERE conversation_id = ? AND user_id = ? ORDER BY created_at DESC LIMIT 20").bind(conversationId, userId).all<ChatMessage>();
   const terms = text.toLocaleLowerCase("pt-BR").split(/[^\p{L}\p{N}_]+/u).filter((word) => word.length > 2).slice(0, 12);
   const match = terms.map((word) => `"${word.replaceAll('"', '')}"`).join(" OR ");
@@ -747,7 +764,7 @@ app.post("/brain/complete", authMiddleware(), async (c) => {
     messages.push({ role: message.role, content: message.content });
   }
   const user = c.get("user");
-  const settings = await c.env.DB.prepare("SELECT provider,model FROM settings WHERE user_id=?").bind(user.id).first<{ provider: string; model: string | null }>();
+  const settings = await readBrainSettings(c.env, user.id);
   const start = Date.now();
   try {
     if (settings?.provider === "chatgpt_plan") {
