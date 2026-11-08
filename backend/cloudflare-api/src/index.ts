@@ -102,6 +102,48 @@ async function getChatGPTHostId(env: Env): Promise<string> {
   return row.host_id;
 }
 
+const CHATGPT_PLAN_SCOPES = "openid profile email offline_access resource.invoke chatgpt.tokens.use.direct";
+const CHATGPT_PLAN_RESOURCE = "https://api.openai.com/v1";
+
+function chatGPTPlanRedirectUri(env: Env): string {
+  return `${env.APP_ORIGIN.replace(/\/$/, "")}/chatgpt-plan/callback`;
+}
+
+function validOAuthVerifier(value: unknown): value is string {
+  return typeof value === "string" && /^[A-Za-z0-9._~-]{43,128}$/.test(value);
+}
+
+function validOAuthChallenge(value: unknown): value is string {
+  return typeof value === "string" && /^[A-Za-z0-9_-]{43,128}$/.test(value);
+}
+
+function validOAuthNonce(value: unknown): value is string {
+  return typeof value === "string" && /^[A-Za-z0-9_-]{16,256}$/.test(value);
+}
+
+function validRedirectUri(env: Env, value: unknown): value is string {
+  if (typeof value !== "string" || value.length > 512) return false;
+  try {
+    const parsed = new URL(value);
+    const expected = new URL(chatGPTPlanRedirectUri(env));
+    return parsed.protocol === "https:" && parsed.origin === expected.origin && parsed.pathname === expected.pathname && !parsed.search && !parsed.hash;
+  } catch {
+    return false;
+  }
+}
+
+async function completeChatGPTPlanOAuth(code: string, clientId: string, redirectUri: string, verifier: string): Promise<Record<string, unknown>> {
+  const response = await fetch("https://auth.openai.com/api/accounts/oauth/token", {
+    method: "POST",
+    headers: { Accept: "application/json", "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({ grant_type: "authorization_code", client_id: clientId, code, code_verifier: verifier, redirect_uri: redirectUri, resource: CHATGPT_PLAN_RESOURCE }),
+  });
+  if (!response.ok) throw new Error("chatgpt_plan_oauth_exchange_failed");
+  const payload = await response.json() as unknown;
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) throw new Error("chatgpt_plan_oauth_exchange_invalid");
+  return payload as Record<string, unknown>;
+}
+
 async function validateChatGPTIdToken(token: string, clientId: string, expectedNonce: string): Promise<Record<string, unknown>> {
   const parts = token.split(".");
   if (parts.length !== 3) throw new Error("chatgpt_plan_identity_invalid");
@@ -775,6 +817,56 @@ app.post("/brain/complete", authMiddleware(), async (c) => {
     return output.response ? c.json({ text: output.response, model: c.env.MODEL_ID, latency_ms: Date.now() - start, cached: false, fallback_used: false }) : jsonError(c, "model_unavailable", 503);
   } catch {
     return jsonError(c, "model_unavailable", 503);
+  }
+});
+
+app.post("/brain/chatgpt-plan/authorize", authMiddleware(), async (c) => {
+  const body = await jsonBody<{ redirect_uri?: unknown; code_challenge?: unknown; nonce?: unknown }>(c);
+  if (!body || !validRedirectUri(c.env, body.redirect_uri) || !validOAuthChallenge(body.code_challenge) || !validOAuthNonce(body.nonce)) return jsonError(c, "invalid_chatgpt_authorization", 422);
+  try {
+    const user = c.get("user");
+    const hostId = await getChatGPTHostId(c.env);
+    const existing = await c.env.DB.prepare("SELECT client_id FROM openai_plan_credentials WHERE user_id=?").bind(user.id).first<{ client_id: string }>();
+    const clientId = existing?.client_id && existing.client_id.startsWith("oaiapp_") ? existing.client_id : "dynamic_agent_client";
+    const state = randomId();
+    const createdAt = isoNow();
+    const expiresAt = new Date(Date.now() + 5 * 60_000).toISOString();
+    await c.env.DB.prepare("INSERT INTO openai_plan_authorizations(state,user_id,host_id,client_id,nonce,code_challenge,redirect_uri,created_at,expires_at) VALUES(?,?,?,?,?,?,?,?,?)").bind(state, user.id, hostId, clientId, body.nonce, body.code_challenge, body.redirect_uri, createdAt, expiresAt).run();
+    const params = new URLSearchParams({ client_id: clientId, ext_agent_host_id: hostId, response_type: "code", redirect_uri: body.redirect_uri, scope: CHATGPT_PLAN_SCOPES, resource: CHATGPT_PLAN_RESOURCE, state, nonce: body.nonce, code_challenge_method: "S256", code_challenge: body.code_challenge });
+    if (clientId === "dynamic_agent_client") params.set("agent_name_hint", "Ultron — Neg-o-IA");
+    return c.json({ authorization_url: `https://auth.openai.com/api/accounts/authorize?${params.toString()}`, state, expires_at: expiresAt });
+  } catch (error) {
+    console.warn("chatgpt_plan_authorization_start_failed", error instanceof Error ? error.message : "unknown");
+    return jsonError(c, "chatgpt_plan_authorization_unavailable", 503);
+  }
+});
+
+app.post("/brain/chatgpt-plan/oauth/callback", authMiddleware(), async (c) => {
+  const body = await jsonBody<{ state?: unknown; code?: unknown; client_id?: unknown; redirect_uri?: unknown; code_verifier?: unknown }>(c);
+  if (!body || !validCredentialString(body.state, 128) || !validCredentialString(body.code, 16_384) || (body.client_id !== undefined && !validCredentialString(body.client_id, 256)) || !validRedirectUri(c.env, body.redirect_uri) || !validOAuthVerifier(body.code_verifier)) return jsonError(c, "invalid_chatgpt_callback", 422);
+  const user = c.get("user");
+  const attempt = await c.env.DB.prepare("SELECT state,user_id,host_id,client_id,nonce,code_challenge,redirect_uri,expires_at FROM openai_plan_authorizations WHERE state=? AND user_id=?").bind(body.state, user.id).first<{ state: string; user_id: string; host_id: string; client_id: string; nonce: string; code_challenge: string; redirect_uri: string; expires_at: string }>();
+  if (!attempt || Date.parse(attempt.expires_at) <= Date.now() || attempt.redirect_uri !== body.redirect_uri) return jsonError(c, "chatgpt_authorization_expired", 410);
+  const computedChallenge = await digest(new TextEncoder().encode(body.code_verifier));
+  if (!safeEqual(computedChallenge, attempt.code_challenge)) return jsonError(c, "chatgpt_authorization_verifier_mismatch", 422);
+  const returnedClientId = typeof body.client_id === "string" && body.client_id.startsWith("oaiapp_") ? body.client_id : attempt.client_id;
+  if (!returnedClientId.startsWith("oaiapp_") || (attempt.client_id !== "dynamic_agent_client" && returnedClientId !== attempt.client_id)) return jsonError(c, "invalid_chatgpt_client", 422);
+  try {
+    const tokenPayload = await completeChatGPTPlanOAuth(body.code, returnedClientId, attempt.redirect_uri, body.code_verifier);
+    const accessToken = tokenPayload.access_token;
+    const refreshToken = tokenPayload.refresh_token;
+    const idToken = tokenPayload.id_token;
+    const expiresIn = tokenPayload.expires_in;
+    const scopes = typeof tokenPayload.scope === "string" ? tokenPayload.scope.split(/\s+/).filter(Boolean) : [];
+    if (!validCredentialString(accessToken) || !validCredentialString(refreshToken) || !validCredentialString(idToken, 32_000) || typeof expiresIn !== "number" || expiresIn < 60 || expiresIn > 86_400 || !scopes.includes("chatgpt.tokens.use.direct") || !scopes.includes("resource.invoke")) return jsonError(c, "chatgpt_plan_scope_denied", 422);
+    const claims = await validateChatGPTIdToken(idToken, returnedClientId, attempt.nonce);
+    const now = isoNow();
+    await c.env.DB.prepare("INSERT INTO openai_plan_credentials(user_id,client_id,host_id,email,access_token_cipher,refresh_token_cipher,scopes,expires_at,connected_at,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(user_id) DO UPDATE SET client_id=excluded.client_id,host_id=excluded.host_id,email=excluded.email,access_token_cipher=excluded.access_token_cipher,refresh_token_cipher=excluded.refresh_token_cipher,scopes=excluded.scopes,expires_at=excluded.expires_at,connected_at=excluded.connected_at,updated_at=excluded.updated_at").bind(user.id, returnedClientId, attempt.host_id, typeof claims.email === "string" ? claims.email.slice(0, 320) : null, await encryptChatGPTSecret(c.env, user.id, "access", accessToken), await encryptChatGPTSecret(c.env, user.id, "refresh", refreshToken), [...new Set(scopes)].join(" "), new Date(Date.now() + expiresIn * 1000).toISOString(), now, now).run();
+    await c.env.DB.prepare("DELETE FROM openai_plan_authorizations WHERE state=?").bind(attempt.state).run();
+    return c.json({ connected: true, email: typeof claims.email === "string" ? claims.email : null }, 200, { "Cache-Control": "no-store" });
+  } catch (error) {
+    console.warn("chatgpt_plan_authorization_callback_failed", error instanceof Error ? error.message : "unknown");
+    return jsonError(c, "chatgpt_plan_authorization_failed", 422);
   }
 });
 
