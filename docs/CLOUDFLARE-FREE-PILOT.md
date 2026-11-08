@@ -55,13 +55,14 @@ Do not interpret a successful login-page render as a fully functioning agent.
 1. Log into the intended **Free** Cloudflare account with `npx wrangler login`.
 2. Verify the account and plan in the Cloudflare dashboard; do not upgrade or
    enable Containers or other paid resources.
-3. After the first deployment reveals the real `*.workers.dev` address, set
-   `SOPHIE_PUBLIC_ORIGIN` to that exact HTTPS origin as a **runtime variable**;
-   the production security middleware intentionally rejects auth mutations
-   until this value is configured. If a **separate test backend** is available,
-   also set `SOPHIE_API_URL` (HTTPS) and `SOPHIE_WS_URL` (WSS) as runtime
-   variables on the test Worker.
-   Use Cloudflare's encrypted secret storage for any actual credentials.
+3. `SOPHIE_PUBLIC_ORIGIN` is set as a non-secret runtime variable in
+   `wrangler.jsonc`, using the `workers.dev` subdomain currently shown in the
+   account. Confirm Wrangler reports the same URL on first deploy before
+   testing auth; the security middleware rejects auth mutations if the origin
+   does not match. If a **separate test backend** is available, set
+   `SOPHIE_API_URL` (HTTPS) and `SOPHIE_WS_URL` (WSS) as runtime variables on
+   the test Worker. Use Cloudflare's encrypted secret storage for any actual
+   credentials.
 4. Run `npm run cloudflare:deploy` from `frontend/`. It uses `--keep-vars`
    so dashboard-only runtime variables and secrets are not removed.
 5. Confirm the resulting `https://sophie-ultron-free-test.<account>.workers.dev`

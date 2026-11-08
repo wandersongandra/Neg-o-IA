@@ -5,6 +5,9 @@
   "compatibility_date": "2026-11-07",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
+  "vars": {
+    "SOPHIE_PUBLIC_ORIGIN": "https://sophie-ultron-free-test.gandratecnologia.workers.dev"
+  },
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
