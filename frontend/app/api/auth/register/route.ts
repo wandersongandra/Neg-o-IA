@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resolveApiConfig } from "@/lib/env";
+import { resolveApiConfig, resolveRuntimeEnv } from "@/lib/env";
 import {
   enforceSameOriginMutation,
   trustedClientIpHeaders,
@@ -18,12 +18,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
   try {
+    const bootstrapSecret = resolveRuntimeEnv("SOPHIE_BOOTSTRAP_SECRET");
     const upstream = await fetch(`${apiUrl}/security/register`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(process.env.SOPHIE_BOOTSTRAP_SECRET
-          ? { "X-Ultron-Bootstrap-Secret": process.env.SOPHIE_BOOTSTRAP_SECRET }
+        ...(bootstrapSecret
+          ? { "X-Ultron-Bootstrap-Secret": bootstrapSecret }
           : {}),
         ...trustedClientIpHeaders(request),
       },

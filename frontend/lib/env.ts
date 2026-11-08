@@ -1,5 +1,20 @@
 import { readFileSync, statSync } from "node:fs";
 import { isAbsolute } from "node:path";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+
+/**
+ * Resolve an application setting from the live Worker binding first, then
+ * fall back to process.env for local development and non-Cloudflare deploys.
+ */
+export function resolveRuntimeEnv(name: string): string | undefined {
+  try {
+    const runtimeValue = getCloudflareContext().env[name];
+    if (typeof runtimeValue === "string") return runtimeValue;
+  } catch {
+    // There is no Cloudflare request context in local Node.js execution.
+  }
+  return process.env[name];
+}
 
 /**
  * Resolução de env vars do backend com compatibilidade SOPHIE_* / NEGAO_* —
@@ -8,11 +23,11 @@ import { isAbsolute } from "node:path";
  * server-side (ws-info, dashboard, proxy) — nunca exposto ao cliente.
  */
 function resolveEnv(newName: string, legacyName: string, fallback: string): string {
-  return process.env[newName] ?? process.env[legacyName] ?? fallback;
+  return resolveRuntimeEnv(newName) ?? resolveRuntimeEnv(legacyName) ?? fallback;
 }
 
 function resolveSecretEnv(newName: string, legacyName: string, fallback: string): string {
-  const direct = process.env[newName] ?? process.env[legacyName];
+  const direct = resolveRuntimeEnv(newName) ?? resolveRuntimeEnv(legacyName);
   const fileName = `${newName}_FILE`;
   const legacyFileName = `${legacyName}_FILE`;
   const newFile = process.env[fileName]?.trim() ?? "";
