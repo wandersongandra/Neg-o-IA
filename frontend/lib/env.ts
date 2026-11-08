@@ -8,7 +8,8 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
  */
 export function resolveRuntimeEnv(name: string): string | undefined {
   try {
-    const runtimeValue = getCloudflareContext().env[name];
+    const env = getCloudflareContext().env as Record<string, unknown>;
+    const runtimeValue = env[name];
     if (typeof runtimeValue === "string") return runtimeValue;
   } catch {
     // There is no Cloudflare request context in local Node.js execution.
