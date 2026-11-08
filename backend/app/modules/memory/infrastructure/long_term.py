@@ -9,10 +9,14 @@ from typing import Any, cast
 
 from sqlalchemy import delete, func, or_, select
 from sqlalchemy.engine import CursorResult
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.embeddings import embed_text
-from app.infrastructure.db import create_engine, create_session_factory
+from app.infrastructure.db import (
+    AsyncSession,
+    async_sessionmaker,
+    create_engine,
+    create_session_factory,
+)
 from app.modules.configuration.settings import get_settings
 from app.modules.database.infrastructure import MemoryEntryORM, MemoryPolicyORM
 from app.modules.memory.domain import LongTermMemoryEntry, MemoryPolicy, MemorySearchHit

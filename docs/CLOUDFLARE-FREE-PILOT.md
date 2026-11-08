@@ -44,21 +44,40 @@ Worker, though, and must not be treated as deployed:
   no usable PyEmscripten wheel for `orjson` (and subsequent checks also exposed
   missing wheels for `cryptography` and the locked `pydantic-core`); with
   Python 3.13 it reported no usable `asyncpg` wheel.
-- The backend also uses `threading.Lock`, Redis TCP clients, password hashing,
+- The backend also uses Redis-backed rate limits, short-term memory,
+  conversation persistence, WebSocket tickets, Redis Streams, password hashing,
   encrypted credentials, startup event-bus tasks, and PostgreSQL/pgvector.
   These need independent compatibility and runtime validation in the Worker
   environment; swapping just the entrypoint would leave important routes
   unusable.
 
-The safe next step is a dedicated Cloudflare backend port in an isolated
-`sophie-ultron-api-free-test` Worker. Keep the existing FastAPI/Docker runtime
-available for the main deployment. The port needs a Worker-compatible database
-adapter (Cloudflare documents Hyperdrive with `asyncpg`, but does not support
-the current async SQLAlchemy layer), compatible cryptography/password-hashing
-packages, and a reviewed Redis replacement or adapter. Do not point it at
-production data or set the frontend's `SOPHIE_API_URL` / `SOPHIE_WS_URL` until
-the isolated API has passed auth, PostgreSQL, chat, WebSocket and voice checks.
-No paid Cloudflare feature should be enabled for this pilot.
+An initial, opt-in SQLAlchemy compatibility adapter now exists at
+`backend/app/infrastructure/cloudflare_db.py`. It wraps synchronous SQLAlchemy
+operations with async-shaped methods and expects Hyperdrive's binding; SQLite
+unit tests cover session and transaction behavior. The adapter is not wired to
+a Worker entrypoint yet, does not include the required `pg8000` Worker package,
+and has not been exercised by Cloudflare's runtime or against PostgreSQL. The
+normal Docker path still uses async SQLAlchemy and `asyncpg`.
+
+The remaining port includes more than a database driver. The current password
+hasher uses Argon2id with 65,536 KiB of memory, while a Workers Free isolate is
+limited to 128 MiB and 10 ms of CPU per request. This needs a separately tested
+design that preserves the current password hashes; lowering the password cost
+to fit without evidence is not acceptable. SQLite Durable Objects are
+available on Free and allow up to 30 seconds of CPU per invocation, so a
+separate Argon2-compatible Durable Object is a candidate for testing; it still
+has to fit within the 128 MiB isolate memory limit and preserve existing
+password hashes. Redis also cannot be replaced by per-isolate memory because
+that would break shared rate limits, session state, WebSocket tickets, and
+event delivery. Free Durable Objects have request and storage quotas, and
+Queues include 10,000 operations per day, so a replacement must preserve the
+current atomicity and delivery guarantees within those limits.
+
+The backend port remains isolated from Docker and production. Do not point it
+at production data or set the frontend's `SOPHIE_API_URL` / `SOPHIE_WS_URL`
+until the Worker package resolves, the full app imports in Python Workers, and
+auth, PostgreSQL, chat, WebSocket, voice, security and free-tier performance
+checks pass. No paid Cloudflare feature should be enabled for this pilot.
 
 ## Build and locally preview the real Workers bundle
 
@@ -123,4 +142,7 @@ Documentation:
 - https://developers.cloudflare.com/workers/platform/limits/
 - https://developers.cloudflare.com/workers/languages/python/packages/fastapi/
 - https://developers.cloudflare.com/hyperdrive/examples/python-workers/
+- https://developers.cloudflare.com/durable-objects/platform/pricing/
+- https://developers.cloudflare.com/durable-objects/platform/limits/
+- https://developers.cloudflare.com/queues/platform/pricing/
 - https://opennext.js.org/cloudflare/get-started

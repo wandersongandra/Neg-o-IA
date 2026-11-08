@@ -12,9 +12,8 @@ from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel, Field, field_validator
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.infrastructure.db import get_db_session
+from app.infrastructure.db import AsyncSession, get_db_session
 from app.modules.configuration.settings import get_settings
 from app.modules.database import get_database_provider
 from app.modules.database.application import (

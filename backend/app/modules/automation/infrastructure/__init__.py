@@ -7,9 +7,13 @@ from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.infrastructure.db import create_engine, create_session_factory
+from app.infrastructure.db import (
+    AsyncSession,
+    async_sessionmaker,
+    create_engine,
+    create_session_factory,
+)
 from app.modules.automation.domain import AutomationRule
 from app.modules.configuration.settings import get_settings
 from app.modules.database.infrastructure import AutomationRuleORM

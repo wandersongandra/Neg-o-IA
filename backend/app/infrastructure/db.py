@@ -3,26 +3,69 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from collections.abc import AsyncIterator
 from functools import lru_cache
+from typing import TYPE_CHECKING, cast
 
 from fastapi import HTTPException, status
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.ext.asyncio import (
-    AsyncEngine,
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
 
 from app.modules.configuration.settings import get_settings
+
+_CLOUDFLARE_RUNTIME = os.environ.get("SOPHIE_RUNTIME") == "cloudflare"
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import (
+        AsyncEngine,
+        AsyncSession,
+        async_sessionmaker,
+    )
+
+    from app.infrastructure.cloudflare_db import create_engine as _create_cloudflare_engine
+elif _CLOUDFLARE_RUNTIME:
+    from app.infrastructure.cloudflare_db import (
+        CloudflareAsyncEngine as AsyncEngine,  # type: ignore[assignment]
+    )
+    from app.infrastructure.cloudflare_db import (
+        CloudflareAsyncSession as AsyncSession,  # type: ignore[assignment]
+    )
+    from app.infrastructure.cloudflare_db import (
+        CloudflareAsyncSessionFactory as async_sessionmaker,  # type: ignore[assignment]
+    )
+    from app.infrastructure.cloudflare_db import (
+        create_engine as _create_cloudflare_engine,
+    )
+else:
+    from sqlalchemy.ext.asyncio import (
+        AsyncEngine,
+        AsyncSession,
+        async_sessionmaker,
+    )
+
+__all__ = [
+    "AsyncEngine",
+    "AsyncSession",
+    "async_sessionmaker",
+    "check_database_health",
+    "create_engine",
+    "create_session_factory",
+    "get_db_session",
+]
 
 
 @lru_cache
 def create_engine(database_url: str) -> AsyncEngine:
-    """Cria (e cacheia por URL) o engine async do PostgreSQL."""
+    """Cria (e cacheia por URL) o engine do PostgreSQL para o runtime ativo."""
     settings = get_settings()
+    if _CLOUDFLARE_RUNTIME:
+        return cast(
+            AsyncEngine,
+            _create_cloudflare_engine(database_url, echo=settings.debug),
+        )
+    from sqlalchemy.ext.asyncio import create_async_engine
+
     return create_async_engine(
         database_url,
         pool_pre_ping=True,
@@ -33,6 +76,8 @@ def create_engine(database_url: str) -> AsyncEngine:
 
 
 def create_session_factory(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
+    if _CLOUDFLARE_RUNTIME:
+        return async_sessionmaker(engine)
     return async_sessionmaker(engine, expire_on_commit=False)
 
 

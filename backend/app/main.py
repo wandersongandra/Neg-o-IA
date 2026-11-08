@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+import json
 import logging
 import sys
 import time
@@ -8,7 +9,6 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
 
-import orjson
 import structlog
 from fastapi import Depends, FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
@@ -56,6 +56,15 @@ from app.modules.voice.router import (
 logger = structlog.get_logger("negao.main")
 
 
+def _json_serializer(value: object, **kwargs: Any) -> str | bytes:
+    """Keep fast orjson logs on Docker; use the standard library in Workers."""
+    try:
+        import orjson
+    except ImportError:
+        return json.dumps(value, ensure_ascii=False, separators=(",", ":"), default=str)
+    return orjson.dumps(value, **kwargs)
+
+
 def _setup_logging(settings: Settings) -> None:
     level = getattr(logging, settings.log_level.upper(), logging.INFO)
     shared_processors: list[Any] = [
@@ -77,7 +86,7 @@ def _setup_logging(settings: Settings) -> None:
             *shared_processors,
             structlog.processors.TimeStamper(fmt="iso"),
             structlog.processors.format_exc_info,
-            structlog.processors.JSONRenderer(serializer=orjson.dumps),
+            structlog.processors.JSONRenderer(serializer=_json_serializer),
         ]
     structlog.configure(
         processors=processors,
