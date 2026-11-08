@@ -45,6 +45,7 @@ interface ChatGPTPlanStatus {
   connected: boolean;
   configured?: boolean;
   available?: boolean;
+  web_oauth_available?: boolean;
   email?: string | null;
   expires_at?: string;
   host_id?: string;
@@ -491,12 +492,18 @@ export default function ConfigPage() {
               <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
                 Conecte sua conta diretamente pelo navegador. A senha do ChatGPT não é compartilhada com a Ultron.
               </p>
-              <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={() => void connectChatGPT()} disabled={connectingPlan || planStatus.configured === false} className="inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-[#17110f] disabled:opacity-50">
-                  {connectingPlan ? <Loader2 className="size-4 animate-spin" /> : <Brain className="size-4" />}
-                  {connectingPlan ? "Abrindo autorização…" : "Conectar pelo navegador"}
-                </button>
-              </div>
+              {planStatus.web_oauth_available === false ? (
+                <p className="rounded-lg border border-[#F59E0B]/40 bg-[#F59E0B]/10 p-3 text-sm leading-relaxed text-[#F59E0B]">
+                  A conexão pelo navegador ainda precisa de um Client ID OAuth web registrado na OpenAI. O fluxo dinâmico é aceito somente por uma instalação local com callback em 127.0.0.1.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" onClick={() => void connectChatGPT()} disabled={connectingPlan || planStatus.configured === false} className="inline-flex items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-[#17110f] disabled:opacity-50">
+                    {connectingPlan ? <Loader2 className="size-4 animate-spin" /> : <Brain className="size-4" />}
+                    {connectingPlan ? "Abrindo autorização…" : "Conectar pelo navegador"}
+                  </button>
+                </div>
+              )}
               <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
                 O fluxo usa a autorização oficial Sign in with ChatGPT. O Cloudflare guarda somente os tokens cifrados; a elegibilidade e o consentimento são decididos pela OpenAI.
               </p>
