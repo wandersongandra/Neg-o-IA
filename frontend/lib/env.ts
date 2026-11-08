@@ -17,6 +17,27 @@ export function resolveRuntimeEnv(name: string): string | undefined {
   return process.env[name];
 }
 
+export interface WorkerServiceBinding {
+  fetch(request: Request): Promise<Response>;
+}
+
+export function resolveWorkerServiceBinding(name: string): WorkerServiceBinding | undefined {
+  try {
+    const binding = (getCloudflareContext().env as Record<string, unknown>)[name];
+    if (
+      binding !== null &&
+      typeof binding === "object" &&
+      "fetch" in binding &&
+      typeof binding.fetch === "function"
+    ) {
+      return binding as WorkerServiceBinding;
+    }
+  } catch {
+    // No Cloudflare request context is available in local Node.js execution.
+  }
+  return undefined;
+}
+
 /**
  * Resolução de env vars do backend com compatibilidade SOPHIE_* / NEGAO_* —
  * SOPHIE_* tem precedência; se ausente, cai para NEGAO_* (comportamento

@@ -10,6 +10,12 @@
     "SOPHIE_API_URL": "https://sophie-ultron-api-free-test.gandratecnologia.workers.dev",
     "SOPHIE_WS_URL": "wss://sophie-ultron-api-free-test.gandratecnologia.workers.dev"
   },
+  "services": [
+    {
+      "binding": "SOPHIE_API",
+      "service": "sophie-ultron-api-free-test"
+    }
+  ],
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
