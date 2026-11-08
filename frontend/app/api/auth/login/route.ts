@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resolveApiConfig } from "@/lib/env";
+import {
+  resolveApiConfig,
+  resolveWorkerServiceBinding,
+} from "@/lib/env";
 import { sessionCookieName } from "@/lib/session-cookie";
 import {
   enforceSameOriginMutation,
@@ -19,7 +22,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
   try {
-    const upstream = await fetch(`${apiUrl}/security/login`, {
+    const upstreamRequest = new Request(`${apiUrl}/security/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -28,6 +31,10 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(body),
       cache: "no-store",
     });
+    const service = resolveWorkerServiceBinding("SOPHIE_API");
+    const upstream = service
+      ? await service.fetch(upstreamRequest)
+      : await fetch(upstreamRequest);
     const payload = (await upstream.json()) as Record<string, unknown>;
     if (!upstream.ok) return NextResponse.json(payload, { status: upstream.status });
     const response = NextResponse.json(
