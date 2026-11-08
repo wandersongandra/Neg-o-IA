@@ -43,9 +43,13 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(body),
       cache: "no-store",
     });
+    console.log("[ultron-register-upstream-response]", JSON.stringify({ status: upstream.status }));
     const payload = await upstream.json();
     return NextResponse.json(payload, { status: upstream.status });
-  } catch {
+  } catch (error) {
+    console.error("[ultron-register-upstream-error]", error instanceof Error
+      ? JSON.stringify({ name: error.name, message: error.message.slice(0, 180) })
+      : JSON.stringify({ type: typeof error }));
     return NextResponse.json(
       { error: "identity_dependency_unavailable" },
       { status: 503 },
