@@ -316,6 +316,42 @@ body {
     box-shadow: 0 24px 60px rgba(0, 0, 0, .24);
   }
 
+  .workspace-shell {
+    background: var(--bg-primary);
+  }
+
+  .workspace-shell .glass {
+    border-radius: 1rem;
+    background: #191c1a;
+  }
+
+  .workspace-shell .rounded-2xl {
+    border-radius: 1rem;
+  }
+
+  .workspace-shell input,
+  .workspace-shell textarea,
+  .workspace-shell select {
+    border-radius: .55rem;
+    background: #121513;
+  }
+
+  .workspace-shell button:not(.interactive-control),
+  .workspace-shell [role="button"] {
+    border-radius: .55rem;
+  }
+
+  .workspace-shell .border-dashed {
+    border-style: solid;
+    border-color: color-mix(in srgb, var(--border) 90%, transparent);
+    background: #151816;
+  }
+
+  .workspace-shell .bg-white\/\[0\.025\],
+  .workspace-shell .bg-black\/20 {
+    background: #121513;
+  }
+
   .side-command-deck {
     position: fixed;
     border-right-color: var(--border);

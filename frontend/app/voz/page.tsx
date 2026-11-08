@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function VozPage() {
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col p-5 md:p-6">
+    <main className="workspace-shell mx-auto flex min-h-dvh w-full max-w-3xl flex-col p-5 md:p-8">
       <header className="animate-fade-in mb-6">
         <Link
           href="/"
@@ -17,10 +17,10 @@ export default function VozPage() {
         >
           ← Voltar ao painel
         </Link>
-        <p className="font-mono-data text-[10px] font-semibold tracking-[0.3em] text-[var(--accent)]">
-          Ultron AI — interface de voz
+        <p className="eyebrow">
+          Interface de voz
         </p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
+        <h1 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-[var(--text-primary)]">
           Fale com a <span className="text-[var(--accent)]">Ultron</span>
         </h1>
         <p className="mt-1 text-sm text-[var(--text-secondary)]">

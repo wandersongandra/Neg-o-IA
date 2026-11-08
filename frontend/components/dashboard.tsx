@@ -190,7 +190,7 @@ export default function Dashboard() {
 
         <main id="main-content" className="dashboard-main page-transition flex-1 space-y-5 overflow-x-hidden p-4 sm:p-6 md:space-y-7 md:p-8">
           <button
-            className="glass glass-hover interactive-control lg:hidden flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            className="interactive-control flex items-center gap-2 rounded-lg border border-[var(--border)] px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
             onClick={() => setSidebarOpen(true)}
             aria-label="Abrir menu de navegação"
             aria-expanded={sidebarOpen}

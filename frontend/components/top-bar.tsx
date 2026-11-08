@@ -44,7 +44,9 @@ function useBrainModel(): string | null {
 export default function TopBar({ data, onOpenPalette, commandLabel }: TopBarProps) {
   const router = useRouter();
   const model = useBrainModel();
-  const online = data?.healthz?.status === "alive" || data?.healthz?.status === "ok";
+  const online: boolean | null = data
+    ? data.healthz?.status === "alive" || data.healthz?.status === "ok"
+    : null;
   const latency = data?.latency_ms ?? null;
   const level = data?.security?.authorization_level ?? "offline";
   return (
@@ -95,7 +97,7 @@ export default function TopBar({ data, onOpenPalette, commandLabel }: TopBarProp
           </span>
           <span
             className={`size-1.5 rounded-full ${
-              online ? "bg-[var(--color-ok)]" : "bg-[var(--color-danger)]"
+              online === null ? "bg-[var(--text-secondary)]" : online ? "bg-[var(--color-ok)]" : "bg-[var(--color-danger)]"
             }`}
           />
           <span className="text-xs text-[var(--text-secondary)]">resposta</span>
@@ -104,11 +106,11 @@ export default function TopBar({ data, onOpenPalette, commandLabel }: TopBarProp
         <div className="hidden items-center gap-2 border-l border-[var(--border)] pl-4 lg:flex">
           <span
             className={`size-1.5 rounded-full ${
-              online ? "bg-[var(--color-ok)]" : "bg-[var(--color-danger)]"
+              online === null ? "bg-[var(--text-secondary)]" : online ? "bg-[var(--color-ok)]" : "bg-[var(--color-danger)]"
             }`}
           />
           <span className="text-xs text-[var(--text-secondary)]">
-            {online ? "online" : "offline"}
+            {online === null ? "—" : online ? "online" : "offline"}
           </span>
         </div>
 

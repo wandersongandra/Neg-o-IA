@@ -19,7 +19,7 @@ export default function WorkspaceShell({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="workspace-shell flex min-h-dvh flex-col">
       <TopBar
         data={null}
         commandLabel="Voltar ao centro de comando"
