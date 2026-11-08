@@ -32,6 +32,8 @@ const ALLOWLIST: AllowEntry[] = [
   { path: "brain/config", methods: ["GET", "PATCH"] },
   { path: "brain/chatgpt-plan/status", methods: ["GET"] },
   { path: "brain/chatgpt-plan/models", methods: ["GET"] },
+  { path: "brain/chatgpt-plan/authorize", methods: ["POST"] },
+  { path: "brain/chatgpt-plan/oauth/callback", methods: ["POST"] },
   { path: "brain/chatgpt-plan/credentials", methods: ["POST", "DELETE"] },
   { path: "conversation/status", methods: ["GET"] },
   { path: "conversation/sessions", methods: ["GET", "POST"] },
