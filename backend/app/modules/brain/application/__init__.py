@@ -57,11 +57,7 @@ class BrainService:
             user_config = await load_user_config(user_id)
             effective_messages = [
                 ChatMessage(role="system", content=user_config.system_prompt),
-                *[
-                    message
-                    for message in messages
-                    if message.role != "system"
-                ],
+                *[message for message in messages if message.role != "system"],
             ]
             response = await get_model_router().complete(
                 ModelRequest(

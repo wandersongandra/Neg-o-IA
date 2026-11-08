@@ -157,9 +157,7 @@ class ConversationService:
                     min_score=settings.retrieval_min_score,
                 )
                 lesson_lines = [
-                    f"- {hit['lesson']}"
-                    for hit in lessons
-                    if isinstance(hit.get("lesson"), str)
+                    f"- {hit['lesson']}" for hit in lessons if isinstance(hit.get("lesson"), str)
                 ]
                 if lesson_lines:
                     retrieval_sections.append(

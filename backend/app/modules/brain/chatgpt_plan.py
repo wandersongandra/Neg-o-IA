@@ -265,20 +265,14 @@ class ChatGPTPlanStore:
                     scopes = raw_scopes.split() if isinstance(raw_scopes, str) else []
                     if _REQUIRED_SCOPE not in scopes or "resource.invoke" not in scopes:
                         await session.delete(row)
-                        refresh_failure = (
-                            "O plano ChatGPT deixou de autorizar uso direto pela app."
-                        )
+                        refresh_failure = "O plano ChatGPT deixou de autorizar uso direto pela app."
                 if refresh_failure is None:
                     expires_in = _valid_expires_in(refreshed.get("expires_in"))
                     refreshed_access = _required_string(refreshed, "access_token")
                     refreshed_refresh = refreshed.get("refresh_token", refresh_token)
                     if not isinstance(refreshed_refresh, str) or not refreshed_refresh:
-                        raise ChatGPTPlanError(
-                            "A resposta OAuth perdeu o refresh token da conta."
-                        )
-                    row.access_token_cipher = self._encrypt(
-                        parsed_user, "access", refreshed_access
-                    )
+                        raise ChatGPTPlanError("A resposta OAuth perdeu o refresh token da conta.")
+                    row.access_token_cipher = self._encrypt(parsed_user, "access", refreshed_access)
                     row.refresh_token_cipher = self._encrypt(
                         parsed_user, "refresh", refreshed_refresh
                     )
@@ -339,9 +333,7 @@ class ChatGPTPlanStore:
                 if row is None:
                     return False
                 try:
-                    refresh_token = self._decrypt(
-                        parsed_user, "refresh", row.refresh_token_cipher
-                    )
+                    refresh_token = self._decrypt(parsed_user, "refresh", row.refresh_token_cipher)
                 except ChatGPTPlanError:
                     _LOGGER.warning("chatgpt_plan_refresh_token_unreadable")
                 client_id = row.client_id
@@ -414,9 +406,7 @@ async def validate_identity_token(
         ) as client:
             async with client.stream("GET", discovery["jwks_uri"]) as response:
                 if response.status_code != 200:
-                    raise ChatGPTPlanError(
-                        "Não foi possível obter as chaves de validação OpenAI."
-                    )
+                    raise ChatGPTPlanError("Não foi possível obter as chaves de validação OpenAI.")
                 raw = await _read_limited(response, 256 * 1024)
         if len(raw) > 256 * 1024:
             raise ChatGPTPlanError("Não foi possível obter as chaves de validação OpenAI.")
@@ -433,9 +423,7 @@ async def validate_identity_token(
         header = jwt.get_unverified_header(token)
         kid = header.get("kid")
         matching = next(
-            item
-            for item in jwks
-            if item.get("kid") == kid and item.get("kty") == "RSA"
+            item for item in jwks if item.get("kid") == kid and item.get("kty") == "RSA"
         )
         key = jwt.PyJWK.from_dict(matching, algorithm="RS256").key
         claims = jwt.decode(
@@ -453,9 +441,7 @@ async def validate_identity_token(
         raise ChatGPTPlanError("O ID token não contém um identificador de conta válido.")
     if expected_nonce is not None:
         claim_nonce = claims.get("nonce")
-        if not isinstance(claim_nonce, str) or not hmac.compare_digest(
-            claim_nonce, expected_nonce
-        ):
+        if not isinstance(claim_nonce, str) or not hmac.compare_digest(claim_nonce, expected_nonce):
             raise ChatGPTPlanError("A confirmação OAuth não corresponde à tentativa iniciada.")
     return claims
 

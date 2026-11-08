@@ -21,8 +21,17 @@ production service API keys, databases, OAuth keys, or user data for this test.
 Cloudflare Workers Free has a 10 ms CPU-time limit per request. A successful
 build does not prove that this dynamic Next.js application will meet that
 runtime limit; actual free-tier requests must be measured before accepting the
-pilot. Rendering/voice performance and WebSocket availability also require
-real browser testing.
+pilot. The Free plan also allows 100,000 requests per day, 128 MiB per
+isolate, 50 subrequests per request, and a 64 MiB Worker size. The local dry-run
+currently reports a 6,211.97 KiB upload (1,249.14 KiB gzip), below the Worker
+size limit. Rendering/voice performance and WebSocket availability still
+require real browser testing.
+
+R2 is not configured for this pilot, so the optional `rclone.js` peer is
+intentionally omitted. The package introduced `adm-zip` and is not required by
+the no-R2 build. OpenNext's build-time `glob` dependencies are pinned to the
+patched 14.0.2 release; this combination has passed the Cloudflare build and
+dry-run locally.
 
 ## Build and locally preview the real Workers bundle
 

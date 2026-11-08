@@ -165,9 +165,7 @@ def _validate_identity_token(
         jwk = next(
             entry
             for entry in key_entries
-            if isinstance(entry, dict)
-            and entry.get("kid") == kid
-            and entry.get("kty") == "RSA"
+            if isinstance(entry, dict) and entry.get("kid") == kid and entry.get("kty") == "RSA"
         )
         claims = jwt.decode(
             token,
@@ -230,9 +228,7 @@ def _finish_chatgpt_plan_connection(
     api: str,
     headers: dict[str, str],
 ) -> int:
-    status_response = client.get(
-        f"{api}/api/proxy/brain/chatgpt-plan/status", headers=headers
-    )
+    status_response = client.get(f"{api}/api/proxy/brain/chatgpt-plan/status", headers=headers)
     if status_response.status_code != 200:
         raise SiwcError("Não foi possível obter a identidade segura desta instalação.")
     try:
@@ -336,10 +332,9 @@ def _finish_chatgpt_plan_connection(
     )
     if result.status_code != 204:
         raise SiwcError("A Ultron não conseguiu armazenar as credenciais autorizadas.")
-    print(f"Plano conectado à conta ChatGPT {claims.get('email') or '(e-mail indisponível)' }.")
+    print(f"Plano conectado à conta ChatGPT {claims.get('email') or '(e-mail indisponível)'}.")
     print(
-        "As credenciais ficaram apenas na memória local durante o envio e foram "
-        "cifradas no banco."
+        "As credenciais ficaram apenas na memória local durante o envio e foram cifradas no banco."
     )
     return 0
 

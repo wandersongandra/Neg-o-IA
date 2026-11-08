@@ -8,6 +8,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
 from sqlalchemy import delete, func, or_, select
+from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.embeddings import embed_text
@@ -57,12 +58,15 @@ class PostgresLongTermMemory:
         async with self._factory() as session:
             async with session.begin():
                 await self._set_user_scope(session, parsed_user)
-                result = await session.execute(
-                    delete(MemoryEntryORM).where(
-                        MemoryEntryORM.user_id == parsed_user,
-                        MemoryEntryORM.expires_at.is_not(None),
-                        MemoryEntryORM.expires_at <= now,
-                    )
+                result = cast(
+                    CursorResult[Any],
+                    await session.execute(
+                        delete(MemoryEntryORM).where(
+                            MemoryEntryORM.user_id == parsed_user,
+                            MemoryEntryORM.expires_at.is_not(None),
+                            MemoryEntryORM.expires_at <= now,
+                        )
+                    ),
                 )
                 return int(result.rowcount or 0)
 

@@ -40,8 +40,7 @@ def upgrade() -> None:
         """
     )
     op.execute(
-        "CREATE INDEX ix_openai_plan_credentials_expiry "
-        "ON ai.openai_plan_credentials (expires_at)"
+        "CREATE INDEX ix_openai_plan_credentials_expiry ON ai.openai_plan_credentials (expires_at)"
     )
     op.execute("ALTER TABLE ai.openai_plan_credentials ENABLE ROW LEVEL SECURITY")
     op.execute("ALTER TABLE ai.openai_plan_credentials FORCE ROW LEVEL SECURITY")

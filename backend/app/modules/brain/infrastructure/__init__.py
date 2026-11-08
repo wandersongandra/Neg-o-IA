@@ -343,13 +343,9 @@ async def _complete_chatgpt_plan(
             json=payload,
         ) as response:
             if response.status_code in {408, 429, 500, 502, 503, 504}:
-                raise RetryableProviderError(
-                    f"ChatGPT plan returned HTTP {response.status_code}"
-                )
+                raise RetryableProviderError(f"ChatGPT plan returned HTTP {response.status_code}")
             if response.status_code != 200:
-                raise ProviderError(
-                    f"ChatGPT plan denied inference (HTTP {response.status_code})"
-                )
+                raise ProviderError(f"ChatGPT plan denied inference (HTTP {response.status_code})")
             async for line in response.aiter_lines():
                 response_size += len(line.encode("utf-8")) + 1
                 if response_size > settings.provider_max_response_bytes:
