@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resolveApiConfig, resolveWsUrl } from "@/lib/env";
+import { fetchApiRequest, resolveApiConfig, resolveWsUrl } from "@/lib/env";
 import { getSessionToken } from "@/lib/session-cookie";
 import {
   enforceSensitiveSameOriginGet,
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const res = await fetch(`${apiUrl}/security/ws-ticket`, {
+    const upstreamRequest = new Request(`${apiUrl}/security/ws-ticket`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${sessionToken}`,
@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
       body: JSON.stringify({ purpose, session_id: sessionId }),
       cache: "no-store",
     });
+    const res = await fetchApiRequest(upstreamRequest);
     if (!res.ok) {
       return NextResponse.json(
         { error: "ticket_unavailable" },

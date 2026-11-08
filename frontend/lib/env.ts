@@ -38,6 +38,11 @@ export function resolveWorkerServiceBinding(name: string): WorkerServiceBinding 
   return undefined;
 }
 
+export function fetchApiRequest(request: Request): Promise<Response> {
+  const service = resolveWorkerServiceBinding("SOPHIE_API");
+  return service ? service.fetch(request) : fetch(request);
+}
+
 /**
  * Resolução de env vars do backend com compatibilidade SOPHIE_* / NEGAO_* —
  * SOPHIE_* tem precedência; se ausente, cai para NEGAO_* (comportamento

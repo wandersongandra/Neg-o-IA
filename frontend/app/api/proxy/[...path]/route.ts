@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { resolveApiConfig } from "@/lib/env";
+import { fetchApiRequest, resolveApiConfig } from "@/lib/env";
 import { getSessionToken } from "@/lib/session-cookie";
 import {
   enforceSameOriginMutation,
@@ -167,13 +167,14 @@ async function proxy(req: NextRequest, path: string[]): Promise<Response> {
       body = raw.byteLength > 0 ? raw : undefined;
     }
 
-    const res = await fetch(buildTarget(path, req.nextUrl.search), {
+    const upstreamRequest = new Request(buildTarget(path, req.nextUrl.search), {
       method: req.method,
       headers,
       body,
       signal: controller.signal,
       cache: "no-store",
     });
+    const res = await fetchApiRequest(upstreamRequest);
 
     const resContentType = res.headers.get("content-type") ?? "";
     const resHeaders = new Headers({
