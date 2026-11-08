@@ -162,7 +162,7 @@ export const AvatarCore = forwardRef<
     canvas.addEventListener("pointerleave", onPointerLeave, { passive: true });
 
     const loader = new GLTFLoader();
-    loader.load("/models/sentinel.glb", (gltf) => {
+    loader.load("/models/sentinel.glb?v=0adc4299", (gltf) => {
       if (disposed) return;
       const root = gltf.scene;
       scene.add(root);
