@@ -432,11 +432,20 @@ app.patch("/brain/config", authMiddleware(), async (c) => {
 
 async function completeWithChatGPTPlan(env: Env, userId: string, messages: Array<{ role: "system" | "user" | "assistant"; content: string }>, modelHint: string): Promise<{ text: string; model: string }> {
   const access = await getChatGPTAccessToken(env, userId);
+  let model = modelHint.trim();
+  if (!model) {
+    const catalogResponse = await fetch("https://api.openai.com/v1/models", { headers: { Authorization: `Bearer ${access.token}`, Accept: "application/json" } });
+    if (!catalogResponse.ok) throw new Error("chatgpt_plan_models_unavailable");
+    const catalog = await catalogResponse.json() as { data?: Array<Record<string, unknown>>; models?: Array<Record<string, unknown>> };
+    const first = (catalog.models ?? catalog.data ?? []).find((item) => item && (item.visibility === undefined || item.visibility === "list") && typeof (item.slug ?? item.id) === "string");
+    model = String(first?.slug ?? first?.id ?? "");
+    if (!model) throw new Error("chatgpt_plan_models_unavailable");
+  }
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: { Authorization: `Bearer ${access.token}`, Accept: "application/json", "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: modelHint || "gpt-5",
+      model,
       instructions: messages.filter((message) => message.role === "system").map((message) => message.content).join("\n\n") || undefined,
       input: messages.filter((message) => message.role !== "system").map((message) => ({ type: "message", role: message.role, content: [{ type: "input_text", text: message.content }] })),
       store: false,
@@ -450,7 +459,7 @@ async function completeWithChatGPTPlan(env: Env, userId: string, messages: Array
   for (const item of payload.output ?? []) for (const content of item.content ?? []) if (content.type === "output_text" && typeof content.text === "string") chunks.push(content.text);
   const answer = chunks.join("").trim();
   if (!answer) throw new Error("chatgpt_plan_empty_response");
-  return { text: answer, model: modelHint || "gpt-5" };
+  return { text: answer, model };
 }
 
 async function generateReply(env: Env, userId: string, conversationId: string, text: string): Promise<{ text: string; model: string; latency_ms: number }> {
