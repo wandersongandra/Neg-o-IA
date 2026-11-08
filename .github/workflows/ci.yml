@@ -167,7 +167,8 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Instalar dependências
-        run: npm ci
+        # No remote postinstall binary downloads (rclone is unused by this R2-free pilot).
+        run: npm ci --ignore-scripts
 
       - name: Lint
         run: |
@@ -283,6 +284,12 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck
+
+      - name: Build Cloudflare Workers pilot (no deployment)
+        run: npm run cloudflare:build
+
+      - name: Validate Cloudflare Worker bundle (no deployment)
+        run: npm run cloudflare:dry-run
 
       - name: Dependency audit (produção)
         run: npm audit --omit=dev --audit-level=high
