@@ -60,9 +60,8 @@ rules, vision, voice, readiness and sanitized monitoring. The Worker tests run
 on Cloudflare's local runtime and include owner isolation and confirmation
 gates. This local test suite does not call production Workers AI.
 
-The pilot uses Cloudflare Workers AI instead of a ChatGPT Plan token. The
-existing ChatGPT Plan OAuth CLI flow is not available in this Worker API;
-connecting it requires a separate design and end-to-end validation. External
+The pilot uses Cloudflare Workers AI by default and can also use a user-authorized
+ChatGPT Plan token through the native D1-backed OAuth implementation. External
 email, calendar, browser search and arbitrary code execution are not part of
 the existing closed Tool Manager catalog and are not enabled by this pilot.
 Automation currently accepts only registered read-only tools that do not
@@ -102,10 +101,13 @@ preview still needs a real browser functional pass after deployment.
 2. Apply D1 migrations remotely from `backend/cloudflare-api/` with Wrangler.
    The configured D1 database is `sophie-ultron-free-test`; check the database
    id in `wrangler.jsonc` matches the account before applying migrations.
-3. Store random `BOOTSTRAP_SECRET` and `INTERNAL_PROXY_KEY` values as encrypted
-   API Worker secrets. Store the matching `SOPHIE_BOOTSTRAP_SECRET` and
-   `SOPHIE_INTERNAL_PROXY_KEY` secrets on the frontend Worker. Generate and
-   pass these values locally; never put them in source or chat.
+3. Store random `BOOTSTRAP_SECRET`, `INTERNAL_PROXY_KEY` and
+   `CHATGPT_PLAN_ENCRYPTION_KEY` values as encrypted API Worker secrets. The
+   last value must be a base64url-encoded random 32-byte key and is used only
+   for AES-GCM encryption of ChatGPT OAuth tokens in D1. Store the matching
+   `SOPHIE_BOOTSTRAP_SECRET` and `SOPHIE_INTERNAL_PROXY_KEY` secrets on the
+   frontend Worker. Generate and pass these values locally; never put them in
+   source or chat.
 4. Deploy `sophie-ultron-api-free-test` from `backend/cloudflare-api/`, then
    deploy `sophie-ultron-free-test` from `frontend/` with
    `npm run cloudflare:deploy`. The command retains dashboard variables.

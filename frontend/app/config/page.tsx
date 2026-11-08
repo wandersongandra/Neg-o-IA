@@ -43,6 +43,8 @@ interface Config {
 
 interface ChatGPTPlanStatus {
   connected: boolean;
+  configured?: boolean;
+  available?: boolean;
   email?: string | null;
   expires_at?: string;
   host_id?: string;
@@ -436,12 +438,12 @@ export default function ConfigPage() {
         </SectionCard>
       </div>
 
-      <SectionCard title={config.runtime_target === "cloudflare-workers" ? "Modelo do agente" : "Conectar plano ChatGPT"} icon={Brain}>
+      <SectionCard title="Conectar plano ChatGPT" icon={Brain}>
         <div className="space-y-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="font-medium text-[var(--text-primary)]">
-                {config.runtime_target === "cloudflare-workers" ? "Cloudflare Workers AI ativo" : planLoading ? "Verificando conexão…" : planStatus.connected ? `Conectado${planStatus.email ? ` como ${planStatus.email}` : ""}` : "Nenhuma conta conectada"}
+                {planLoading ? "Verificando conexão…" : planStatus.connected ? `Conectado${planStatus.email ? ` como ${planStatus.email}` : ""}` : planStatus.configured === false ? "Configuração pendente no servidor" : "Nenhuma conta conectada"}
               </p>
               {planStatus.expires_at ? <p className="mt-1 text-sm text-[var(--text-secondary)]">Token renovável; validade atual até {new Date(planStatus.expires_at).toLocaleString("pt-BR")}.</p> : null}
             </div>
@@ -452,12 +454,9 @@ export default function ConfigPage() {
               {planStatus.connected ? <button type="button" onClick={() => void disconnectChatGPT()} className="rounded-lg border border-[var(--color-danger)]/40 px-3 py-2 text-sm text-[var(--color-danger)]">Desconectar</button> : null}
             </div>
           </div>
-          {config.runtime_target === "cloudflare-workers" ? (
-            <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
-              Este piloto executa o modelo {config.primary_model} pela cota gratuita do Workers AI. A conexão direta ao plano ChatGPT não está habilitada neste Worker.
-            </p>
-          ) : !planStatus.connected ? (
+          {!planStatus.connected ? (
             <>
+              {planStatus.configured === false ? <p className="rounded-lg border border-[#F59E0B]/40 bg-[#F59E0B]/10 p-3 text-sm leading-relaxed text-[#F59E0B]">O Worker ainda precisa da secret <code>CHATGPT_PLAN_ENCRYPTION_KEY</code>. Depois de configurá-la no Cloudflare, atualize esta tela.</p> : null}
               <p className="text-sm leading-relaxed text-[var(--text-secondary)]">
                 A autorização é feita no seu navegador e retorna a um callback local no seu computador. A senha do ChatGPT não é compartilhada com a Ultron. Você precisa ter o repositório clonado e o comando <code className="rounded bg-black/30 px-1.5 py-0.5">uv</code> instalado.
               </p>
@@ -468,7 +467,7 @@ export default function ConfigPage() {
                 </button>
               </div>
               <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
-                Antes, configure a chave de cifra no servidor e aplique as migrations do backend. O fluxo usa a autorização oficial Sign in with ChatGPT; o acesso depende da elegibilidade e do consentimento exibidos pela OpenAI.
+                O fluxo usa a autorização oficial Sign in with ChatGPT. O Cloudflare guarda somente os tokens cifrados; a elegibilidade e o consentimento são decididos pela OpenAI.
               </p>
             </>
           ) : null}
