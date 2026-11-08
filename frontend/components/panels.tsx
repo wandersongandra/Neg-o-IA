@@ -42,10 +42,10 @@ function Card({
 }) {
   const Icon = icon;
   return (
-    <div className={`glass glass-hover animate-fade-up rounded-2xl p-4 ${className}`}>
-      <div className="mb-3 flex items-center gap-2">
-        <Icon className="size-3.5 text-[var(--accent)]" />
-        <h3 className="font-mono-data text-[10px] font-semibold tracking-[0.25em] text-[var(--text-secondary)]">
+    <div className={`glass glass-hover animate-fade-up rounded-xl p-5 ${className}`}>
+      <div className="mb-4 flex items-center gap-2 border-b border-[var(--border)] pb-3">
+        <Icon className="size-4 text-[var(--accent)]" />
+        <h3 className="text-[.7rem] font-semibold tracking-[0.16em] text-[var(--text-secondary)]">
           {title}
         </h3>
       </div>
@@ -237,7 +237,7 @@ export function ToolsCard({
         {tools.map((tool) => (
           <div
             key={tool.label}
-            className="glass glass-hover flex flex-col items-center gap-1.5 rounded-xl px-2 py-2.5"
+            className="surface-muted flex flex-col items-center gap-1.5 rounded-lg px-2 py-2.5"
             title={tool.status === "ok" ? "conectado" : tool.status === "danger" ? "indisponível" : "não verificado"}
           >
             <tool.icon className="size-4 text-[var(--text-primary)]" />
@@ -260,15 +260,16 @@ export function ToolsCard({
 export function Greeting({ data }: { data: DashboardData | null }) {
   const hour = new Date().getHours();
   const period = hour < 6 ? "Boa madrugada" : hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
-  const online = data?.healthz?.status === "alive";
-  const ready = data?.readyz?.status === "ready";
+  const online = data?.healthz?.status === "alive" || data?.healthz?.status === "ok";
+  const ready = data?.readyz?.status === "ready" || data?.readyz?.status === "ok";
 
   return (
-    <div className="animate-fade-up text-center">
-      <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
+    <div className="animate-fade-up px-6 pb-2 pt-6 text-left sm:px-8 sm:pt-8">
+      <p className="eyebrow">Centro de comando</p>
+      <h1 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-[var(--text-primary)] sm:text-4xl">
         {period}, <span className="text-[var(--accent)]">Wanderson</span>.
       </h1>
-      <p className="mt-2 text-sm text-[var(--text-secondary)]">
+      <p className="mt-3 max-w-lg text-sm leading-6 text-[var(--text-secondary)]">
         <span className={online ? "text-[var(--color-ok)]" : "text-[var(--color-danger)]"}>
           Ultron está {online ? "online" : "offline"}.
         </span>{" "}
@@ -276,9 +277,9 @@ export function Greeting({ data }: { data: DashboardData | null }) {
           ? "Tudo funcionando normalmente."
           : "Operando com ressalvas em alguns subsistemas."}
       </p>
-      <div className="mx-auto mt-3 flex max-w-md flex-wrap items-center justify-center gap-2 font-mono-data text-[10px] text-[var(--text-secondary)]">
-        <span className="glass rounded-full px-3 py-1">{data?.backend_reachable ? "DADOS AO VIVO" : "MODO OFFLINE"}</span>
-        <span className={`glass rounded-full px-3 py-1 ${ready ? "text-[var(--color-ok)]" : "text-[var(--color-warn)]"}`}>
+      <div className="mt-5 flex flex-wrap items-center gap-4 text-[10px] text-[var(--text-secondary)]">
+        <span className="status-line"><span className={`size-1.5 rounded-full ${data?.backend_reachable ? "bg-[var(--color-ok)]" : "bg-[var(--color-warn)]"}`} />{data?.backend_reachable ? "Dados ao vivo" : "Modo local"}</span>
+        <span className={`status-line ${ready ? "text-[var(--color-ok)]" : "text-[var(--color-warn)]"}`}><span className="size-1.5 rounded-full bg-current" />
           {ready ? "SISTEMAS OPERACIONAIS" : "SISTEMAS PARCIAIS"}
         </span>
       </div>

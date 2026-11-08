@@ -89,13 +89,11 @@ function SectionHeader({
   subtitle: string;
 }) {
   return (
-    <div className="mb-4 flex items-center gap-3">
-      <div className="flex size-9 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)]">
-        <Icon className="size-4 text-[var(--accent)]" />
-      </div>
+    <div className="mb-4 flex items-center gap-3 border-b border-[var(--border)] pb-3">
+      <Icon className="size-4 text-[var(--accent)]" />
       <div className="leading-tight">
-        <h2 className="font-mono-data text-[10px] font-semibold tracking-[0.25em] text-[var(--text-secondary)]">{title}</h2>
-        <p className="text-sm font-semibold text-[var(--text-primary)]">{subtitle}</p>
+        <h2 className="text-[.68rem] font-semibold tracking-[0.16em] text-[var(--text-secondary)]">{title}</h2>
+        <p className="mt-1 text-sm font-semibold text-[var(--text-primary)]">{subtitle}</p>
       </div>
     </div>
   );

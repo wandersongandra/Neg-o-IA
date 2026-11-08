@@ -574,6 +574,8 @@ function InfraSection({ snapshot }: { snapshot: Snapshot }) {
   const handlers = events?.handlers ? events.handlers.length : null;
   const deliveries = events?.deliveries ? Object.keys(events.deliveries).length : null;
   const securityOk = security?.authenticated === true || security?.status === "ok";
+  const healthOk = healthz?.status === "alive" || healthz?.status === "ok";
+  const readyOk = readyz?.status === "ready" || readyz?.status === "ok";
 
   return (
     <Section title="INFRA" icon={Server}>
@@ -658,14 +660,14 @@ function InfraSection({ snapshot }: { snapshot: Snapshot }) {
         title="HEALTHZ"
         icon={Activity}
         className="col-span-12 md:col-span-6 lg:col-span-4"
-        badge={<StatusBadge ok={healthz?.status === "alive"} />}
+        badge={<StatusBadge ok={healthOk} />}
         error={snapshot.errors.healthz}
       >
         {healthz ? (
           <InfoRow
             label="STATUS"
             value={String(healthz.status)}
-            tone={healthz.status === "alive" ? "ok" : "danger"}
+            tone={healthOk ? "ok" : "danger"}
           />
         ) : (
           <EmptyData />
@@ -676,7 +678,7 @@ function InfraSection({ snapshot }: { snapshot: Snapshot }) {
         title="READYZ"
         icon={CheckCircle2}
         className="col-span-12 md:col-span-6 lg:col-span-4"
-        badge={<StatusBadge ok={readyz?.status === "ready"} />}
+        badge={<StatusBadge ok={readyOk} />}
         error={snapshot.errors.readyz}
       >
         {readyz ? (
@@ -684,7 +686,7 @@ function InfraSection({ snapshot }: { snapshot: Snapshot }) {
             <InfoRow
               label="STATUS"
               value={String(readyz.status)}
-              tone={readyz.status === "ready" ? "ok" : "warn"}
+              tone={readyOk ? "ok" : "warn"}
             />
 
           </div>

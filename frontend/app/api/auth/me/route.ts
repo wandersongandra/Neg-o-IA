@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resolveApiConfig } from "@/lib/env";
+import { fetchApiRequest, resolveApiConfig } from "@/lib/env";
 import { getSessionToken } from "@/lib/session-cookie";
 import {
   enforceSensitiveSameOriginGet,
@@ -15,13 +15,15 @@ export async function GET(request: NextRequest) {
   const token = getSessionToken(request.cookies);
   if (!token) return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
   try {
-    const upstream = await fetch(`${apiUrl}/security/status`, {
+    const upstreamRequest = new Request(`${apiUrl}/security/status`, {
+      method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,
         ...trustedClientIpHeaders(request),
       },
       cache: "no-store",
     });
+    const upstream = await fetchApiRequest(upstreamRequest);
     const payload = await upstream.json();
     return NextResponse.json(payload, {
       status: upstream.status,

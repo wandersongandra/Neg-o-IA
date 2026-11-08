@@ -48,7 +48,7 @@ export function TimelinePanel({ data }: { data: DashboardData | null }) {
   const logs = data?.logs?.slice(-6).reverse() ?? [];
 
   return (
-    <div className="glass glass-hover animate-fade-up rounded-2xl p-4">
+    <div className="glass glass-hover animate-fade-up rounded-xl p-5">
       <SectionTitle icon={Activity} title="Linha do Tempo" subtitle="ATIVIDADES RECENTES" />
       <div className="space-y-1">
         {logs.length === 0 ? (
@@ -71,7 +71,7 @@ export function TimelinePanel({ data }: { data: DashboardData | null }) {
 
 export function TasksPanel() {
   return (
-    <div className="glass glass-hover animate-fade-up rounded-2xl p-4">
+    <div className="glass glass-hover animate-fade-up rounded-xl p-5">
       <SectionTitle icon={ListTodo} title="Próximas Tarefas" subtitle="AGUARDANDO SINCRONIZAÇÃO" />
       <p className="px-2 py-4 text-xs text-[var(--text-secondary)]">Nenhuma tarefa foi carregada de uma fonte conectada.</p>
     </div>
@@ -80,9 +80,9 @@ export function TasksPanel() {
 
 export function MemoryDonut() {
   return (
-    <div className="glass glass-hover animate-fade-up rounded-2xl p-4">
+    <div className="glass glass-hover animate-fade-up rounded-xl p-5">
       <SectionTitle icon={TrendingUp} title="Uso da Memória" subtitle="DISTRIBUIÇÃO" />
-      <div className="flex min-h-36 items-center justify-center rounded-xl border border-dashed border-[var(--border)] px-4 text-center">
+      <div className="surface-muted flex min-h-36 items-center justify-center rounded-lg px-4 text-center">
         <p className="max-w-xs text-xs text-[var(--text-secondary)]">A distribuição só será exibida quando a fonte de memória estiver conectada.</p>
       </div>
     </div>
@@ -91,9 +91,9 @@ export function MemoryDonut() {
 
 export function KnowledgeGraph() {
   return (
-    <div className="glass glass-hover animate-fade-up rounded-2xl p-4">
+    <div className="glass glass-hover animate-fade-up rounded-xl p-5">
       <SectionTitle icon={GitBranch} title="Knowledge Graph" subtitle="REDE DE CONHECIMENTO" />
-      <div className="flex min-h-48 items-center justify-center rounded-xl border border-dashed border-[var(--border)] px-4 text-center">
+      <div className="surface-muted flex min-h-48 items-center justify-center rounded-lg px-4 text-center">
         <p className="max-w-sm text-xs text-[var(--text-secondary)]">O grafo aparecerá quando houver entidades e relacionamentos carregados.</p>
       </div>
     </div>
@@ -135,7 +135,7 @@ export function LearningsPanel() {
   };
 
   return (
-    <div className="glass glass-hover animate-fade-up rounded-2xl p-4">
+    <div className="glass glass-hover animate-fade-up rounded-xl p-5">
       <SectionTitle icon={Sparkles} title="Aprendizados Recentes" subtitle="ENSINADOS POR VOCÊ" />
       {experiences.length === 0 ? (
         <p className="px-2 py-4 text-xs text-[var(--text-secondary)]">Avalie uma resposta e escreva uma correção para Ultron usar como referência pessoal.</p>
@@ -144,7 +144,7 @@ export function LearningsPanel() {
           {experiences.slice(0, 8).map((item) => (
             <li
               key={item.id}
-              className="flex items-start gap-2 rounded-xl bg-white/[0.025] p-2.5"
+              className="surface-muted flex items-start gap-2 rounded-lg p-3"
             >
               <span className="mt-0.5 font-mono-data text-[10px] text-[#ff765e]">
                 {item.rating > 0 ? "+" : "−"}
@@ -211,7 +211,7 @@ export function FooterBar({ data }: { data: DashboardData | null }) {
   ];
 
   return (
-    <footer className="glass animate-fade-up rounded-2xl px-4 py-3">
+    <footer className="glass animate-fade-up rounded-xl px-5 py-4">
       <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-2">
         {cells.map((cell) => (
           <div key={cell.label} className="leading-tight">

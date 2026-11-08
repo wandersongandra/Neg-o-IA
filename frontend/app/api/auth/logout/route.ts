@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resolveApiConfig } from "@/lib/env";
+import { fetchApiRequest, resolveApiConfig } from "@/lib/env";
 import {
   DEV_SESSION_COOKIE,
   PROD_SESSION_COOKIE,
@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
   const token = getSessionToken(request.cookies);
   if (token) {
     try {
-      await fetch(`${apiUrl}/security/logout`, {
+      const upstreamRequest = new Request(`${apiUrl}/security/logout`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
         },
         cache: "no-store",
       });
+      await fetchApiRequest(upstreamRequest);
     } catch {
       // Always remove the browser cookie; the backend will reject expired/revoked state.
     }

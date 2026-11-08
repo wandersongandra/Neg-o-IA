@@ -72,7 +72,7 @@ export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: S
   const pathname = usePathname();
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const version = data?.root?.version ?? "--";
-  const ready = data?.readyz?.status === "ready";
+  const ready = data?.readyz?.status === "ready" || data?.readyz?.status === "ok";
 
   const handleLinkClick = useCallback(() => {
     onClose?.();
@@ -111,11 +111,11 @@ export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: S
       <aside
         id="sidebar"
         className={`
-          glass side-command-deck flex h-[calc(100dvh-4rem)] w-60 flex-col
+          glass side-command-deck flex h-[calc(100dvh-4.5rem)] w-60 flex-col
           left-0 z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:visible
           ${isOpen ? "visible translate-x-0" : "invisible -translate-x-full"}
         `}
-        style={{ top: "calc(4rem + env(safe-area-inset-top))" }}
+        style={{ top: "calc(4.5rem + env(safe-area-inset-top))" }}
         aria-label="Painel lateral"
       >
         <button
@@ -128,7 +128,8 @@ export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: S
           <X className="size-5" />
         </button>
 
-        <nav className="flex-1 space-y-0.5 overflow-y-auto p-3 mt-6 lg:mt-0">
+        <nav className="flex-1 space-y-0.5 overflow-y-auto p-4 pt-6 mt-6 lg:mt-0">
+          <p className="eyebrow mb-3 px-3">Navegação</p>
           {MAIN_NAV.map((item) => {
             const active = pathname === item.href;
             return (
@@ -139,10 +140,10 @@ export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: S
                   onNavigate?.(item.label);
                   handleLinkClick();
                 }}
-                className={`interactive-control group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] transition-all duration-300 ${
+                className={`interactive-control group flex w-full items-center gap-3 rounded-lg border-l-2 px-3 py-2.5 text-[13px] transition-all duration-200 ${
                   active
-                    ? "bg-[var(--color-prime)]/10 text-[var(--text-primary)] shadow-[inset_0_0_0_1px_var(--accent-muted)]"
-                    : "text-[var(--text-secondary)] hover:bg-white/[0.03] hover:text-[var(--text-primary)]"
+                    ? "border-[var(--accent)] bg-[var(--accent-muted)] text-[var(--text-primary)]"
+                    : "border-transparent text-[var(--text-secondary)] hover:bg-white/[0.03] hover:text-[var(--text-primary)]"
                 }`}
               >
                 <item.icon
@@ -154,14 +155,14 @@ export default function Sidebar({ data, onNavigate, isOpen = false, onClose }: S
                 />
                 <span className="truncate">{item.label}</span>
                 {active && (
-                  <span className="ml-auto size-1 rounded-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
+                    <span className="ml-auto size-1.5 rounded-full bg-[var(--accent)]" />
                 )}
               </Link>
             );
           })}
 
-          <p className="px-3 pb-1 pt-4 font-mono-data text-[10px] font-semibold tracking-widest text-[var(--text-secondary)]">
-            EM BREVE
+          <p className="eyebrow px-3 pb-1 pt-7">
+            Em breve
           </p>
           {SOON_NAV.map((item) => (
             <button

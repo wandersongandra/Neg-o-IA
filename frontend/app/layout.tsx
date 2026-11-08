@@ -46,6 +46,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <meta name="theme-color" content="#b65b46" media="(prefers-color-scheme: light)" />
         <link rel="apple-touch-icon" href="/icons/ultron-mark.svg" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content={BRAND.displayName} />
       </head>

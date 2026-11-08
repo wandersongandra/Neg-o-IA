@@ -11,9 +11,9 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import func, select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.models import ApiKeyRecord, AppConfigRecord, AuditEventRecord
+from app.infrastructure.db import AsyncSession
 from app.modules.configuration.settings import get_settings
 from app.modules.database.infrastructure import ApiKeyORM, AppConfigORM, AuditEventORM
 from app.modules.events.envelope import EventEnvelope

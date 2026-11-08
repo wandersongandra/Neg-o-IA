@@ -755,9 +755,9 @@ export default function ChatPanel() {
   const StatusIcon = meta.icon;
 
   return (
-    <div className="glass flex h-[calc(100dvh-16rem)] min-h-0 flex-col overflow-hidden rounded-2xl sm:min-h-[480px]">
-      <header className="flex items-center gap-2 border-b border-white/[0.06] px-3 py-3 sm:gap-3 sm:px-5">
-        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)]">
+    <div className="glass flex h-[calc(100dvh-16rem)] min-h-0 flex-col overflow-hidden rounded-xl sm:min-h-[480px]">
+      <header className="flex items-center gap-2 border-b border-[var(--border)] px-3 py-3 sm:gap-3 sm:px-5">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] text-[#1b1512]">
           <MessageSquare className="size-4 text-[var(--accent)]" strokeWidth={2.2} />
         </div>
         <div className="min-w-0 leading-tight">
@@ -773,7 +773,7 @@ export default function ChatPanel() {
           </p>
         </div>
 
-        <span className="glass ml-auto hidden shrink-0 items-center gap-2 rounded-full px-3 py-1.5 sm:flex">
+        <span className="ml-auto hidden shrink-0 items-center gap-2 border-l border-[var(--border)] pl-3 sm:flex">
           <StatusIcon
             className={`size-3.5 ${meta.spinning ? "animate-spin" : ""}`}
             style={{ color: meta.color }}
@@ -789,7 +789,7 @@ export default function ChatPanel() {
         <button
           type="button"
           onClick={() => setHistoryOpen(!historyOpen)}
-          className="glass glass-hover flex size-9 shrink-0 items-center justify-center rounded-xl text-[var(--text-secondary)] hover:text-[var(--accent)] sm:size-9"
+          className="glass glass-hover flex size-9 shrink-0 items-center justify-center rounded-lg text-[var(--text-secondary)] hover:text-[var(--accent)] sm:size-9"
           aria-label="Histórico"
           aria-expanded={historyOpen}
           aria-controls="chat-history"
@@ -811,7 +811,7 @@ export default function ChatPanel() {
         <button
           type="button"
           onClick={resetConversation}
-          className="glass glass-hover flex size-9 shrink-0 items-center justify-center rounded-xl text-[var(--text-secondary)] hover:text-[var(--accent)]"
+          className="glass glass-hover flex size-9 shrink-0 items-center justify-center rounded-lg text-[var(--text-secondary)] hover:text-[var(--accent)]"
           aria-label="Nova conversa"
           title="Nova conversa"
         >
@@ -946,7 +946,7 @@ export default function ChatPanel() {
           >
             {messages.length === 0 && (
               <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
-                <div className="flex size-14 items-center justify-center rounded-2xl border border-[var(--border)] bg-[var(--accent-muted)]">
+                <div className="flex size-12 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--bg-primary)]">
                   <MessageSquare className="size-6 text-[var(--accent)]" />
                 </div>
                 <div>
@@ -968,16 +968,16 @@ export default function ChatPanel() {
             {messages.map((m) =>
               m.role === "user" ? (
                 <div key={m.id} className="flex justify-end">
-                  <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-[var(--accent-muted)] px-4 py-2.5 text-sm text-[var(--text-primary)] ring-1 ring-[var(--accent)]/25">
+                  <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-xl rounded-br-md bg-[var(--accent-muted)] px-4 py-2.5 text-sm text-[var(--text-primary)]">
                     {m.content}
                   </div>
                 </div>
               ) : (
                 <div key={m.id} className="group/message flex items-start gap-3">
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--bg-secondary)] text-xs font-semibold text-[var(--accent)]">
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] text-xs font-semibold text-[#1b1512]">
                     U
                   </div>
-                  <div className="glass max-w-[85%] rounded-2xl rounded-tl-md px-4 py-2.5">
+                  <div className="glass max-w-[85%] rounded-xl rounded-tl-md px-4 py-2.5">
                     {m.status === "streaming" ? (
                       m.content ? (
                         <div className="text-sm whitespace-pre-wrap break-words text-[var(--text-primary)]">

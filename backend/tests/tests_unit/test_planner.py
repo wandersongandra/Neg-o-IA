@@ -153,6 +153,7 @@ async def test_plan_execution_runs_confirmed_write(
     assert result.status == "completed"
     assert tools.calls[0][3] is True
 
+
 @pytest.mark.asyncio
 async def test_planner_never_fabricates_tool_confirmation(
     monkeypatch: pytest.MonkeyPatch,
@@ -191,4 +192,3 @@ async def test_planner_never_fabricates_tool_confirmation(
 
     assert result.status == "completed"
     assert tools.calls[0][3] is False
-

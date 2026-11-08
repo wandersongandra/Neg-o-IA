@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies, headers as requestHeaders } from "next/headers";
-import { resolveApiConfig } from "@/lib/env";
+import { fetchApiRequest, resolveApiConfig } from "@/lib/env";
 import { getSessionToken } from "@/lib/session-cookie";
 import { trustedClientIpHeadersFromHeaders } from "@/lib/request-security";
 import type {
@@ -34,11 +34,13 @@ async function getJson<T>(
     if (SERVICE_API_KEY && process.env.NODE_ENV !== "production" && !sessionToken) {
       headers["X-API-Key"] = SERVICE_API_KEY;
     }
-    const res = await fetch(`${API_URL}${path}`, {
+    const upstreamRequest = new Request(`${API_URL}${path}`, {
+      method: "GET",
       headers,
       signal: controller.signal,
       cache: "no-store",
     });
+    const res = await fetchApiRequest(upstreamRequest);
     if (!res.ok) return null;
     return (await res.json()) as T;
   } catch {
@@ -63,11 +65,13 @@ async function getLogs(
     if (SERVICE_API_KEY && process.env.NODE_ENV !== "production" && !sessionToken) {
       headers["X-API-Key"] = SERVICE_API_KEY;
     }
-    const res = await fetch(`${API_URL}${LOGS_URLS[0]}`, {
+    const upstreamRequest = new Request(`${API_URL}${LOGS_URLS[0]}`, {
+      method: "GET",
       headers,
       signal: controller.signal,
       cache: "no-store",
     });
+    const res = await fetchApiRequest(upstreamRequest);
     if (!res.ok) return null;
     const body = (await res.json()) as { lines?: string[] };
     return body.lines ?? null;

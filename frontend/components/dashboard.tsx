@@ -188,9 +188,9 @@ export default function Dashboard() {
           onClose={() => setSidebarOpen(false)}
         />
 
-        <main id="main-content" className="page-transition flex-1 space-y-5 overflow-x-hidden p-4 sm:p-5 md:space-y-6 md:p-6">
+        <main id="main-content" className="dashboard-main page-transition flex-1 space-y-5 overflow-x-hidden p-4 sm:p-6 md:space-y-7 md:p-8">
           <button
-            className="glass glass-hover interactive-control lg:hidden flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            className="interactive-control flex items-center gap-2 rounded-lg border border-[var(--border)] px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
             onClick={() => setSidebarOpen(true)}
             aria-label="Abrir menu de navegação"
             aria-expanded={sidebarOpen}
@@ -206,8 +206,10 @@ export default function Dashboard() {
             </div>
 
             <div className="col-span-1 sm:col-span-2 lg:col-span-6 min-w-0">
-              <Greeting data={data} />
-              <CoreSphere data={data} brain={brain} />
+              <div className="dashboard-core-panel">
+                <Greeting data={data} />
+                <CoreSphere data={data} brain={brain} />
+              </div>
             </div>
 
             <div className="col-span-1 space-y-4 sm:col-span-2 lg:col-span-3 min-w-0">

@@ -147,6 +147,37 @@ jobs:
           python -m pip install "pip-audit==2.10.1"
           pip-audit
 
+  cloudflare_api:
+    name: Cloudflare API Worker (typecheck e testes)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/cloudflare-api
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: backend/cloudflare-api/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Cloudflare runtime tests
+        run: npm test
+
+      - name: Worker deployment dry-run
+        run: npx wrangler deploy --dry-run --config wrangler.jsonc
+
   frontend:
     name: Frontend (lint e build)
     runs-on: ubuntu-latest
@@ -167,7 +198,8 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Instalar dependências
-        run: npm ci
+        # No remote postinstall binary downloads (rclone is unused by this R2-free pilot).
+        run: npm ci --ignore-scripts
 
       - name: Lint
         run: |
@@ -283,6 +315,12 @@ jobs:
 
       - name: Typecheck
         run: npm run typecheck
+
+      - name: Build Cloudflare Workers pilot (no deployment)
+        run: npm run cloudflare:build
+
+      - name: Validate Cloudflare Worker bundle (no deployment)
+        run: npm run cloudflare:dry-run
 
       - name: Dependency audit (produção)
         run: npm audit --omit=dev --audit-level=high

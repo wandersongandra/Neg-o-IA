@@ -18,8 +18,8 @@ from datetime import UTC, datetime, timedelta
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.infrastructure.db import AsyncSession
 from app.modules.configuration.settings import Settings
 from app.modules.database.infrastructure import AuthSessionORM, DeviceORM, UserORM
 

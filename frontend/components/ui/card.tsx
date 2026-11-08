@@ -32,9 +32,9 @@ const variantStyles: Record<CardVariant, string> = {
   elevated:
     "glass glass-hover animate-fade-up rounded-xl p-4",
   outlined:
-    "rounded-2xl p-4 border border-[var(--border)] bg-transparent hover:border-[var(--accent-muted)] transition-colors duration-300",
+    "rounded-xl p-4 border border-[var(--border)] bg-transparent hover:border-[var(--accent-muted)] transition-colors duration-300",
   filled:
-    "rounded-2xl p-4 bg-[var(--bg-secondary)] border border-[var(--border)] hover:bg-[var(--bg-secondary)]/80 transition-colors duration-300",
+    "rounded-xl p-4 bg-[var(--bg-secondary)] border border-[var(--border)] hover:bg-[var(--bg-secondary)]/80 transition-colors duration-300",
 };
 
 export const Card = React.forwardRef<

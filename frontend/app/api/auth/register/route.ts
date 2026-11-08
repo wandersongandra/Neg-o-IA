@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resolveApiConfig } from "@/lib/env";
+import {
+  resolveApiConfig,
+  resolveRuntimeEnv,
+  resolveWorkerServiceBinding,
+} from "@/lib/env";
 import {
   enforceSameOriginMutation,
   trustedClientIpHeaders,
@@ -18,15 +22,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
   try {
-    const upstream = await fetch(`${apiUrl}/security/register`, {
+    const bootstrapSecret = resolveRuntimeEnv("SOPHIE_BOOTSTRAP_SECRET");
+    const upstreamRequest = new Request(`${apiUrl}/security/register`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(bootstrapSecret
+          ? { "X-Ultron-Bootstrap-Secret": bootstrapSecret }
+          : {}),
         ...trustedClientIpHeaders(request),
       },
       body: JSON.stringify(body),
       cache: "no-store",
     });
+    const service = resolveWorkerServiceBinding("SOPHIE_API");
+    const upstream = service
+      ? await service.fetch(upstreamRequest)
+      : await fetch(upstreamRequest);
     const payload = await upstream.json();
     return NextResponse.json(payload, { status: upstream.status });
   } catch {

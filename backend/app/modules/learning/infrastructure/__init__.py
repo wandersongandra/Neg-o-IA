@@ -7,10 +7,14 @@ from typing import Any, cast
 
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.embeddings import embed_text
-from app.infrastructure.db import create_engine, create_session_factory
+from app.infrastructure.db import (
+    AsyncSession,
+    async_sessionmaker,
+    create_engine,
+    create_session_factory,
+)
 from app.modules.configuration.settings import get_settings
 from app.modules.database.infrastructure import LearningExperienceORM
 
@@ -43,7 +47,7 @@ class PostgresLearningStore:
     ) -> dict[str, Any]:
         parsed_user = _user_uuid(user_id)
         embedding = embed_text(lesson) if lesson else None
-        statement = insert(LearningExperienceORM).values(
+        insert_statement = insert(LearningExperienceORM).values(
             user_id=parsed_user,
             session_id=session_id,
             message_ref=message_ref,
@@ -51,23 +55,21 @@ class PostgresLearningStore:
             lesson=lesson,
             embedding=embedding,
         )
-        statement = statement.on_conflict_do_update(
+        statement = insert_statement.on_conflict_do_update(
             constraint="uq_learning_experience_message",
             set_={
-                "rating": statement.excluded.rating,
-                "lesson": statement.excluded.lesson,
-                "embedding": statement.excluded.embedding,
+                "rating": insert_statement.excluded.rating,
+                "lesson": insert_statement.excluded.lesson,
+                "embedding": insert_statement.excluded.embedding,
             },
         ).returning(LearningExperienceORM)
         async with self._factory() as session:
             async with session.begin():
                 await self._set_user_scope(session, parsed_user)
-                row = (await session.execute(statement)).scalar_one()
+                row: LearningExperienceORM = (await session.execute(statement)).scalar_one()
                 return self._serialize(row)
 
-    async def search(
-        self, user_id: str, query: str, *, limit: int = 4
-    ) -> list[dict[str, Any]]:
+    async def search(self, user_id: str, query: str, *, limit: int = 4) -> list[dict[str, Any]]:
         parsed_user = _user_uuid(user_id)
         query_embedding = embed_text(query)
         distance = cast(Any, LearningExperienceORM.embedding).cosine_distance(query_embedding)

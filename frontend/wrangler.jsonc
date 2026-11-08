@@ -1,0 +1,26 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "sophie-ultron-free-test",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-11-07",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "vars": {
+    "SOPHIE_PUBLIC_ORIGIN": "https://sophie-ultron-free-test.gandratecnologia.workers.dev",
+    "SOPHIE_API_URL": "https://sophie-ultron-api-free-test.gandratecnologia.workers.dev",
+    "SOPHIE_WS_URL": "wss://sophie-ultron-api-free-test.gandratecnologia.workers.dev"
+  },
+  "services": [
+    {
+      "binding": "SOPHIE_API",
+      "service": "sophie-ultron-api-free-test"
+    }
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": false
+  }
+}

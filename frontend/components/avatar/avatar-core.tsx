@@ -162,7 +162,7 @@ export const AvatarCore = forwardRef<
     canvas.addEventListener("pointerleave", onPointerLeave, { passive: true });
 
     const loader = new GLTFLoader();
-    loader.load("/models/sentinel.glb", (gltf) => {
+    loader.load("/models/sentinel.glb?v=0adc4299", (gltf) => {
       if (disposed) return;
       const root = gltf.scene;
       scene.add(root);
@@ -179,10 +179,12 @@ export const AvatarCore = forwardRef<
       if (!disposed) setFailed(true);
     });
 
-    const clock = new THREE.Clock();
+    const timer = new THREE.Timer();
+    timer.connect(document);
     const animate = () => {
       if (disposed) return;
-      const elapsed = clock.getElapsedTime();
+      timer.update();
+      const elapsed = timer.getElapsed();
       const active = stateRef.current;
       const head = headRef.current;
       if (head) {
@@ -219,6 +221,7 @@ export const AvatarCore = forwardRef<
         }
       });
       renderer.dispose();
+      timer.dispose();
       headRef.current = null;
       jawRef.current = null;
     };

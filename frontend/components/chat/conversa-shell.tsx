@@ -11,7 +11,7 @@ export default function ConversaShell({ children }: { children: ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="workspace-shell flex min-h-dvh flex-col">
       <TopBar data={null} commandLabel="Voltar ao centro de comando" onOpenPalette={() => router.push("/")} />
       <div className="flex flex-1">
         <Sidebar
@@ -23,7 +23,7 @@ export default function ConversaShell({ children }: { children: ReactNode }) {
         <div className="flex flex-1 flex-col overflow-hidden">
           <div className="p-4 pb-0 lg:hidden">
             <button
-              className="glass glass-hover interactive-control flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+              className="interactive-control flex items-center gap-2 rounded-lg border border-[var(--border)] px-3 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] hover:text-[var(--text-primary)]"
               onClick={() => setSidebarOpen(true)}
               aria-label="Abrir menu de navegação"
               aria-expanded={sidebarOpen}

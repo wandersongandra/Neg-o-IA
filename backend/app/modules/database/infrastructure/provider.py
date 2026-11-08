@@ -5,9 +5,8 @@ from __future__ import annotations
 import asyncio
 
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncEngine
 
-from app.infrastructure.db import create_engine
+from app.infrastructure.db import AsyncEngine, create_engine
 from app.modules.configuration.settings import Settings
 
 

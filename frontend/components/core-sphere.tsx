@@ -40,7 +40,7 @@ export const CoreSphere = forwardRef<CoreSphereRef, CoreSphereProps>(
       stopSpeaking: () => avatarRef.current?.stopSpeaking(),
     }));
 
-    const online = data?.healthz?.status === "alive";
+    const online = data?.healthz?.status === "alive" || data?.healthz?.status === "ok";
     const latency = data?.latency_ms;
     return (
       <div

@@ -19,7 +19,7 @@ export default function WorkspaceShell({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    <div className="workspace-shell flex min-h-dvh flex-col">
       <TopBar
         data={null}
         commandLabel="Voltar ao centro de comando"
@@ -32,7 +32,7 @@ export default function WorkspaceShell({
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
         />
-        <main className="min-w-0 flex-1 space-y-6 overflow-x-hidden p-4 sm:p-5 md:p-6">
+        <main className="min-w-0 flex-1 space-y-7 overflow-x-hidden p-4 sm:p-6 md:p-8">
           <button
             type="button"
             onClick={() => setSidebarOpen(true)}
@@ -44,11 +44,12 @@ export default function WorkspaceShell({
             <Menu className="size-4" />
             Menu
           </button>
-          <header className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
+          <header className="max-w-3xl space-y-2 border-b border-[var(--border)] pb-6">
+            <p className="eyebrow">Ultron workspace</p>
+            <h1 className="text-3xl font-semibold tracking-[-0.03em] text-[var(--text-primary)]">
               {title}
             </h1>
-            <p className="text-sm text-[var(--text-secondary)]">{description}</p>
+            <p className="max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">{description}</p>
           </header>
           {children}
         </main>
