@@ -260,8 +260,8 @@ export function ToolsCard({
 export function Greeting({ data }: { data: DashboardData | null }) {
   const hour = new Date().getHours();
   const period = hour < 6 ? "Boa madrugada" : hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
-  const online = data?.healthz?.status === "alive";
-  const ready = data?.readyz?.status === "ready";
+  const online = data?.healthz?.status === "alive" || data?.healthz?.status === "ok";
+  const ready = data?.readyz?.status === "ready" || data?.readyz?.status === "ok";
 
   return (
     <div className="animate-fade-up text-center">
