@@ -143,7 +143,13 @@ export default function ConfigPage() {
     try {
       const res = await fetch("/api/proxy/security/sessions", { cache: "no-store" });
       if (!res.ok) throw new Error("Falha ao carregar sessões");
-      setSessions((await res.json()) as ActiveSession[]);
+      const payload = (await res.json()) as unknown;
+      const values = Array.isArray(payload)
+        ? payload
+        : payload && typeof payload === "object" && Array.isArray((payload as { sessions?: unknown }).sessions)
+          ? (payload as { sessions: unknown[] }).sessions
+          : [];
+      setSessions(values as ActiveSession[]);
     } catch {
       setSessions([]);
     } finally {
