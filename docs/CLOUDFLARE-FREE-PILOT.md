@@ -9,11 +9,9 @@ Docker/Next.js/FastAPI deployment. The test Worker is named
 - The **existing** Next.js 15 frontend (including the 3D sentinel avatar),
   middleware, auth endpoints and BFF route handlers, adapted through OpenNext.
 - No Cloudflare Containers, paid features, R2 buckets or domain changes.
-- **Not** the Python 3.13/FastAPI backend, PostgreSQL, Redis, migrations or
-  scheduled workers. Those dependencies cannot simply be uploaded as a free
-  Cloudflare Worker. A working conversational test requires a separately
-  provisioned, isolated backend reachable over HTTPS, or a later native
-  Cloudflare backend implementation.
+- **Not yet** the Python/FastAPI backend, PostgreSQL, Redis, migrations or
+  scheduled workers. The backend source is in this repository, but it cannot
+  be deployed unchanged as a Worker; see the compatibility findings below.
 
 The Worker **must not** be connected to a production backend or reuse
 production service API keys, databases, OAuth keys, or user data for this test.
@@ -32,6 +30,35 @@ intentionally omitted. The package introduced `adm-zip` and is not required by
 the no-R2 build. OpenNext's build-time `glob` dependencies are pinned to the
 patched 14.0.2 release; this combination has passed the Cloudflare build and
 dry-run locally.
+
+## Backend deployment status
+
+Cloudflare supports FastAPI through Python Workers, so an isolated native
+backend pilot is technically possible. The current backend is not a drop-in
+Worker, though, and must not be treated as deployed:
+
+- Its database layer uses async SQLAlchemy with `asyncpg`; Cloudflare's Python
+  Workers documentation currently says async SQLAlchemy is not supported.
+- A `pywrangler sync` compatibility check against the locked dependencies did
+  not resolve for the available Worker runtimes: with Python 3.14 it reported
+  no usable PyEmscripten wheel for `orjson` (and subsequent checks also exposed
+  missing wheels for `cryptography` and the locked `pydantic-core`); with
+  Python 3.13 it reported no usable `asyncpg` wheel.
+- The backend also uses `threading.Lock`, Redis TCP clients, password hashing,
+  encrypted credentials, startup event-bus tasks, and PostgreSQL/pgvector.
+  These need independent compatibility and runtime validation in the Worker
+  environment; swapping just the entrypoint would leave important routes
+  unusable.
+
+The safe next step is a dedicated Cloudflare backend port in an isolated
+`sophie-ultron-api-free-test` Worker. Keep the existing FastAPI/Docker runtime
+available for the main deployment. The port needs a Worker-compatible database
+adapter (Cloudflare documents Hyperdrive with `asyncpg`, but does not support
+the current async SQLAlchemy layer), compatible cryptography/password-hashing
+packages, and a reviewed Redis replacement or adapter. Do not point it at
+production data or set the frontend's `SOPHIE_API_URL` / `SOPHIE_WS_URL` until
+the isolated API has passed auth, PostgreSQL, chat, WebSocket and voice checks.
+No paid Cloudflare feature should be enabled for this pilot.
 
 ## Build and locally preview the real Workers bundle
 
@@ -94,4 +121,6 @@ Documentation:
 
 - https://developers.cloudflare.com/workers/framework-guides/web-apps/opennext/
 - https://developers.cloudflare.com/workers/platform/limits/
+- https://developers.cloudflare.com/workers/languages/python/packages/fastapi/
+- https://developers.cloudflare.com/hyperdrive/examples/python-workers/
 - https://opennext.js.org/cloudflare/get-started
