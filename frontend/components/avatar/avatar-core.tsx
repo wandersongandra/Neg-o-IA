@@ -179,10 +179,12 @@ export const AvatarCore = forwardRef<
       if (!disposed) setFailed(true);
     });
 
-    const clock = new THREE.Clock();
+    const timer = new THREE.Timer();
+    timer.connect(document);
     const animate = () => {
       if (disposed) return;
-      const elapsed = clock.getElapsedTime();
+      timer.update();
+      const elapsed = timer.getElapsed();
       const active = stateRef.current;
       const head = headRef.current;
       if (head) {
@@ -219,6 +221,7 @@ export const AvatarCore = forwardRef<
         }
       });
       renderer.dispose();
+      timer.dispose();
       headRef.current = null;
       jawRef.current = null;
     };

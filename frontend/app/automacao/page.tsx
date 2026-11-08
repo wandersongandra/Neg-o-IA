@@ -20,6 +20,10 @@ interface ToolSpec {
   requires_confirmation: boolean;
 }
 
+function asArray<T>(value: unknown): T[] {
+  return Array.isArray(value) ? (value as T[]) : [];
+}
+
 export default function AutomationPage() {
   const [events, setEvents] = useState<string[]>([]);
   const [tools, setTools] = useState<ToolSpec[]>([]);
@@ -42,14 +46,18 @@ export default function AutomationPage() {
       fetch("/api/proxy/automation/rules", { cache: "no-store" }),
     ]);
     if (capsRes.ok) {
-      const data = (await capsRes.json()) as { trigger_events?: string[] };
-      const values = data.trigger_events ?? [];
+      const data = (await capsRes.json()) as { trigger_events?: unknown } | unknown;
+      const values = Array.isArray(data)
+        ? asArray<string>(data)
+        : asArray<string>((data as { trigger_events?: unknown }).trigger_events);
       setEvents(values);
       setEventType((current) => current || values[0] || "");
     }
     if (toolsRes.ok) {
-      const data = (await toolsRes.json()) as { tools?: ToolSpec[] };
-      const values = data.tools ?? [];
+      const data = (await toolsRes.json()) as { tools?: unknown } | unknown;
+      const values = Array.isArray(data)
+        ? asArray<ToolSpec>(data)
+        : asArray<ToolSpec>((data as { tools?: unknown }).tools);
       setTools(values);
       const firstSafe = values.find(
         (tool) => tool.automation_safe && !tool.requires_confirmation,
@@ -57,8 +65,8 @@ export default function AutomationPage() {
       if (firstSafe) setToolName((current) => current || firstSafe.name);
     }
     if (rulesRes.ok) {
-      const data = (await rulesRes.json()) as { rules?: AutomationRule[] };
-      setRules(data.rules ?? []);
+      const data = (await rulesRes.json()) as { rules?: unknown } | unknown;
+      setRules(Array.isArray(data) ? asArray<AutomationRule>(data) : asArray<AutomationRule>((data as { rules?: unknown }).rules));
     }
   }
 
