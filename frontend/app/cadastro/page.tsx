@@ -75,46 +75,60 @@ export default function CadastroPage() {
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-[var(--bg-primary)] p-6">
-      <form onSubmit={submit} className="glass w-full max-w-md space-y-5 rounded-2xl p-6">
+    <main className="auth-shell flex min-h-dvh items-center justify-center p-5 sm:p-8">
+      <div className="grid w-full max-w-5xl overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-secondary)] lg:grid-cols-[1fr_1.05fr]">
+        <section className="auth-intro hidden flex-col justify-between p-10 lg:flex">
+          <div>
+            <p className="text-[.75rem] font-bold tracking-[.2em] text-[var(--accent)]">ULTRON</p>
+            <h1 className="mt-10 max-w-sm text-4xl font-semibold leading-tight tracking-[-0.04em] text-[var(--text-primary)]">
+              Configure um assistente que acompanha seu trabalho.
+            </h1>
+            <p className="mt-5 max-w-sm text-sm leading-6 text-[var(--text-secondary)]">
+              A primeira conta cria a identidade da instância e prepara o seu centro de comando.
+            </p>
+          </div>
+          <p className="text-xs text-[var(--text-secondary)]">Configuração inicial · Acesso protegido</p>
+        </section>
+        <form onSubmit={submit} className="auth-card space-y-5 p-6 sm:p-10">
         <div>
           <p className="font-mono-data text-[10px] uppercase tracking-[0.3em] text-[var(--accent)]">
-            ULTRON — CONFIGURAÇÃO INICIAL
+            Configuração inicial
           </p>
-          <h1 className="mt-2 text-2xl font-semibold text-[var(--text-primary)]">Criar acesso</h1>
+          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-[var(--text-primary)]">Criar acesso</h1>
           <p className="mt-1 text-sm text-[var(--text-secondary)]">
             Crie o único usuário inicial da sua instância.
           </p>
         </div>
         <label className="block space-y-2 text-sm text-[var(--text-secondary)]">
           Usuário
-          <input required minLength={3} maxLength={128} value={username} onChange={(event) => setUsername(event.target.value)} className="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-[var(--text-primary)] outline-none focus:border-[var(--accent)]" autoComplete="username" />
+          <input required minLength={3} maxLength={128} value={username} onChange={(event) => setUsername(event.target.value)} className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2.5 text-[var(--text-primary)] outline-none focus:border-[var(--accent)]" autoComplete="username" />
         </label>
         <label className="block space-y-2 text-sm text-[var(--text-secondary)]">
           Nome de exibição <span className="opacity-60">(opcional)</span>
-          <input maxLength={256} value={displayName} onChange={(event) => setDisplayName(event.target.value)} className="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-[var(--text-primary)] outline-none focus:border-[var(--accent)]" autoComplete="name" />
+          <input maxLength={256} value={displayName} onChange={(event) => setDisplayName(event.target.value)} className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2.5 text-[var(--text-primary)] outline-none focus:border-[var(--accent)]" autoComplete="name" />
         </label>
         <label className="block space-y-2 text-sm text-[var(--text-secondary)]">
           Senha
-          <input required minLength={12} type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-[var(--text-primary)] outline-none focus:border-[var(--accent)]" autoComplete="new-password" />
+          <input required minLength={12} type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2.5 text-[var(--text-primary)] outline-none focus:border-[var(--accent)]" autoComplete="new-password" />
         </label>
         <label className="block space-y-2 text-sm text-[var(--text-secondary)]">
           Confirmar senha
-          <input required minLength={12} type="password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} className="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-[var(--text-primary)] outline-none focus:border-[var(--accent)]" autoComplete="new-password" />
+          <input required minLength={12} type="password" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2.5 text-[var(--text-primary)] outline-none focus:border-[var(--accent)]" autoComplete="new-password" />
         </label>
         {error ? (
           <p role="alert" aria-live="polite" className="text-sm text-[var(--color-danger)]">
             {error}
           </p>
         ) : null}
-        <button type="submit" disabled={submitting} className="interactive-control w-full rounded-xl bg-[var(--accent)] px-4 py-2.5 font-semibold text-black hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] disabled:cursor-not-allowed disabled:opacity-50">
+        <button type="submit" disabled={submitting} className="interactive-control w-full rounded-lg bg-[var(--accent)] px-4 py-3 font-semibold text-[#1b1512] hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] disabled:cursor-not-allowed disabled:opacity-50">
           {submitting ? "Criando…" : "Criar conta"}
         </button>
         <p className="text-center text-sm text-[var(--text-secondary)]">
           Já possui acesso?{" "}
           <Link href="/login" className="text-[var(--accent)] hover:underline">Entrar</Link>
         </p>
-      </form>
+        </form>
+      </div>
     </main>
   );
 }

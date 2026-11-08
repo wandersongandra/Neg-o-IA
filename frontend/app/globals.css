@@ -6,17 +6,17 @@
   --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 
   /* Colors — Core Palette */
-  --color-void: #05070b;
-  --color-panel: #0b1018;
-  --color-edge: rgba(255, 255, 255, 0.06);
-  --color-neon: #b9624d;
-  --color-prime: #8d4437;
-  --color-glow: #cb7960;
+  --color-void: #111311;
+  --color-panel: #181b19;
+  --color-edge: #30342f;
+  --color-neon: #c46d54;
+  --color-prime: #8c4d3c;
+  --color-glow: #d5876e;
   --color-ok: #22c55e;
   --color-warn: #f59e0b;
   --color-danger: #ef4444;
-  --color-ink: #f8fafc;
-  --color-mute: #a8b5c7;
+  --color-ink: #f1eee8;
+  --color-mute: #a7a8a1;
 
   /* Spacing scale (4px baseline) */
   --space-xs: 0.25rem;
@@ -46,9 +46,9 @@
   --duration-orbit-reverse-fast: 22s;
 
   /* Blur Scale for Glass Effects */
-  --blur-sm: 12px;
-  --blur-base: 14px;
-  --blur-lg: 16px;
+  --blur-sm: 0;
+  --blur-base: 0;
+  --blur-lg: 0;
 
   /* Shadow Elevation System */
   --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
@@ -61,14 +61,14 @@
 :root {
   color-scheme: dark;
   /* Theme Colors */
-  --accent: #b65b46;
-  --accent-glow: #c77861;
-  --accent-muted: rgba(182, 91, 70, 0.14);
-  --bg-primary: #0d0f10;
-  --bg-secondary: #17191a;
-  --border: rgba(255, 255, 255, 0.09);
-  --text-primary: #eeece7;
-  --text-secondary: #a5a5a0;
+  --accent: #c46d54;
+  --accent-glow: #d5876e;
+  --accent-muted: rgba(196, 109, 84, 0.14);
+  --bg-primary: #111311;
+  --bg-secondary: #1a1d1b;
+  --border: #30342f;
+  --text-primary: #f1eee8;
+  --text-secondary: #a7a8a1;
 
   /* Typography Scale */
   --text-display: clamp(2.5rem, 5vw, 4rem);
@@ -105,8 +105,8 @@
   --tracking-wider: 0.1em;
   --tracking-widest: 0.15em;
   --tracking-mono: 0.02em;
-  --glass-surface: #17191b;
-  --glass-edge: #303335;
+  --glass-surface: #1a1d1b;
+  --glass-edge: #30342f;
 }
 
 .ultron-core {
@@ -135,6 +135,7 @@ a, button, input, textarea, select {
 body {
   @apply bg-[var(--bg-primary)] text-[var(--text-primary)] antialiased;
   background-color: var(--bg-primary);
+  background-image: none;
 }
 
 ::-webkit-scrollbar {
@@ -157,7 +158,8 @@ body {
     position: relative;
     background: var(--glass-surface);
     border: 1px solid var(--glass-edge);
-    box-shadow: 0 1px 2px rgba(0, 0, 0, .24);
+    box-shadow: 0 1px 1px rgba(0, 0, 0, .18);
+    backdrop-filter: none;
   }
 
   .glass-hover {
@@ -167,8 +169,8 @@ body {
       background var(--duration-normal) ease;
   }
   .glass-hover:hover {
-    border-color: color-mix(in srgb, var(--accent) 48%, var(--glass-edge));
-    box-shadow: 0 4px 12px rgba(0, 0, 0, .2);
+    border-color: color-mix(in srgb, var(--accent) 42%, var(--glass-edge));
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .16);
   }
 
   .font-mono-data {
@@ -256,9 +258,69 @@ body {
     position: relative;
   }
 
+  .dashboard-main {
+    max-width: 1800px;
+  }
+
+  .dashboard-core-panel {
+    position: relative;
+    overflow: hidden;
+    min-height: 520px;
+    border: 1px solid var(--border);
+    border-radius: 1.1rem;
+    background: #171a18;
+  }
+
+  .dashboard-core-panel::before {
+    position: absolute;
+    inset: 0;
+    content: "";
+    pointer-events: none;
+    border-left: 3px solid var(--accent);
+    opacity: .72;
+  }
+
+  .eyebrow {
+    color: var(--accent);
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .18em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .surface-muted {
+    background: #141715;
+    border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
+  }
+
+  .status-line {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    color: var(--text-secondary);
+    font-size: .75rem;
+  }
+
+  .auth-shell {
+    background: #111311;
+  }
+
+  .auth-intro {
+    border-left: 3px solid var(--accent);
+  }
+
+  .auth-card {
+    background: #191c1a;
+    border: 1px solid var(--border);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, .24);
+  }
+
   .side-command-deck {
     position: fixed;
     border-right-color: var(--border);
+    background: #151816;
+    border-radius: 0;
   }
 
   @media (min-width: 1024px) {
@@ -268,7 +330,7 @@ body {
   }
 
   .core-status {
-    background: var(--bg-secondary);
+    background: #1b1e1c;
   }
 
   .command-palette {
@@ -451,4 +513,7 @@ body {
 
 
 @media (max-width: 640px) {
+  .dashboard-core-panel {
+    min-height: 420px;
+  }
 }

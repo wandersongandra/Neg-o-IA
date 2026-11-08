@@ -39,13 +39,26 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-[var(--bg-primary)] p-6">
-      <form onSubmit={submit} className="glass w-full max-w-md space-y-5 rounded-2xl p-6">
+    <main className="auth-shell flex min-h-dvh items-center justify-center p-5 sm:p-8">
+      <div className="grid w-full max-w-5xl overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--bg-secondary)] lg:grid-cols-[1fr_1.05fr]">
+        <section className="auth-intro hidden flex-col justify-between p-10 lg:flex">
+          <div>
+            <p className="text-[.75rem] font-bold tracking-[.2em] text-[var(--accent)]">ULTRON</p>
+            <h1 className="mt-10 max-w-sm text-4xl font-semibold leading-tight tracking-[-0.04em] text-[var(--text-primary)]">
+              Um espaço claro para pensar, decidir e agir.
+            </h1>
+            <p className="mt-5 max-w-sm text-sm leading-6 text-[var(--text-secondary)]">
+              Seu centro de comando pessoal para conversas, memória e ferramentas em um só lugar.
+            </p>
+          </div>
+          <p className="text-xs text-[var(--text-secondary)]">Sessão protegida · Centro de comando</p>
+        </section>
+        <form onSubmit={submit} className="auth-card space-y-5 p-6 sm:p-10">
         <div>
           <p className="font-mono-data text-[10px] uppercase tracking-[0.3em] text-[var(--accent)]">
-            ULTRON — IDENTIDADE
+            Acesso à sua instância
           </p>
-          <h1 className="mt-2 text-2xl font-semibold text-[var(--text-primary)]">Entrar</h1>
+          <h1 className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-[var(--text-primary)]">Entrar</h1>
           <p className="mt-1 text-sm text-[var(--text-secondary)]">
             Use uma sessão autenticada para acessar suas conversas.
           </p>
@@ -57,7 +70,7 @@ export default function LoginPage() {
             minLength={3}
             value={username}
             onChange={(event) => setUsername(event.target.value)}
-            className="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2.5 text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
             autoComplete="username"
           />
         </label>
@@ -68,7 +81,7 @@ export default function LoginPage() {
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="w-full rounded-xl border border-[var(--border)] bg-transparent px-3 py-2 text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
+            className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg-primary)] px-3 py-2.5 text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
             autoComplete="current-password"
           />
         </label>
@@ -80,7 +93,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={submitting}
-          className="interactive-control w-full rounded-xl bg-[var(--accent)] px-4 py-2.5 font-semibold text-black hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+          className="interactive-control w-full rounded-lg bg-[var(--accent)] px-4 py-3 font-semibold text-[#1b1512] hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {submitting ? "Validando…" : "Entrar"}
         </button>
@@ -96,7 +109,8 @@ export default function LoginPage() {
             Novos acessos são provisionados pelo administrador da instância.
           </p>
         )}
-      </form>
+        </form>
+      </div>
     </main>
   );
 }
